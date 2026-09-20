@@ -1,0 +1,542 @@
+[
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_01",
+    "interacciones": [
+      {
+        "autor": "Ana Ribeiro",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Despues de seis meses de aprendizaje consegui mi primera entrevista para Analista de Datos. Los proyectos realizados con Python y SQL durante el programa fueron fundamentales para demostrar experiencia practica."
+      },
+      {
+        "autor": "Tiago Mendes",
+        "canal": "#dudas-python",
+        "tipo": "pregunta_tecnica",
+        "texto": "Cual es la mejor forma de optimizar un proceso ETL que carga mas de un millon de registros diarios usando pandas?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_02",
+    "interacciones": [
+      {
+        "autor": "Fernanda Costa",
+        "canal": "#certificaciones",
+        "tipo": "testimonio",
+        "texto": "Aprobe la certificacion OCI Foundations. Las sesiones de estudio grupal de la comunidad fueron clave para entender los conceptos de nube."
+      },
+      {
+        "autor": "Rafael Lima",
+        "canal": "#dudas-sql",
+        "tipo": "pregunta_tecnica",
+        "texto": "Alguien puede explicar la diferencia practica entre INNER JOIN y EXISTS en consultas de gran volumen?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_03",
+    "interacciones": [
+      {
+        "autor": "Camila Oliveira",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Termine un dashboard interactivo con Power BI conectado a una API REST. Estoy preparando la documentacion para compartirla."
+      },
+      {
+        "autor": "Pedro Santos",
+        "canal": "#dudas-api",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como gestionan la autenticacion OAuth2 cuando desarrollan integraciones con multiples proveedores?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_04",
+    "interacciones": [
+      {
+        "autor": "Juliana Martins",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Recibi una oferta para trabajar como Desarrolladora Backend Junior. El proyecto de FastAPI presentado en mi portfolio hizo la diferencia."
+      },
+      {
+        "autor": "Gustavo Rocha",
+        "canal": "#dudas-fastapi",
+        "tipo": "pregunta_tecnica",
+        "texto": "Existe alguna estrategia recomendada para manejar tareas asincronas de larga duracion en FastAPI?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_05",
+    "interacciones": [
+      {
+        "autor": "Bruno Carvalho",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Publique mi primera aplicacion web utilizando Streamlit para analisis financiero automatizado."
+      },
+      {
+        "autor": "Larissa Vieira",
+        "canal": "#dudas-streamlit",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como se puede implementar control de acceso por roles dentro de Streamlit?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_06",
+    "interacciones": [
+      {
+        "autor": "Diego Alves",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Consegui una pasantia en ciencia de datos gracias a los proyectos colaborativos desarrollados dentro de la comunidad."
+      },
+      {
+        "autor": "Patricia Gomes",
+        "canal": "#dudas-machine-learning",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que tecnicas recomiendan para evitar overfitting en conjuntos de datos relativamente pequenos?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_07",
+    "interacciones": [
+      {
+        "autor": "Renato Araujo",
+        "canal": "#certificaciones",
+        "tipo": "testimonio",
+        "texto": "Finalice el programa de fundamentos de IA y ya estoy aplicando lo aprendido en mi trabajo actual."
+      },
+      {
+        "autor": "Marcia Fernandes",
+        "canal": "#dudas-langchain",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como almacenan memoria conversacional de largo plazo en aplicaciones basadas en LangChain?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_08",
+    "interacciones": [
+      {
+        "autor": "Eduardo Lopes",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Implemente un chatbot para soporte interno utilizando OCI Generative AI y vector search."
+      },
+      {
+        "autor": "Vanessa Nunes",
+        "canal": "#dudas-rag",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que estrategia utilizan para mejorar la relevancia de documentos recuperados en sistemas RAG?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_09",
+    "interacciones": [
+      {
+        "autor": "Felipe Moraes",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Fui promovido a Ingeniero de Datos Junior despues de automatizar varios procesos usando Python."
+      },
+      {
+        "autor": "Carolina Dias",
+        "canal": "#dudas-airflow",
+        "tipo": "pregunta_tecnica",
+        "texto": "Cual es la mejor practica para gestionar dependencias complejas en Apache Airflow?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_10",
+    "interacciones": [
+      {
+        "autor": "Paulo Henrique",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Desarrolle un sistema de recomendacion de cursos utilizando embeddings y busqueda semantica."
+      },
+      {
+        "autor": "Natasha Silva",
+        "canal": "#dudas-embeddings",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como evalúan la calidad de embeddings generados para idiomas distintos del ingles?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_11",
+    "interacciones": [
+      {
+        "autor": "Leandro Castro",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Obtuve mi primer contrato freelance desarrollando automatizaciones con n8n."
+      },
+      {
+        "autor": "Aline Souza",
+        "canal": "#dudas-n8n",
+        "tipo": "pregunta_tecnica",
+        "texto": "Hay alguna forma eficiente de versionar workflows complejos de n8n?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_12",
+    "interacciones": [
+      {
+        "autor": "Ricardo Melo",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Estoy integrando Oracle Object Storage con una API personalizada para almacenamiento de documentos."
+      },
+      {
+        "autor": "Sabrina Rocha",
+        "canal": "#dudas-oci",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como gestionan credenciales de OCI de forma segura en ambientes de desarrollo?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_13",
+    "interacciones": [
+      {
+        "autor": "Mariana Souza",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Fui contratada como Desarrolladora Junior de IA gracias a mi portfolio con LangChain y OCI."
+      },
+      {
+        "autor": "Lucas Albuquerque",
+        "canal": "#dudas-langgraph",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como estructurar routers con reintentos automaticos en LangGraph?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_14",
+    "interacciones": [
+      {
+        "autor": "Joao Pereira",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Complete una API para procesamiento de documentos PDF usando OCR e inteligencia artificial."
+      },
+      {
+        "autor": "Bianca Teixeira",
+        "canal": "#dudas-ocr",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que motor OCR ofrece mejor precision para documentos con tablas complejas?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_15",
+    "interacciones": [
+      {
+        "autor": "Daniel Correia",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Me incorporé a una startup de analitica como Ingeniero de Datos Trainee."
+      },
+      {
+        "autor": "Cintia Barros",
+        "canal": "#dudas-kubernetes",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como exponen servicios internos de manera segura en Kubernetes?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_16",
+    "interacciones": [
+      {
+        "autor": "Helena Freitas",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Publique un agente de IA que resume articulos cientificos utilizando varias fuentes academicas."
+      },
+      {
+        "autor": "Igor Batista",
+        "canal": "#dudas-llm",
+        "tipo": "pregunta_tecnica",
+        "texto": "Cual es la mejor estrategia para reducir alucinaciones en agentes conversacionales?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_17",
+    "interacciones": [
+      {
+        "autor": "Tatiana Lima",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Consegui una entrevista internacional gracias a los proyectos open source compartidos en la comunidad."
+      },
+      {
+        "autor": "Vitor Oliveira",
+        "canal": "#dudas-git",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como manejan flujos Git con multiples ramas de desarrollo activas?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_18",
+    "interacciones": [
+      {
+        "autor": "Andre Lopes",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Implemente monitoreo completo de APIs usando Prometheus y Grafana."
+      },
+      {
+        "autor": "Michele Santos",
+        "canal": "#dudas-monitoring",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que metricas consideran esenciales para observabilidad de microservicios?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_19",
+    "interacciones": [
+      {
+        "autor": "Fabio Ribeiro",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Finalice mi proceso de onboarding como desarrollador cloud en una consultora internacional."
+      },
+      {
+        "autor": "Kelly Moraes",
+        "canal": "#dudas-devops",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como gestionan secretos en pipelines CI/CD?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_20",
+    "interacciones": [
+      {
+        "autor": "Rodrigo Nascimento",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Desarrolle una aplicacion que clasifica tickets de soporte usando modelos de lenguaje."
+      },
+      {
+        "autor": "Pamela Duarte",
+        "canal": "#dudas-ai",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como evaluar objetivamente la calidad de respuestas generadas por un LLM?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_21",
+    "interacciones": [
+      {
+        "autor": "Victor Hugo",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Obtube mi primer empleo remoto como desarrollador Python despues de participar activamente en la comunidad."
+      },
+      {
+        "autor": "Isabela Costa",
+        "canal": "#dudas-postgresql",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que tecnicas recomiendan para mejorar consultas lentas en PostgreSQL?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_22",
+    "interacciones": [
+      {
+        "autor": "Mateus Silva",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Complete un asistente virtual integrado con WhatsApp para atencion automatizada."
+      },
+      {
+        "autor": "Julia Almeida",
+        "canal": "#dudas-integraciones",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como controlan limites de tasa cuando integran APIs externas?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_23",
+    "interacciones": [
+      {
+        "autor": "Gabriel Fernandes",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Mi portfolio de proyectos en GitHub fue suficiente para superar la etapa tecnica inicial."
+      },
+      {
+        "autor": "Monica Lopes",
+        "canal": "#dudas-github",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que estructura recomiendan para documentar proyectos de manera profesional?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_24",
+    "interacciones": [
+      {
+        "autor": "Samuel Costa",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Desarrolle una plataforma de analisis de sentimientos para redes sociales."
+      },
+      {
+        "autor": "Priscila Melo",
+        "canal": "#dudas-nlp",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como manejan textos multilingues en modelos de clasificacion?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_25",
+    "interacciones": [
+      {
+        "autor": "Thiago Ramos",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Fui seleccionado para un programa de aceleracion de talento en inteligencia artificial."
+      },
+      {
+        "autor": "Denise Ferreira",
+        "canal": "#dudas-vector-db",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que base vectorial ofrece mejor balance entre rendimiento y simplicidad?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_26",
+    "interacciones": [
+      {
+        "autor": "Carlos Eduardo",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Publique un sistema de recomendacion de contenidos basado en comportamiento de usuarios."
+      },
+      {
+        "autor": "Renata Pires",
+        "canal": "#dudas-modelos",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como comparan objetivamente distintos modelos fundacionales para una misma tarea?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_27",
+    "interacciones": [
+      {
+        "autor": "Leonardo Farias",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Obtuve una posicion como Ingeniero MLOps despues de presentar un proyecto de despliegue automatizado."
+      },
+      {
+        "autor": "Ariane Souza",
+        "canal": "#dudas-mlops",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que herramientas recomiendan para versionar datasets y modelos?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_28",
+    "interacciones": [
+      {
+        "autor": "Roberta Campos",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Termine una plataforma educativa con recomendaciones personalizadas utilizando IA generativa."
+      },
+      {
+        "autor": "Henrique Dias",
+        "canal": "#dudas-personalizacion",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como medir el impacto real de recomendaciones personalizadas sobre usuarios?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_29",
+    "interacciones": [
+      {
+        "autor": "Amanda Ribeiro",
+        "canal": "#logros-y-empleos",
+        "tipo": "testimonio",
+        "texto": "Consegui trabajar en una empresa internacional gracias a mi experiencia con servicios cloud."
+      },
+      {
+        "autor": "Felipe Santos",
+        "canal": "#dudas-cloud",
+        "tipo": "pregunta_tecnica",
+        "texto": "Que criterios consideran para elegir entre arquitectura serverless y contenedores?"
+      }
+    ]
+  },
+  {
+    "origen_comunidad": "Discord_Grupo_ONE_G10",
+    "periodo_referencia": "Semana_30",
+    "interacciones": [
+      {
+        "autor": "Cristiane Rocha",
+        "canal": "#proyectos",
+        "tipo": "avance_proyecto",
+        "texto": "Lance una plataforma de gestion de conocimiento basada en agentes y busqueda semantica."
+      },
+      {
+        "autor": "Otavio Martins",
+        "canal": "#dudas-agentes",
+        "tipo": "pregunta_tecnica",
+        "texto": "Como coordinan multiples agentes especializados manteniendo contexto compartido?"
+      }
+    ]
+  }
+]

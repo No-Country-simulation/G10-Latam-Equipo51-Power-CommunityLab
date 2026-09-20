@@ -1,0 +1,81 @@
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Compilados
+*.so
+*.dll
+*.dylib
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Distribución
+build/
+dist/
+*.egg-info/
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# OCI
+oci_api_key.pem
+*.pem
+*.key
+
+# Datos generados
+salida/
+downloads/
+uploads/
+
+# JSON masivos generados
+*.json.bak
+
+# Archivos locales
+config.local.py
+
+# Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
+
+# FastAPI
+.fastapi/
+
+# Logs de uvicorn
+uvicorn*.log
+
+
+*.pdf
