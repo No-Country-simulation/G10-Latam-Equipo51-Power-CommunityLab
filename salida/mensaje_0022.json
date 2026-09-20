@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_11",
+  "interaccion": {
+    "autor": "Aline Souza",
+    "canal": "#dudas-n8n",
+    "tipo": "pregunta_tecnica",
+    "texto": "Hay alguna forma eficiente de versionar workflows complejos de n8n?"
+  }
+}

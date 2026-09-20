@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_14",
+  "interaccion": {
+    "autor": "Bianca Teixeira",
+    "canal": "#dudas-ocr",
+    "tipo": "pregunta_tecnica",
+    "texto": "Que motor OCR ofrece mejor precision para documentos con tablas complejas?"
+  }
+}

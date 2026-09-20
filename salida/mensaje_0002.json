@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_01",
+  "interaccion": {
+    "autor": "Tiago Mendes",
+    "canal": "#dudas-python",
+    "tipo": "pregunta_tecnica",
+    "texto": "Cual es la mejor forma de optimizar un proceso ETL que carga mas de un millon de registros diarios usando pandas?"
+  }
+}

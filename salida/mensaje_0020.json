@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_10",
+  "interaccion": {
+    "autor": "Natasha Silva",
+    "canal": "#dudas-embeddings",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como evalúan la calidad de embeddings generados para idiomas distintos del ingles?"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_29",
+  "interaccion": {
+    "autor": "Felipe Santos",
+    "canal": "#dudas-cloud",
+    "tipo": "pregunta_tecnica",
+    "texto": "Que criterios consideran para elegir entre arquitectura serverless y contenedores?"
+  }
+}

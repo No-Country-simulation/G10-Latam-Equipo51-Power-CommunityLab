@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_07",
+  "interaccion": {
+    "autor": "Marcia Fernandes",
+    "canal": "#dudas-langchain",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como almacenan memoria conversacional de largo plazo en aplicaciones basadas en LangChain?"
+  }
+}

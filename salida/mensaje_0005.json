@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_03",
+  "interaccion": {
+    "autor": "Camila Oliveira",
+    "canal": "#proyectos",
+    "tipo": "avance_proyecto",
+    "texto": "Termine un dashboard interactivo con Power BI conectado a una API REST. Estoy preparando la documentacion para compartirla."
+  }
+}
