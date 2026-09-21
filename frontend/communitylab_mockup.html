@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CommunityLab — Mockup</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--text:#17202a;--muted:#667085;--border:#e4e7ec;--accent:#4f46e5;--accentbg:#eef2ff;--green:#12b76a;--amber:#f79009;--red:#f04438}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+    .app{max-width:1180px;margin:auto;padding:28px 20px 50px}.header{display:flex;justify-content:space-between;gap:16px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:13px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+    h1{font-size:22px;margin:0}.muted{color:var(--muted);font-size:14px}.pills,.tabs,.actions,.tags{display:flex;gap:8px;flex-wrap:wrap}.pill,.tag{border:1px solid var(--border);border-radius:999px;padding:7px 11px;font-size:13px;background:#fff}
+    .tabs{margin:20px 0}.tab{border:1px solid var(--border);background:#fff;padding:11px 15px;border-radius:9px;cursor:pointer;font-size:14px}.tab.active{background:var(--accentbg);border-color:#c7d2fe;font-weight:700}
+    .panel{display:none}.panel.active{display:block}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.grid2{display:grid;grid-template-columns:.8fr 1.2fr;gap:16px}.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+    .metric{font-size:28px;font-weight:750;margin-top:5px}.bar{height:12px;background:#f0f1f3;border-radius:10px;overflow:hidden}.fill{height:100%;border-radius:10px}.positive{background:var(--green)}.neutral{background:var(--amber)}.negative{background:var(--red)}
+    .row{margin:16px 0}.rowhead{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--border)}th{color:var(--muted)}
+    .upload{min-height:180px;border:2px dashed var(--border);border-radius:14px;display:grid;place-items:center;text-align:center;padding:25px;cursor:pointer}.btn{border:1px solid var(--border);background:#fff;border-radius:9px;padding:11px 15px;cursor:pointer;font-weight:650}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    textarea{width:100%;min-height:260px;border:1px solid var(--border);border-radius:10px;padding:14px;font:inherit;line-height:1.55;resize:vertical}.asset{width:100%;text-align:left;border:1px solid var(--border);background:#fff;padding:13px;border-radius:10px;margin-bottom:8px;cursor:pointer}.asset.active{background:var(--accentbg)}
+    @media(max-width:800px){.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.header{align-items:flex-start;flex-direction:column}}@media(max-width:460px){.grid4{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand"><div class="logo">CL</div><div><h1>CommunityLab</h1><div class="muted">Community Intelligence & Content Engine</div></div></div>
+    <div class="pills"><span class="pill">Semana 04 · 2026</span><span class="pill">32 interacciones</span></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab" data-tab="upload">1 · Cargar lote</button>
+    <button class="tab active" data-tab="analysis">2 · Análisis</button>
+    <button class="tab" data-tab="content">3 · Contenidos</button>
+  </nav>
+
+  <section id="upload" class="panel">
+    <div class="grid2">
+      <div class="card"><h3>Importar conversaciones</h3><p class="muted">Subí un archivo CSV o JSON con las interacciones de la comunidad.</p>
+        <label class="upload">↑<br><b>Seleccionar CSV / JSON</b><br><span class="muted">o arrastrar el lote hasta aquí</span><input id="file" type="file" accept=".csv,.json" hidden></label>
+        <p id="fileStatus" class="muted">Dataset demo listo: comunidad-semana-04.json</p><button id="process" class="btn primary">Procesar lote</button>
+      </div>
+      <div class="card"><h3>Pipeline</h3><p><b>01 · Validar</b><br><span class="muted">FastAPI + Pydantic</span></p><p><b>02 · Analizar</b><br><span class="muted">Sentimiento, tipo, temas y relevancia</span></p><p><b>03 · Decidir</b><br><span class="muted">Router LangGraph</span></p><p><b>04 · Generar</b><br><span class="muted">LinkedIn · X · FAQ · Newsletter</span></p></div>
+    </div>
+  </section>
+
+  <section id="analysis" class="panel active">
+    <div class="grid4">
+      <div class="card"><div class="muted">Interacciones</div><div class="metric">32</div></div><div class="card"><div class="muted">Positivas</div><div class="metric">59%</div></div><div class="card"><div class="muted">FAQs detectadas</div><div class="metric">8</div></div><div class="card"><div class="muted">Alertas</div><div class="metric">3</div></div>
+    </div><br>
+    <div class="grid2">
+      <div class="card"><h3>Sentimiento de la comunidad</h3>
+        <div class="row"><div class="rowhead"><span>Positivo</span><b>59%</b></div><div class="bar"><div class="fill positive" style="width:59%"></div></div></div>
+        <div class="row"><div class="rowhead"><span>Neutral</span><b>28%</b></div><div class="bar"><div class="fill neutral" style="width:28%"></div></div></div>
+        <div class="row"><div class="rowhead"><span>Negativo</span><b>13%</b></div><div class="bar"><div class="fill negative" style="width:13%"></div></div></div>
+        <h4>Temas principales</h4><div class="tags"><span class="tag">Java</span><span class="tag">OCI</span><span class="tag">Certificación</span><span class="tag">Mentoría</span></div>
+      </div>
+      <div class="card"><h3>Interacciones priorizadas</h3><div style="overflow:auto"><table><thead><tr><th>Mensaje</th><th>Clasificación</th><th>Sent.</th><th>Score</th></tr></thead><tbody>
+        <tr><td>“Terminé mi certificación gracias a la comunidad…”</td><td>Caso de éxito</td><td>+0.91</td><td><b>94</b></td></tr>
+        <tr><td>“¿Cómo puedo desplegar mi proyecto en OCI?”</td><td>Tip / FAQ</td><td>+0.12</td><td><b>87</b></td></tr>
+        <tr><td>“No puedo acceder al laboratorio desde ayer…”</td><td>Alerta</td><td>−0.74</td><td><b>83</b></td></tr>
+        <tr><td>“Gracias!”</td><td>Descartado</td><td>+0.60</td><td><b>24</b></td></tr></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="content" class="panel"><div class="grid2">
+    <div class="card"><h3>Borradores generados</h3>
+      <button class="asset active" data-asset="linkedin"><b>LinkedIn · Historia de éxito</b><br><span class="muted">Score 94 · caso_exito</span></button>
+      <button class="asset" data-asset="faq"><b>FAQ · Despliegue en OCI</b><br><span class="muted">Score 87 · pregunta_tecnica</span></button>
+      <button class="asset" data-asset="newsletter"><b>Newsletter semanal</b><br><span class="muted">Community Highlights</span></button>
+      <button class="asset" data-asset="alert"><b>Alerta interna</b><br><span class="muted">No publicable</span></button>
+    </div>
+    <div class="card"><h3 id="editorTitle">LinkedIn · Historia de éxito</h3><p id="editorMeta" class="muted">Generado por Gemini Flash · listo para revisión humana</p>
+      <textarea id="editor">🎉 Una historia que merece ser compartida.
+
+Un miembro de nuestra comunidad completó su certificación después de semanas de aprendizaje, práctica y colaboración.
+
+Este tipo de logros muestra el valor de aprender acompañado: compartir preguntas, experiencias y soluciones hace que toda la comunidad avance.
+
+#CommunityLab #ONE #LearningTogether</textarea>
+      <div class="actions" style="margin-top:12px"><button id="approve" class="btn primary">✓ Aprobar</button><button id="discard" class="btn">Descartar</button><button id="restore" class="btn">Regenerar demo</button></div><p id="message" class="muted">La versión aprobada se guardará en OCI Object Storage.</p>
+    </div>
+  </div></section>
+</div>
+<script>
+const tabs=document.querySelectorAll('.tab'),panels=document.querySelectorAll('.panel');
+function tab(name){tabs.forEach(x=>x.classList.toggle('active',x.dataset.tab===name));panels.forEach(x=>x.classList.toggle('active',x.id===name))}
+tabs.forEach(x=>x.onclick=()=>tab(x.dataset.tab));
+document.querySelector('#file').onchange=e=>{const f=e.target.files[0];if(f)document.querySelector('#fileStatus').textContent='Archivo seleccionado: '+f.name};
+document.querySelector('#process').onclick=()=>{document.querySelector('#fileStatus').textContent='Lote procesado · 32 interacciones analizadas.';setTimeout(()=>tab('analysis'),300)};
+const data={
+linkedin:['LinkedIn · Historia de éxito','Generado por Gemini Flash · caso_exito · score 94',`🎉 Una historia que merece ser compartida.
+
+Un miembro de nuestra comunidad completó su certificación después de semanas de aprendizaje, práctica y colaboración.
+
+Este tipo de logros muestra el valor de aprender acompañado: compartir preguntas, experiencias y soluciones hace que toda la comunidad avance.
+
+#CommunityLab #ONE #LearningTogether`],
+faq:['FAQ · Despliegue en OCI','pregunta_tecnica · score 87',`¿Cómo desplegar un proyecto en OCI?
+
+1. Crear una instancia Compute.
+2. Preparar la aplicación y variables de entorno.
+3. Exponer únicamente los puertos necesarios.
+4. Validar el servicio y documentar el proceso.`],
+newsletter:['Newsletter · Community Highlights','Consolidado semanal automático',`COMMUNITY HIGHLIGHTS — SEMANA 04
+
+• Nuevos logros de certificación.
+• OCI y despliegue entre las dudas más frecuentes.
+• Oportunidades para contenido educativo corto.
+• Tres interacciones requieren seguimiento.`],
+alert:['Alerta interna · Soporte','Sentimiento −0.74 · no se publica',`ALERTA INTERNA
+
+Se detectó frustración relacionada con el acceso al laboratorio.
+
+Acción sugerida: derivar al equipo responsable para seguimiento.`]};
+let current='linkedin';const editor=document.querySelector('#editor');
+document.querySelectorAll('.asset').forEach(b=>b.onclick=()=>{current=b.dataset.asset;document.querySelectorAll('.asset').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelector('#editorTitle').textContent=data[current][0];document.querySelector('#editorMeta').textContent=data[current][1];editor.value=data[current][2];document.querySelector('#message').textContent='Revisá y editá el borrador antes de aprobarlo.'});
+document.querySelector('#approve').onclick=()=>document.querySelector('#message').textContent='✓ Activo aprobado. Se guardaría en OCI Object Storage.';
+document.querySelector('#discard').onclick=()=>document.querySelector('#message').textContent='Activo descartado. No será incluido entre los contenidos publicables.';
+document.querySelector('#restore').onclick=()=>{editor.value=data[current][2];document.querySelector('#message').textContent='Borrador restaurado.'};
+</script>
+</body></html>
