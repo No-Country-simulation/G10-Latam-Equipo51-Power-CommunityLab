@@ -1,0 +1,928 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>CommunityLab en Gradio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#FFFFFF; --panel:#FFFFFF; --panel-2:#F9FAFB; --block:#FFFFFF;
+  --ink:#111827; --ink-2:#374151; --muted:#6B7280; --faint:#9CA3AF;
+  --border:#E5E7EB; --border-2:#D1D5DB;
+  --primary:#FF7C00; --primary-2:#FF9A2E; --primary-soft:#FFF2E5; --secondary:#F3F4F6;
+  --ok:#059669; --ok-soft:#ECFDF5; --warn:#D97706; --warn-soft:#FFFBEB; --alert:#DC2626; --alert-soft:#FEF2F2;
+  --link:#2563EB; --radius:8px; --radius-lg:10px; --shadow:0 1px 2px rgba(0,0,0,.05);
+  --font:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B0F19; --panel:#111827; --panel-2:#1F2937; --block:#111827;
+  --ink:#F3F4F6; --ink-2:#E5E7EB; --muted:#9CA3AF; --faint:#6B7280;
+  --border:#374151; --border-2:#4B5563; --primary:#FF7C00; --primary-2:#FF9A2E; --primary-soft:#2A1A0C; --secondary:#1F2937;
+  --ok:#34D399; --ok-soft:#0D2A22; --warn:#FBBF24; --warn-soft:#2A2109; --alert:#F87171; --alert-soft:#2C1416;
+  --link:#60A5FA; --shadow:0 1px 2px rgba(0,0,0,.4);}}
+:root[data-theme="dark"]{
+  --bg:#0B0F19; --panel:#111827; --panel-2:#1F2937; --block:#111827;
+  --ink:#F3F4F6; --ink-2:#E5E7EB; --muted:#9CA3AF; --faint:#6B7280;
+  --border:#374151; --border-2:#4B5563; --primary:#FF7C00; --primary-2:#FF9A2E; --primary-soft:#2A1A0C; --secondary:#1F2937;
+  --ok:#34D399; --ok-soft:#0D2A22; --warn:#FBBF24; --warn-soft:#2A2109; --alert:#F87171; --alert-soft:#2C1416;
+  --link:#60A5FA; --shadow:0 1px 2px rgba(0,0,0,.4);}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+button,input,select,textarea{font-family:inherit}
+.app{display:grid;grid-template-columns:238px 1fr;min-height:100%}
+
+.sidebar{background:var(--panel-2);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-title{display:flex;gap:9px;align-items:center;padding:2px 4px 6px}
+.sb-title .mk{width:30px;height:30px;border-radius:var(--radius);background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.sb-title b{display:block;font-size:1rem;line-height:1.2}
+.sb-title span{font-size:.78rem;color:var(--muted)}
+.sb-lbl{font-size:.75rem;color:var(--muted);font-weight:600;padding:8px 6px 2px}
+.nav{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:1px solid transparent;background:none;border-radius:var(--radius);color:var(--ink-2);font-size:.92rem;cursor:pointer;text-align:left}
+.nav:hover{background:var(--panel);border-color:var(--border)}
+.nav[aria-current="page"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
+.nav .badge{margin-left:auto;font-size:.76rem;font-family:var(--mono);color:var(--muted)}
+.sb-foot{margin-top:auto;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--border);padding-top:12px}
+
+.block{background:var(--block);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.label{display:block;font-size:.83rem;color:var(--muted);font-weight:600;margin-bottom:5px}
+.blk-title{font-size:1.05rem;font-weight:600;margin:0 0 3px}
+.blk-info{font-size:.85rem;color:var(--muted);margin:0 0 12px}
+
+main{min-width:0;display:flex;flex-direction:column}
+.head{padding:18px 24px 0;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.head h1{margin:0;font-size:1.3rem;font-weight:700}
+.head p{margin:3px 0 0;color:var(--muted);font-size:.9rem}
+.wrap{padding:16px 24px 60px;display:flex;flex-direction:column;gap:14px;max-width:1180px;width:100%}
+
+/* stepper del flujo: distinto de las tabs a propósito */
+.stepper{display:flex;align-items:stretch;gap:0;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:6px;overflow-x:auto;scrollbar-width:none}
+.stepper::-webkit-scrollbar{display:none}
+.stp{flex:1;min-width:142px;display:flex;gap:10px;align-items:center;padding:10px 14px;border:none;background:none;border-radius:var(--radius);color:var(--muted);cursor:pointer;text-align:left;white-space:nowrap}
+.stp:hover{background:var(--block)}
+.stp[aria-current="step"]{background:var(--block);color:var(--ink);box-shadow:var(--shadow);border:1px solid var(--border)}
+.stp .n{width:24px;height:24px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-size:.78rem;font-family:var(--mono);flex:none}
+.stp[aria-current="step"] .n{background:var(--primary);border-color:var(--primary);color:#fff}
+.stp.done{color:var(--ok)}
+.stp.done .n{background:var(--ok);border-color:var(--ok);color:#fff}
+.stp b{display:block;font-size:.92rem;line-height:1.2}
+.stp span.sub2{font-size:.76rem;opacity:.85}
+.sep{display:grid;place-items:center;color:var(--faint);padding:0 2px;flex:none}
+/* encabezado de sección dentro de un paso */
+.sec-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-top:4px}
+.sec-h h2{margin:0;font-size:1.08rem;font-weight:700}
+.sec-h .mini{margin:0}
+/* las tabs de plataforma van pegadas a su tarjeta */
+.platwrap{display:flex;flex-direction:column}
+.platwrap .tabs{border-bottom:none;margin-bottom:-1px;padding-left:2px}
+.platwrap .plat{border-top-left-radius:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:none;border:1px solid transparent;border-bottom:none;padding:9px 15px;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted);font-size:.92rem;cursor:pointer;margin-bottom:-1px;display:inline-flex;gap:7px;align-items:center}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--block);border-color:var(--border);color:var(--ink);font-weight:600}
+.tab .c{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.tab .c.pend{color:#fff;background:var(--primary);border-radius:999px;padding:0 6px;font-weight:600}
+/* filtro de estado dentro de la tarjeta de plataforma */
+.plat-head{flex-wrap:wrap}
+.plat-filtros{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.plat-filtros button{border:1px solid var(--border-2);background:var(--block);color:var(--ink-2);padding:4px 10px;border-radius:999px;font-size:.82rem;cursor:pointer}
+.plat-filtros button[aria-pressed="true"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
+.plat-filtros .sep2{width:1px;height:20px;background:var(--border);margin:0 3px}
+
+.btn{padding:9px 16px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--secondary);color:var(--ink);font-size:.92rem;font-weight:600;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.btn:hover{background:var(--border)}
+.btn.primary{background:linear-gradient(to bottom right,var(--primary-2),var(--primary));border-color:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.sm{padding:6px 11px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* modal de confirmación */
+dialog{border:none;padding:0;background:transparent;max-width:min(560px,94vw);width:100%}
+dialog::backdrop{background:rgba(3,7,18,.6);backdrop-filter:blur(2px)}
+.modal{background:var(--block);border:1px solid var(--border);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden}
+.modal-head{display:flex;gap:11px;align-items:center;padding:15px 18px;border-bottom:1px solid var(--border);background:var(--panel-2)}
+.modal-head .mk{width:34px;height:34px;border-radius:var(--radius);display:grid;place-items:center;color:#fff;font-weight:700;font-size:.8rem;flex:none}
+.modal-head b{font-size:1.02rem}
+.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.modal-prev{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;font-size:.88rem;white-space:pre-wrap;max-height:230px;overflow:auto;line-height:1.55}
+.modal-foot{display:flex;gap:9px;justify-content:flex-end;padding:13px 18px;border-top:1px solid var(--border);background:var(--panel-2);flex-wrap:wrap}
+.modal-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+.modal-meta b{color:var(--ink)}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid{display:grid;gap:14px}
+
+.radio{display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel-2)}
+.radio button{border:1px solid var(--border-2);background:var(--block);color:var(--ink-2);padding:6px 12px;border-radius:999px;font-size:.87rem;cursor:pointer}
+.radio button[aria-pressed="true"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
+.radio .c{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-left:5px}
+
+input[type=text],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);color:var(--ink);font-size:.92rem}
+textarea{line-height:1.6;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+
+.acc{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel-2);overflow:hidden}
+.acc>summary{cursor:pointer;padding:10px 13px;font-size:.88rem;font-weight:600;color:var(--ink-2);list-style:none;display:flex;gap:8px;align-items:center}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.acc[open]>summary::before{transform:rotate(90deg)}
+.acc .body{padding:0 13px 13px;font-size:.89rem;color:var(--ink-2)}
+.acc .meta{font-family:var(--mono);font-size:.74rem;color:var(--muted);margin-bottom:6px}
+
+.df{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;background:var(--block)}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{background:var(--panel-2);font-size:.78rem;font-weight:600;color:var(--muted);text-align:left;padding:9px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+td{padding:9px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle}
+th:last-child,td:last-child{border-right:none}
+tr:last-child td{border-bottom:none}
+
+.stat{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.stat .k{font-size:.8rem;color:var(--muted);font-weight:600}
+.stat .v{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .d{font-size:.8rem;font-family:var(--mono)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.up{color:var(--ok)} .down{color:var(--alert)}
+.bars{display:flex;height:22px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.bars i{display:block}
+.legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);margin-top:9px;flex-wrap:wrap}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px}
+
+.pill{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap;font-weight:600}
+.p-ok{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.p-warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.p-alert{color:var(--alert);border-color:var(--alert);background:var(--alert-soft)}
+.p-mute{color:var(--muted);border-color:var(--border-2)}
+.p-pri{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.86rem}
+.muted{color:var(--muted)} .mini{font-size:.83rem;color:var(--muted)}
+code{font-family:var(--mono);font-size:.84rem;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+.note{border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--radius-lg);padding:12px 15px;font-size:.9rem}
+.note.err{border-color:var(--alert);background:var(--alert-soft)}
+.note.info{border-color:var(--primary);background:var(--primary-soft)}
+.prog{height:7px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.prog i{display:block;height:100%;background:var(--primary);transition:width .3s}
+.steps{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:.85rem;margin-top:12px}
+.step{color:var(--faint)} .step.done{color:var(--ink-2)} .step.run{color:var(--primary);font-weight:500}
+
+.toasts{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:9px;z-index:80;max-width:360px}
+.toast{background:var(--block);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:var(--radius);padding:11px 14px;box-shadow:0 8px 20px rgba(0,0,0,.14);font-size:.88rem;display:flex;gap:10px;align-items:center}
+.toast b{display:block;font-size:.8rem;color:var(--primary);margin-bottom:2px}
+.toast.ok{border-left-color:var(--ok)} .toast.ok b{color:var(--ok)}
+.toast .undo{margin-left:auto;flex:none}
+
+/* tarjeta por plataforma */
+.plat{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--block);box-shadow:var(--shadow);overflow:hidden}
+.plat-head{display:flex;gap:11px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--panel-2)}
+.plat-head .mk{width:32px;height:32px;border-radius:var(--radius);display:grid;place-items:center;color:#fff;font-weight:700;font-size:.78rem;flex:none}
+.plat-head b{font-size:1rem}
+.item{padding:15px 16px;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:none}
+.item.publicado{background:var(--primary-soft)}
+.item.descartado{opacity:.5}
+.dropzone{border:1px dashed var(--border-2);border-radius:var(--radius-lg);padding:26px;text-align:center;background:var(--panel-2);color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:34px 16px}
+.conn{display:flex;gap:12px;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border)}
+.conn:last-child{border-bottom:none}
+.conn .mk{width:34px;height:34px;border-radius:var(--radius);display:grid;place-items:center;color:#fff;font-weight:700;font-size:.8rem;flex:none}
+.conn .b{flex:1;min-width:0}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
+.dot i{width:8px;height:8px;border-radius:50%;background:var(--border-2)}
+.dot.on{color:var(--ok)} .dot.on i{background:var(--ok)}
+.themebtn{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--block);color:var(--ink-2);font-size:.87rem;cursor:pointer}
+
+/* campo de voz con chips dentro */
+.voz-box{border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);padding:9px}
+.voz-box:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.voz-box textarea{border:none;background:none;padding:4px 2px;box-shadow:none!important}
+.voz-box textarea:focus{outline:none}
+.voz-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.vchip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-soft);border:1px solid var(--primary);color:var(--ink);padding:3px 6px 3px 10px;border-radius:999px;font-size:.83rem;font-weight:600}
+.vchip button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:.95rem;line-height:1;padding:0 2px}
+.vchip button:hover{color:var(--alert)}
+.semana-btn{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:13px 15px;border:none;border-bottom:1px solid var(--border);background:none;color:var(--ink);cursor:pointer}
+.semana-btn:last-child{border-bottom:none}
+.semana-btn:hover{background:var(--panel-2)}
+.semana-btn[aria-current="true"]{background:var(--primary-soft)}
+.semana-btn b{font-size:.95rem}
+
+@media(max-width:1100px){.app{grid-template-columns:210px 1fr}.stats{grid-template-columns:repeat(3,1fr)}.cols3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.cols2,.cols3{grid-template-columns:1fr}.df table{min-width:640px}}
+@media(max-width:800px){
+  body{font-size:14px}
+  .app{grid-template-columns:1fr}
+  .sidebar{position:sticky;top:0;z-index:30;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px;gap:10px}
+  .sb-title{padding:0}
+  .sidebar nav{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:4px;scrollbar-width:none;display:flex}
+  .sidebar nav::-webkit-scrollbar{display:none}
+  .sb-lbl{display:none}
+  .nav{width:auto;white-space:nowrap;flex:none;padding:7px 12px;font-size:.88rem}
+  .sb-foot{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin-top:0;padding-top:10px}
+  .head{padding:14px 14px 0} .head h1{font-size:1.15rem}
+  .wrap{padding:12px 14px 48px;gap:12px}
+  .block,.item{padding:14px}
+  .stats{grid-template-columns:repeat(2,1fr);gap:9px}
+  .stat .v{font-size:1.35rem}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{white-space:nowrap;flex:none;padding:9px 12px}
+  textarea{font-size:16px}
+  .btn.sm{flex:1;justify-content:center;min-width:112px}
+  .toasts{left:12px;right:12px;top:10px;max-width:none}
+  .conn{flex-wrap:wrap} .conn>.btn{width:100%;justify-content:center}
+}
+@media(max-width:420px){.stats{grid-template-columns:1fr}}
+</style>
+
+<div class="app">
+<div class="sidebar">
+  <div class="sb-title"><div class="mk">CL</div><div><b>CommunityLab</b><span>gr.Blocks · tema Default</span></div></div>
+  <nav>
+    <div class="sb-lbl">Producción</div>
+    <button class="nav" data-p="flujo" aria-current="page">⚡ Procesar lote</button>
+    <div class="sb-lbl">Seguimiento</div>
+    <button class="nav" data-p="tickets">🎫 Tickets<span class="badge" id="b_tic">—</span></button>
+    <button class="nav" data-p="publicaciones">🗓️ Publicaciones<span class="badge" id="b_pub">0</span></button>
+    <button class="nav" data-p="historial">🗂️ Historial</button>
+    <div class="sb-lbl">Configuración</div>
+    <button class="nav" data-p="conexiones">🔌 Conexiones<span class="badge" id="b_con">—</span></button>
+    <button class="nav" data-p="ajustes">⚙️ Ajustes</button>
+  </nav>
+  <div class="sb-foot">
+    <button class="themebtn" id="tema"><span id="tema_ico">🌗</span><span id="tema_txt">Tema: sistema</span></button>
+    <div class="mini">Modo demo · caché activa</div>
+  </div>
+</div>
+
+<main>
+  <div class="head"><div><h1 id="titulo">Procesar lote</h1><p id="subtitulo">Ingesta, análisis y curaduría en un solo flujo.</p></div>
+    <div style="flex:1"></div><div class="row" id="acciones"></div></div>
+  <div class="wrap">
+
+  <!-- FLUJO -->
+  <section id="p_flujo">
+    <div class="grid">
+      <div class="stepper" id="tabs_flujo">
+        <button class="stp" data-s="1" aria-current="step"><span class="n">1</span><span><b>Ingesta</b><span class="sub2">cargar y validar</span></span></button>
+        <div class="sep">›</div>
+        <button class="stp" data-s="2"><span class="n">2</span><span><b>Análisis</b><span class="sub2">sentimiento y router</span></span></button>
+        <div class="sep">›</div>
+        <button class="stp" data-s="3"><span class="n">3</span><span><b>Curaduría</b><span class="sub2">revisar y publicar</span></span></button>
+      </div>
+
+      <!-- PASO 1 -->
+      <div id="paso_1">
+        <div class="block">
+          <p class="blk-title">Lote de interacciones</p>
+          <p class="blk-info">gr.File acepta .json y .csv. También entra por webhook a <code>POST /procesar</code>.</p>
+          <div class="dropzone" id="drop">Arrastra el archivo aquí
+            <div class="row" style="justify-content:center;margin-top:11px">
+              <button class="btn sm" id="btn_file">Subir archivo</button>
+              <button class="btn primary sm" id="btn_ejemplo">Usar lote de ejemplo</button>
+            </div><input type="file" id="file" accept=".json,.csv" hidden></div>
+          <div id="validacion" hidden style="margin-top:14px">
+            <span class="label">Reporte de validación · gr.JSON</span>
+            <div class="df"><table><tbody>
+              <tr><td class="muted">Interacciones válidas</td><td class="mono"><b>12</b></td></tr>
+              <tr><td class="muted">Inválidas (faltan campos)</td><td class="mono">2</td></tr>
+              <tr><td class="muted">Duplicadas eliminadas</td><td class="mono">1</td></tr>
+              <tr><td class="muted">Datos personales enmascarados</td><td class="mono">3 · 2 correos, 1 teléfono</td></tr>
+            </tbody></table></div>
+            <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_procesar">▶ Procesar con IA</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: ANÁLISIS -->
+      <div id="paso_2" hidden>
+        <div class="grid">
+          <div class="block" id="blk_proceso">
+            <p class="blk-title">Ejecución del grafo</p>
+            <div class="prog"><i id="barra" style="width:0%"></i></div>
+            <div class="steps" id="steps"></div>
+            <div class="note info" id="oci_linea" style="margin-top:13px" hidden>✅ Paquete guardado en <code id="oci_ruta"></code></div>
+          </div>
+          <div id="analisis_resultado" hidden>
+            <div class="grid">
+              <div id="banner_slot"></div>
+              <div class="stats" id="stats"></div>
+              <div class="cols2">
+                <div class="block">
+                  <p class="blk-title">Sentimiento del lote</p>
+                  <div class="bars" id="bars"></div>
+                  <div class="legend">
+                    <span><i style="background:var(--ok)"></i>Positivo <b id="l_pos"></b></span>
+                    <span><i style="background:var(--border-2)"></i>Neutral <b id="l_neu"></b></span>
+                    <span><i style="background:var(--alert)"></i>Negativo <b id="l_neg"></b></span></div>
+                  <p class="blk-title" style="margin-top:18px">Temas · gr.Label</p>
+                  <div class="df" style="margin-top:8px"><table><tbody id="temas"></tbody></table></div>
+                </div>
+                <div class="block">
+                  <p class="blk-title">Qué produjo este lote</p>
+                  <p class="blk-info">Resumen antes de pasar a curaduría.</p>
+                  <div class="grid" id="resumen_produccion" style="gap:9px"></div>
+                  <p class="blk-title" style="margin-top:16px">Miembros que necesitan apoyo</p>
+                  <div class="grid" id="apoyo" style="gap:8px;margin-top:8px"></div>
+                </div>
+              </div>
+              <details class="acc"><summary>Ver los 12 mensajes analizados · gr.Dataframe</summary><div class="body">
+                <div class="df"><table><thead><tr><th>Autor</th><th>Mensaje</th><th>Tipo</th><th>Sent.</th><th>Score</th><th>Por qué</th><th>Ruta</th></tr></thead>
+                  <tbody id="tabla"></tbody></table></div></div></details>
+              <div class="row"><button class="btn primary" id="btn_a_3">Ir a curaduría →</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3: CURADURÍA -->
+      <div id="paso_3" hidden>
+        <div class="grid">
+          <div class="sec-h">
+            <h2>Contenido generado</h2>
+            <p class="mini">Elige la plataforma y revisa sus borradores.</p>
+          </div>
+          <div id="conexion_aviso"></div>
+          <div class="platwrap">
+            <div class="tabs" id="tabs_formato"></div>
+            <div id="curaduria"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TICKETS -->
+  <section id="p_tickets" hidden>
+    <div class="grid">
+      <div class="block">
+        <p class="blk-title">Cola de tickets</p>
+        <p class="blk-info">Se avisan en el canal del equipo. No se publican en redes ni salen del panel.</p>
+        <div class="df"><table><thead><tr><th>Sev.</th><th>Reportado por</th><th>Canal</th><th>Resumen</th><th>Aviso</th><th>Estado</th></tr></thead>
+          <tbody id="tabla_tickets"></tbody></table></div>
+        <div class="row" style="margin-top:13px">
+          <button class="btn primary" id="btn_discord">Avisar en Discord · #soporte-interno</button>
+          <button class="btn" id="btn_slack">Avisar en Slack</button></div>
+      </div>
+      <details class="acc"><summary>Historial de tickets de semanas anteriores</summary><div class="body">
+        <div class="df"><table><thead><tr><th>Semana</th><th>Ticket</th><th>Canal</th><th>Abierto</th><th>Resuelto</th><th>Estado</th></tr></thead>
+          <tbody id="tabla_tickets_hist"></tbody></table></div></div></details>
+    </div>
+  </section>
+
+  <!-- PUBLICACIONES -->
+  <section id="p_publicaciones" hidden>
+    <div class="grid">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr)" id="stats_pub"></div>
+      <div class="block">
+        <p class="blk-title">Publicado esta semana</p>
+        <div class="df"><table><thead><tr><th>Fecha</th><th>Plataforma</th><th>Formato</th><th>Contenido</th><th>Origen</th><th>Enlace</th></tr></thead>
+          <tbody id="tabla_pub"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section id="p_historial" hidden>
+    <div class="grid">
+      <div class="cols2" style="grid-template-columns:280px 1fr;align-items:start" id="hist_layout">
+        <div class="plat">
+          <div class="plat-head"><b>Semanas</b></div>
+          <div id="lista_semanas"></div>
+        </div>
+        <div class="grid" id="detalle_semana"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONEXIONES -->
+  <section id="p_conexiones" hidden>
+    <div class="grid">
+      <p class="mini" style="margin:0">Cada destino se vincula una vez. Después, publicar es un clic desde curaduría.</p>
+      <div class="plat" id="lista_conexiones"></div>
+      <div class="note">LinkedIn y X usan publicación asistida. Las FAQ se publican por API en la web de la comunidad y el newsletter se exporta a Mailchimp. Los tickets solo avisan en el canal del equipo.</div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="p_ajustes" hidden>
+    <div class="grid">
+      <div class="block">
+        <p class="blk-title">Guía de voz</p>
+        <p class="blk-info">Escribe las reglas y agrega chips de estilo. Todo junto se inyecta en los prompts de redacción.</p>
+        <div class="voz-box">
+          <div class="voz-chips" id="voz_chips"></div>
+          <textarea rows="5" id="voz">Tono cercano, inspirador y concreto. Celebramos a la persona, no a la marca.
+Español neutro, sin regionalismos. Frases cortas.
+Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
+        </div>
+        <span class="label" style="margin-top:14px">Sugerencias · toca para agregarlas al campo</span>
+        <div class="radio" id="chips_estilo"></div>
+        <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_voz">Guardar guía de voz</button><span class="mini" id="voz_msg"></span></div>
+      </div>
+      <div class="cols2">
+        <div class="block">
+          <p class="blk-title">Umbrales del router · gr.Slider</p>
+          <div class="grid" style="gap:12px">
+            <div><span class="label">Descartar si el score es menor a</span>
+              <select id="u_desc"><option>30</option><option selected>40</option><option>50</option></select></div>
+            <div><span class="label">Caso de éxito si el score es mayor o igual a</span>
+              <select id="u_ex"><option>60</option><option selected>70</option><option>80</option></select></div>
+          </div>
+          <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_umbrales">Aplicar y recalcular</button></div>
+        </div>
+        <div class="block">
+          <p class="blk-title">Cuentas vinculadas</p>
+          <p class="blk-info">Desvincular no borra lo ya publicado.</p>
+          <div class="grid" id="lista_vinculadas" style="gap:9px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+</main>
+</div>
+<div class="toasts" id="toasts"></div>
+<dialog id="dlg"><div class="modal" id="dlg_cont"></div></dialog>
+
+<script>
+const temas=["sistema","claro","oscuro"];let tIdx=0;
+try{tIdx=Math.max(0,temas.indexOf(localStorage.getItem("clg-tema")||"sistema"));}catch(e){}
+function aplicarTema(){const t=temas[tIdx];
+  if(t==="sistema")document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme",t==="claro"?"light":"dark");
+  tema_txt.textContent="Tema: "+t;tema_ico.textContent=t==="claro"?"☀️":t==="oscuro"?"🌙":"🌗";
+  try{localStorage.setItem("clg-tema",t);}catch(e){}}
+tema.onclick=()=>{tIdx=(tIdx+1)%temas.length;aplicarTema();};aplicarTema();
+
+const DATOS=[
+ {id:"m1",autor:"Mariana Souza",canal:"#logros-y-empleos",tipo:"testimonio",sent:.94,score:96,idioma:"es",
+  texto:"Comunidad, ¡quedé seleccionada para el puesto de Desarrolladora Junior de IA! El proyecto del curso de LangChain y OCI que construí en mi portfolio marcó toda la diferencia en la entrevista técnica.",
+  por_que:"Contratación confirmada con el proyecto del curso como detonante",temas:["Contratación / Logros","Portafolio"],
+  cita:"El proyecto del curso de LangChain y OCI marcó toda la diferencia en la entrevista técnica"},
+ {id:"m2",autor:"Lucas Albuquerque",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:.05,score:82,idioma:"es",
+  texto:"Tengo dudas sobre cómo estructurar los nodos condicionales en LangGraph cuando la respuesta del LLM necesita reintento.",
+  por_que:"Duda repetida por 3 personas esta semana",temas:["LangGraph / Nodos condicionales"]},
+ {id:"m3",autor:"Camila Rojas",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:-.1,score:74,idioma:"es",
+  texto:"¿Cómo hago que un nodo vuelva a intentar si Gemini me devuelve un JSON roto? Me pasa 1 de cada 10 veces.",
+  por_que:"Misma duda que Lucas: se agrupa en una sola FAQ",temas:["LangGraph / Reintentos"]},
+ {id:"m4",autor:"Diego Fuentes",canal:"#soporte-labs",tipo:"queja",sent:-.72,score:88,idioma:"es",apoyo:true,
+  texto:"Llevo tres días sin poder entrar al laboratorio de OCI, me sale error de tenancy y ya escribí dos veces sin respuesta.",
+  por_que:"Bloqueo de acceso con riesgo de abandono",temas:["Acceso a laboratorios"]},
+ {id:"m5",autor:"Ana Beatriz Lima",canal:"#logros-y-empleos",tipo:"logro",sent:.88,score:91,idioma:"pt",
+  texto:"Pessoal, passei na certificação Oracle Cloud Infrastructure Foundations! Estudei 6 semanas com o grupo de estudos.",
+  por_que:"Certificación lograda con apoyo del grupo de estudio",temas:["Certificaciones"],
+  cita:"Passei na certificação OCI Foundations estudando com o grupo da comunidade"},
+ {id:"m6",autor:"Rodrigo Pérez",canal:"#feedback-cursos",tipo:"feedback",sent:.42,score:63,idioma:"es",
+  texto:"El módulo de agentes está buenísimo, pero los ejercicios del final saltan de nivel muy rápido.",
+  por_que:"Feedback accionable sobre la curva del módulo",temas:["Diseño del curso"]},
+ {id:"m7",autor:"Valeria Núñez",canal:"#soporte-labs",tipo:"problema_acceso",sent:-.55,score:71,idioma:"es",apoyo:true,
+  texto:"Mi cuenta de estudiante no reconoce el bucket que creé ayer. Necesito entregar el viernes.",
+  por_que:"Segundo reporte de acceso: posible falla generalizada",temas:["Acceso a laboratorios"]},
+ {id:"m8",autor:"Héctor Salas",canal:"#general",tipo:"conversacion",sent:.3,score:18,idioma:"es",
+  texto:"¡Buenos días a todos! ☕ feliz lunes",por_que:"Saludo sin contenido aprovechable",temas:["Convivencia"]},
+ {id:"m9",autor:"Paula Iriarte",canal:"#logros-y-empleos",tipo:"testimonio",sent:.79,score:84,idioma:"es",
+  texto:"Después de 4 meses, hoy firmé como Data Analyst Jr. Las mentorías de los martes me sirvieron muchísimo.",
+  por_que:"Contratación atribuida a las mentorías del programa",temas:["Contratación / Logros","Mentorías"],
+  cita:"Las mentorías de los martes me sirvieron muchísimo para preparar la entrevista"},
+ {id:"m10",autor:"Joao Martins",canal:"#dudas-oci",tipo:"pregunta_tecnica",sent:.12,score:69,idioma:"pt",
+  texto:"Alguém sabe como configurar o bucket Always Free sem gerar custo?",
+  por_que:"Duda frecuente sobre costos de la capa gratuita",temas:["OCI Always Free"]},
+ {id:"m11",autor:"Sofía Mendoza",canal:"#general",tipo:"conversacion",sent:.55,score:31,idioma:"es",
+  texto:"gracias equipo, todo claro 🙌",por_que:"Agradecimiento breve, sin contenido",temas:["Convivencia"]},
+ {id:"m12",autor:"Andrés Gutiérrez",canal:"#feedback-cursos",tipo:"queja",sent:-.48,score:66,idioma:"es",apoyo:true,
+  texto:"Los videos del módulo 3 se cortan a la mitad y ya reporté el bug la semana pasada.",
+  por_que:"Bug reincidente con frustración acumulada",temas:["Plataforma / Video"]}];
+
+const PLAT={
+ linkedin:{nom:"LinkedIn",cuenta:"Página ONE G10 LATAM",color:"#0A66C2",ini:"in",modo:"Publicación asistida",on:true},
+ x:{nom:"X",cuenta:"@comunidadONE_g10",color:"#111827",ini:"X",modo:"Publicación asistida",on:true},
+ web:{nom:"Web de la comunidad",cuenta:"ayuda.one-g10.dev/faq",color:"#7C3AED",ini:"FAQ",modo:"API · publica el tip",on:true},
+ newsletter:{nom:"Newsletter",cuenta:"Mailchimp · lista general",color:"#059669",ini:"NL",modo:"Exporta el markdown",on:false},
+ discord:{nom:"Discord",cuenta:"#soporte-interno",color:"#5865F2",ini:"DC",modo:"Webhook · avisa los tickets",on:true},
+ slack:{nom:"Slack",cuenta:"Sin espacio de trabajo",color:"#611F69",ini:"SL",modo:"Webhook · avisa los tickets",on:false}};
+const FORMATOS={"Post de LinkedIn":{plat:"linkedin",limite:3000},"Hilo de X":{plat:"x",limite:280,porPost:true},
+ "Tip / FAQ":{plat:"web",limite:2500},"Destaque de newsletter":{plat:"newsletter",limite:4000}};
+const TABS=[["linkedin","LinkedIn"],["x","X"],["web","Tip / FAQ"],["newsletter","Newsletter"],["tickets","Tickets"]];
+
+let U={descartar:40,exito_score:70};
+function ruta(m){if(m.score<U.descartar)return "descartado";
+ if(m.sent<=-.4||m.tipo==="queja"||m.tipo==="problema_acceso"||m.apoyo)return "ticket";
+ if((m.tipo==="testimonio"||m.tipo==="logro")&&m.sent>=.6&&m.score>=U.exito_score)return "exito";
+ if(m.tipo==="pregunta_tecnica")return "faq";return "insight";}
+const NOM={exito:"Caso de éxito",faq:"Tip / FAQ",ticket:"Ticket",descartado:"Descartado",insight:"Insight"};
+const PILL={exito:"p-ok",faq:"p-warn",ticket:"p-alert",descartado:"p-mute",insight:"p-pri"};
+
+const linkedinTxt=m=>m.idioma==="pt"
+ ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${m.cita}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
+ : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo==="testimonio"?"ser contratada":"lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${m.cita}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
+const hiloTxt=m=>{const n=m.autor.split(" ")[0];return [
+ `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
+ `"${m.cita}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
+ `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
+ `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`].join("\n\n———\n\n");};
+const faq1=()=>`**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const faq2=()=>`**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
+const newsTxt=()=>`## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
+
+/* semanas anteriores simuladas */
+const HIST={
+ "2026-semana-03":{inter:9,pos:67,neg:8,activos:7,publicados:6,tickets:2,
+  temas:["Certificaciones","Entrevistas técnicas","Java Spring"],
+  contenidos:[["linkedin","Post de LinkedIn","Tres estudiantes aprobaron la certificación OCI…","Publicado"],
+   ["x","Hilo de X","De cero a la nube en 8 semanas: el camino de…","Publicado"],
+   ["web","Tip / FAQ","Cómo preparar el entorno de Java Spring en…","Publicado"],
+   ["linkedin","Post de LinkedIn","Nuestra mentoría de los martes cumple un año…","Publicado"],
+   ["newsletter","Destaque de newsletter","Community Highlights · Semana 03","Publicado"],
+   ["web","Tip / FAQ","Errores comunes al configurar el tenancy","Publicado"],
+   ["x","Hilo de X","5 recursos gratis para practicar SQL","Descartado"]],
+  tickets_list:[["Error 500 al subir el proyecto final","Resuelto"],["Video del módulo 2 sin audio","Resuelto"]]},
+ "2026-semana-02":{inter:11,pos:71,neg:5,activos:8,publicados:5,tickets:1,
+  temas:["Onboarding","Git y GitHub","Empleabilidad"],
+  contenidos:[["linkedin","Post de LinkedIn","La primera semana de la generación 2026 arrancó…","Publicado"],
+   ["web","Tip / FAQ","Cómo resolver conflictos de merge sin miedo","Publicado"],
+   ["x","Hilo de X","Cómo armar tu primer portafolio dev","Publicado"],
+   ["newsletter","Destaque de newsletter","Community Highlights · Semana 02","Publicado"],
+   ["linkedin","Post de LinkedIn","Dos egresados consiguieron empleo este mes","Publicado"],
+   ["x","Hilo de X","Preguntas frecuentes de la semana","Listo"],
+   ["web","Tip / FAQ","Comandos de Git que sí vas a usar","Listo"],
+   ["linkedin","Post de LinkedIn","Testimonio de la mentoría de carrera","Descartado"]],
+  tickets_list:[["Certificado no se descarga","En curso"]]}};
+
+let E={activos:[],tickets:[],pubs:[],procesado:false,paso:1,conex:{},chips:[]};
+Object.keys(PLAT).forEach(k=>E.conex[k]=PLAT[k].on);
+try{const g=localStorage.getItem("clg-demo4");if(g)E=JSON.parse(g);}catch(e){}
+const save=()=>{try{localStorage.setItem("clg-demo4",JSON.stringify(E));}catch(e){}};
+const $=s=>document.querySelector(s), el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!==undefined)e.innerHTML=h;return e;};
+const msg=id=>DATOS.find(d=>d.id===id);
+function toast(titulo,texto,ok,undo){
+  const t=el("div","toast"+(ok?" ok":""),`<div><b>${titulo}</b>${texto||""}</div>`);
+  if(undo){const u=el("button","btn sm undo","Deshacer");u.onclick=()=>{undo();t.remove();};t.appendChild(u);}
+  toasts.appendChild(t);setTimeout(()=>t.remove(),undo?6500:3400);}
+
+function construir(){
+  const a=[];let n=1;const add=o=>a.push(Object.assign({id:"A"+(n++),estado:"Pendiente"},o));
+  DATOS.filter(m=>ruta(m)==="exito").forEach(m=>{
+    add({formato:"Post de LinkedIn",fuente:m.id,score:m.score,texto:linkedinTxt(m)});
+    if(m.id==="m1")add({formato:"Hilo de X",fuente:m.id,score:m.score-4,texto:hiloTxt(m)});});
+  add({formato:"Tip / FAQ",fuente:"m2",score:82,texto:faq1()});
+  add({formato:"Tip / FAQ",fuente:"m10",score:69,texto:faq2()});
+  add({formato:"Destaque de newsletter",fuente:"m1",score:90,texto:newsTxt()});
+  const t=DATOS.filter(m=>ruta(m)==="ticket").map((m,i)=>({id:"T"+(i+1),fuente:m.id,sev:m.sent<=-.6?"Alta":"Media",aviso:null,estado:"Abierto"}));
+  return {activos:a,tickets:t};}
+
+const META={flujo:["Procesar lote","Ingesta, análisis y curaduría en un solo flujo."],
+ tickets:["Tickets","Lo que no se publica: se avisa al equipo."],
+ publicaciones:["Publicaciones","Qué salió publicado, dónde y cuándo."],
+ historial:["Historial","Entra a cualquier semana y revisa qué pasó."],
+ conexiones:["Conexiones","Vincula los destinos donde se publica."],
+ ajustes:["Ajustes","Voz de marca, umbrales y cuentas."]};
+const PAGS=Object.keys(META);
+function ir(p){
+  document.querySelectorAll(".nav").forEach(b=>b.setAttribute("aria-current",b.dataset.p===p?"page":"false"));
+  PAGS.forEach(x=>$("#p_"+x).hidden=(x!==p));
+  titulo.textContent=META[p][0];subtitulo.textContent=META[p][1];
+  acciones.innerHTML="";
+  if(p==="flujo"&&E.procesado)acciones.appendChild(el("span","mini","Lote 2026-semana-04 · 12 mensajes · 41 s"));
+  window.scrollTo({top:0,behavior:"smooth"});}
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>ir(b.dataset.p));
+document.querySelectorAll("#tabs_flujo .stp").forEach(b=>b.onclick=()=>{
+  const n=+b.dataset.s;if(n>1&&!E.procesado)return toast("Falta procesar","Sube un lote y ejecuta el grafo.");irPaso(n);});
+function irPaso(n){E.paso=n;save();
+  document.querySelectorAll("#tabs_flujo .stp").forEach(b=>{
+    const i=+b.dataset.s, hecho=E.procesado&&i<n;
+    b.className="stp"+(hecho?" done":"");
+    b.querySelector(".n").textContent=hecho?"✓":i;
+    if(i===n)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");});
+  [1,2,3].forEach(i=>$("#paso_"+i).hidden=(i!==n));}
+
+btn_file.onclick=()=>file.click(); file.onchange=validar; btn_ejemplo.onclick=validar;
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.style.borderColor="var(--primary)";});
+drop.addEventListener("dragleave",()=>drop.style.borderColor="");
+drop.addEventListener("drop",e=>{e.preventDefault();drop.style.borderColor="";validar();});
+function validar(){validacion.hidden=false;toast("Archivo cargado","12 interacciones válidas · 1 duplicada eliminada");}
+
+const PASOS=["validar · esquema Pydantic","limpiar · enmascarar datos personales","analizar · sentimiento y temas","agrupar_preguntas · dudas similares","router · 4 reglas condicionales","generar · LinkedIn, X, FAQ y newsletter","newsletter_semanal · highlights","consolidar · paquete oficial","guardar · OCI Object Storage"];
+btn_procesar.onclick=()=>{
+  irPaso(2);steps.innerHTML="";oci_linea.hidden=true;analisis_resultado.hidden=true;barra.style.width="0%";
+  PASOS.forEach(p=>steps.appendChild(el("div","step","○ "+p)));
+  const nodos=[...steps.children];let i=0;
+  (function paso(){
+    if(i>0){nodos[i-1].className="step done";nodos[i-1].textContent="✓ "+PASOS[i-1];}
+    barra.style.width=Math.round(i/nodos.length*100)+"%";
+    if(i>=nodos.length){barra.style.width="100%";return fin();}
+    nodos[i].className="step run";nodos[i].textContent="◐ "+PASOS[i];i++;setTimeout(paso,360);})();};
+function fin(){
+  oci_ruta.textContent="activos/2026-semana-04/paquete-distribucion.json";oci_linea.hidden=false;
+  const c=construir();E.activos=c.activos;E.tickets=c.tickets;E.procesado=true;save();
+  pintar();analisis_resultado.hidden=false;toast("Lote procesado","7 activos y 3 tickets generados",true);}
+btn_a_3.onclick=()=>irPaso(3);
+
+/* ---------- ANÁLISIS ---------- */
+function pintarAnalisis(){
+  const pos=DATOS.filter(m=>m.sent>.2).length,neg=DATOS.filter(m=>m.sent<-.2).length,neu=DATOS.length-pos-neg;
+  const pct=n=>Math.round(n/DATOS.length*100);
+  stats.innerHTML=[["Interacciones",DATOS.length,"+3 vs sem 03","up"],["% positivas",pct(pos)+"%","−9 pts","down"],
+   ["Activos generados",E.activos.length,"","up"],["Tickets abiertos",E.tickets.filter(t=>t.estado!=="Resuelto").length,"+2","down"],
+   ["Publicados",E.pubs.length,"","up"]].map(k=>
+   `<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="d ${k[3]}">${k[2]}</div></div>`).join("");
+  bars.innerHTML=`<i style="background:var(--ok);width:${pct(pos)}%"></i><i style="background:var(--border-2);width:${pct(neu)}%"></i><i style="background:var(--alert);width:${pct(neg)}%"></i>`;
+  l_pos.textContent=pct(pos)+"%";l_neu.textContent=pct(neu)+"%";l_neg.textContent=pct(neg)+"%";
+  const t={};DATOS.forEach(m=>m.temas.forEach(x=>t[x]=(t[x]||0)+1));
+  const nuevos=["Acceso a laboratorios","Plataforma / Video"];
+  temas.innerHTML=Object.entries(t).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,c])=>
+    `<tr><td>${k} ${nuevos.includes(k)?'<span class="pill p-pri">nuevo</span>':""}</td><td class="mono" style="width:60px">${c}</td></tr>`).join("");
+  banner_slot.innerHTML=`<div class="note err"><b>⚠️ Alerta de sentimiento.</b> Los negativos pasaron de 8% a ${pct(neg)}% frente a la semana 03. Origen: acceso a laboratorios de OCI con 2 reportes y videos del módulo 3.</div>`;
+  const cuenta={};E.activos.forEach(a=>cuenta[a.formato]=(cuenta[a.formato]||0)+1);
+  resumen_produccion.innerHTML=Object.entries(cuenta).map(([f,c])=>{const p=PLAT[FORMATOS[f].plat];
+    return `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:7px">
+      <span class="row" style="gap:8px"><span style="width:22px;height:22px;border-radius:5px;background:${p.color};color:#fff;display:grid;place-items:center;font-size:.65rem;font-weight:700">${p.ini}</span>${f}</span>
+      <b class="mono">${c}</b></div>`;}).join("")+
+   `<div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">
+     <span style="width:22px;height:22px;border-radius:5px;background:var(--alert);color:#fff;display:grid;place-items:center;font-size:.65rem;font-weight:700">!</span>Tickets internos</span>
+     <b class="mono">${E.tickets.length}</b></div>`;
+  apoyo.innerHTML=DATOS.filter(m=>m.apoyo).map(m=>
+    `<div class="mini" style="border-left:2px solid var(--alert);padding-left:9px"><b>${m.autor}</b> · ${m.canal}<br>${m.texto.slice(0,72)}…</div>`).join("");
+  tabla.innerHTML=DATOS.slice().sort((a,b)=>b.score-a.score).map(m=>{const r=ruta(m);return `<tr>
+    <td><b>${m.autor}</b></td><td style="max-width:240px" class="muted">${m.texto.slice(0,70)}…</td>
+    <td class="muted">${m.tipo}</td><td class="mono ${m.sent>.2?"up":m.sent<-.2?"down":""}">${m.sent.toFixed(2)}</td>
+    <td class="mono"><b>${m.score}</b></td><td class="muted" style="max-width:170px">${m.por_que}</td>
+    <td><span class="pill ${PILL[r]}">${NOM[r]}</span></td></tr>`;}).join("");}
+
+/* ---------- CURADURÍA ---------- */
+let tabFmt="linkedin",fEstado={};
+const ESTADOS=["Todos","Pendiente","Listo","Publicado"];
+const pendientesDe=k=>E.activos.filter(a=>FORMATOS[a.formato].plat===k&&a.estado==="Pendiente").length;
+function pintarCuraduria(){
+  if(!E.procesado){tabs_formato.innerHTML="";
+    curaduria.innerHTML='<div class="block empty">Procesa un lote para ver el contenido generado.</div>';return;}
+  tabs_formato.innerHTML=TABS.map(([k,n])=>{
+    const total=k==="tickets"?E.tickets.length:E.activos.filter(a=>FORMATOS[a.formato].plat===k).length;
+    const pend=k==="tickets"?E.tickets.filter(t=>!t.aviso).length:pendientesDe(k);
+    const badge=pend?`<span class="c pend" title="${pend} sin revisar">${pend}</span>`:`<span class="c" title="${total} en total">${total}</span>`;
+    return `<button class="tab" data-t="${k}" aria-selected="${tabFmt===k}">${n}${badge}</button>`;}).join("");
+  tabs_formato.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tabFmt=b.dataset.t;pintarCuraduria();});
+  if(tabFmt==="tickets"){conexion_aviso.innerHTML="";return pintarTicketsEn(curaduria);}
+  const p=PLAT[tabFmt],conn=E.conex[tabFmt],fE=fEstado[tabFmt]||"Todos";
+  conexion_aviso.innerHTML=conn?"":`<div class="note">🔌 <b>${p.nom}</b> no está vinculado. Puedes aprobar, pero no publicar hasta conectarlo en Conexiones.</div>`;
+  const todos=E.activos.filter(a=>FORMATOS[a.formato].plat===tabFmt);
+  const lista=todos.filter(a=>fE==="Todos"||a.estado===fE);
+  const pend=pendientesDe(tabFmt);
+  const listos=todos.filter(a=>a.estado==="Listo").length;
+  const card=el("div","plat");
+  card.innerHTML=`<div class="plat-head"><div class="mk" style="background:${p.color}">${p.ini}</div>
+    <div style="flex:1;min-width:160px"><b>${p.nom}</b><div class="mini">${conn?p.cuenta+" · "+p.modo:"sin vincular"}</div></div>
+    <div class="plat-filtros">
+      ${ESTADOS.map(e=>{const n=e==="Todos"?todos.length:todos.filter(a=>a.estado===e).length;
+        return `<button aria-pressed="${fE===e}" data-e="${e}">${e} <span class="mono mini">${n}</span></button>`;}).join("")}
+      ${pend?'<span class="sep2"></span><button class="btn sm" id="btn_aprobar_todo">✓ Guardar los '+pend+' pendientes</button>':""}
+      ${listos&&conn?'<button class="btn primary sm" id="btn_publicar_listos">Publicar los '+listos+' listos</button>':""}
+    </div></div>`;
+  if(!lista.length)card.appendChild(el("div","empty",fE==="Todos"
+    ?"Este lote no generó contenido para "+p.nom+"."
+    :`Nada en estado “${fE}” en ${p.nom}.`));
+  lista.forEach(a=>{
+    const m=msg(a.fuente),cfg=FORMATOS[a.formato];
+    const pillC=a.estado==="Publicado"?"p-pri":a.estado==="Listo"?"p-ok":a.estado==="Descartado"?"p-mute":"p-warn";
+    const it=el("div","item "+a.estado.toLowerCase());
+    it.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:9px">
+        <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
+        <span class="pill ${pillC}">${a.estado}</span></div>
+      <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${m.autor}</summary>
+        <div class="body"><div class="meta">${m.canal} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${m.texto}
+        <div class="meta" style="margin-top:7px">POR QUÉ ESTE SCORE: ${m.por_que}</div></div></details>
+      <textarea rows="${cfg.porPost?8:6}" id="ta_${a.id}" ${a.estado==="Publicado"?"readonly":""}>${a.texto}</textarea>
+      <div class="row" style="justify-content:space-between;margin-top:9px">
+        <span class="mini mono" id="c_${a.id}"></span>
+        <div class="row">${a.estado==="Publicado"
+          ? `<span class="mini">Publicado el ${a.publicado}</span>`
+          : `<button class="btn primary sm" data-ac="publicar" data-id="${a.id}" ${conn?"":"disabled"}>Publicar en ${p.nom}</button>
+             <button class="btn sm" data-ac="listo" data-id="${a.id}" ${a.estado==="Listo"?"disabled":""}>${a.estado==="Listo"?"✓ En cola":"Guardar para después"}</button>
+             <span class="sep2"></span>
+             <button class="btn sm" data-ac="corto" data-id="${a.id}" title="Acorta el texto">↓ Más corto</button>
+             <button class="btn sm" data-ac="largo" data-id="${a.id}" title="Alarga el texto o revierte el recorte">↑ Más largo</button>
+             <button class="btn sm" data-ac="nuevo" data-id="${a.id}" title="Otra versión desde el mismo mensaje">⟳ Volver a generar</button>
+             <button class="btn sm" data-ac="descartar" data-id="${a.id}">Descartar</button>`}</div></div>`;
+    card.appendChild(it);
+    const ta=it.querySelector("textarea"),c=it.querySelector("#c_"+a.id);
+    const cuenta=()=>{if(cfg.porPost){const ps=ta.value.split("———"),mx=Math.max(...ps.map(x=>x.trim().length));
+        c.textContent=`${ps.length} posts · máx ${mx}/280`;c.style.color=mx>280?"var(--alert)":"";}
+      else{c.textContent=`${ta.value.length}/${cfg.limite} caracteres`;c.style.color=ta.value.length>cfg.limite?"var(--alert)":"";}};
+    cuenta();ta.oninput=()=>{cuenta();if(ta.value!==a.texto){a.editado=true;a.texto=ta.value;save();}};
+  });
+  curaduria.innerHTML="";curaduria.appendChild(card);
+  card.querySelectorAll(".plat-filtros [data-e]").forEach(b=>b.onclick=()=>{fEstado[tabFmt]=b.dataset.e;pintarCuraduria();});
+  const ba=card.querySelector("#btn_aprobar_todo");
+  if(ba)ba.onclick=()=>aprobarPendientes(tabFmt);
+  const bp=card.querySelector("#btn_publicar_listos");
+  if(bp)bp.onclick=()=>publicarLote(tabFmt);
+  curaduria.querySelectorAll('[data-ac]').forEach(b=>b.onclick=()=>accion(b.dataset.ac,b.dataset.id));}
+function aprobarPendientes(plat){
+  const n=E.activos.filter(a=>FORMATOS[a.formato].plat===plat&&a.estado==="Pendiente");
+  n.forEach(a=>a.estado="Listo");save();pintar();
+  toast(n.length+" en cola de "+PLAT[plat].nom,"Listos para publicar cuando quieras",true);}
+
+/* modal de confirmación antes de publicar */
+function confirmarPublicacion(id){
+  const a=E.activos.find(x=>x.id===id),cfg=FORMATOS[a.formato],p=PLAT[cfg.plat],m=msg(a.fuente);
+  const largo=cfg.porPost
+    ? a.texto.split("———").length+" posts · máximo "+Math.max(...a.texto.split("———").map(x=>x.trim().length))+"/280 caracteres"
+    : a.texto.length+"/"+cfg.limite+" caracteres";
+  dlg_cont.innerHTML=`
+    <div class="modal-head"><div class="mk" style="background:${p.color}">${p.ini}</div>
+      <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+    <div class="modal-body">
+      <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
+        <span>Longitud: <b>${largo}</b></span>${a.editado?"<span>Estado: <b>editado a mano</b></span>":""}</div>
+      <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g,"&lt;")}</div></div>
+      <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="dlg_no">Cancelar</button>
+      <button class="btn primary" id="dlg_si">Publicar ahora</button>
+    </div>`;
+  dlg.showModal();
+  dlg_no.onclick=()=>dlg.close();
+  dlg_si.onclick=()=>{dlg.close();publicar(id);};
+  setTimeout(()=>dlg_si.focus(),50);}
+
+function publicar(id){
+  const a=E.activos.find(x=>x.id===id),p=PLAT[FORMATOS[a.formato].plat];
+  const previo=a.estado;
+  a.estado="Publicado";a.publicado="23 sep, 10:4"+Math.floor(Math.random()*9);
+  const pub={fecha:a.publicado,plat:FORMATOS[a.formato].plat,formato:a.formato,extracto:a.texto.slice(0,64)+"…",fuente:a.fuente};
+  E.pubs.unshift(pub);save();pintar();
+  toast("Publicado en "+p.nom,p.cuenta,true,()=>{
+    a.estado=previo;delete a.publicado;E.pubs=E.pubs.filter(x=>x!==pub);save();pintar();
+    toast("Publicación revertida","El contenido volvió a "+previo);});}
+
+const GANCHOS=[
+ "Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀",
+ "Hay historias que explican mejor que cualquier folleto para qué sirve una comunidad 👇",
+ "Esto no pasó por suerte: pasó por un proyecto terminado y publicado 💼",
+ "De hacer ejercicios a firmar contrato. Así se ve el camino cuando se recorre acompañado 🌱"];
+const CIERRE="\n\n¿Tú también estás construyendo tu portafolio? Cuéntanos en qué andas 👇\n\n#ComunidadONE #AprenderHaciendo";
+
+function accion(ac,id){
+  const a=E.activos.find(x=>x.id===id);
+  if(ac==="publicar")return confirmarPublicacion(id);
+  if(ac==="listo"){a.estado="Listo";save();pintar();
+    toast("Guardado en la cola","Listo para publicar cuando quieras · curaduria.json",true);return;}
+  if(ac==="descartar"){a.estado="Descartado";save();pintar();toast("Descartado","Queda registrado en curaduria.json");return;}
+  /* variantes de texto: siempre parten del original generado */
+  if(!a.base)a.base=a.texto;
+  const partes=a.base.split("\n\n");
+  if(ac==="corto"){
+    a.texto=partes.slice(0,Math.max(2,Math.ceil(partes.length/2))).join("\n\n")+"\n\n#ComunidadONE";
+    a.version="corta";toast("Versión más corta",a.texto.length+" caracteres · 1 llamada al LLM");}
+  if(ac==="largo"){
+    a.texto=(a.version==="corta"||a.version==="variante")?a.base:a.base+CIERRE;
+    a.version=(a.version==="corta"||a.version==="variante")?"original":"larga";
+    toast(a.version==="original"?"Texto original restaurado":"Versión más larga",a.texto.length+" caracteres");}
+  if(ac==="nuevo"){
+    a.variante=((a.variante||0)+1)%GANCHOS.length;
+    const resto=a.base.split("\n\n").slice(1).join("\n\n");
+    a.texto=GANCHOS[a.variante]+"\n\n"+resto;a.version="variante";
+    toast("Nueva versión","Gancho "+(a.variante+1)+" de "+GANCHOS.length+" · 1 llamada al LLM");}
+  const t=$("#ta_"+id);if(t){t.value=a.texto;t.dispatchEvent(new Event("input"));}
+  save();pintarCuraduria();}
+
+function publicarLote(plat){
+  const lista=E.activos.filter(a=>FORMATOS[a.formato].plat===plat&&a.estado==="Listo"),p=PLAT[plat];
+  dlg_cont.innerHTML=`
+    <div class="modal-head"><div class="mk" style="background:${p.color}">${p.ini}</div>
+      <div style="flex:1"><b>Publicar ${lista.length} contenidos en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+    <div class="modal-body">
+      <div class="modal-prev">${lista.map(a=>"• "+a.texto.split("\n")[0].slice(0,70).replace(/</g,"&lt;")+"…").join("\n\n")}</div>
+      <div class="mini">Se publican en orden y quedan registrados en Publicaciones. Tendrás 6 segundos para deshacer.</div></div>
+    <div class="modal-foot"><button class="btn" id="dlg_no">Cancelar</button>
+      <button class="btn primary" id="dlg_si">Publicar los ${lista.length}</button></div>`;
+  dlg.showModal();dlg_no.onclick=()=>dlg.close();
+  dlg_si.onclick=()=>{dlg.close();
+    const previos=lista.map(a=>({a,estado:a.estado})),nuevas=[];
+    lista.forEach(a=>{a.estado="Publicado";a.publicado="23 sep, 10:4"+Math.floor(Math.random()*9);
+      const pub={fecha:a.publicado,plat,formato:a.formato,extracto:a.texto.slice(0,64)+"…",fuente:a.fuente};
+      nuevas.push(pub);E.pubs.unshift(pub);});
+    save();pintar();
+    toast(lista.length+" publicados en "+p.nom,p.cuenta,true,()=>{
+      previos.forEach(x=>{x.a.estado=x.estado;delete x.a.publicado;});
+      E.pubs=E.pubs.filter(x=>!nuevas.includes(x));save();pintar();toast("Publicaciones revertidas","Todo volvió a la cola");});};}
+
+/* ---------- TICKETS ---------- */
+function filasTickets(){
+  return E.tickets.map(t=>{const m=msg(t.fuente);return `<tr>
+    <td><span class="pill ${t.sev==="Alta"?"p-alert":"p-warn"}">${t.sev}</span></td>
+    <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
+    <td>${t.aviso?`<span class="pill p-pri">${PLAT[t.aviso].nom}</span>`:'<span class="mini">sin avisar</span>'}</td>
+    <td><span class="pill ${t.estado==="Resuelto"?"p-ok":"p-mute"}">${t.estado}</span></td></tr>`;}).join("");}
+function pintarTickets(){
+  b_tic.textContent=E.procesado?E.tickets.filter(t=>t.estado!=="Resuelto").length:"—";
+  tabla_tickets.innerHTML=E.procesado?filasTickets():'<tr><td colspan="6" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  tabla_tickets_hist.innerHTML=[["2026-semana-03","Error 500 al subir el proyecto final","discord","15 sep","17 sep","Resuelto"],
+   ["2026-semana-03","Video del módulo 2 sin audio","discord","16 sep","18 sep","Resuelto"],
+   ["2026-semana-02","Certificado no se descarga","discord","09 sep","—","En curso"]].map(f=>
+   `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-pri">${PLAT[f[2]].nom}</span></td>
+    <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5]==="Resuelto"?"p-ok":"p-warn"}">${f[5]}</span></td></tr>`).join("");}
+function pintarTicketsEn(cont){
+  const card=el("div","plat");
+  card.innerHTML=`<div class="plat-head"><div class="mk" style="background:var(--alert)">!</div>
+    <div style="flex:1"><b>Tickets internos</b><div class="mini">No se publican: se avisan en el canal del equipo</div></div>
+    <span class="mini mono">${E.tickets.length}</span></div>
+    <div class="item"><div class="df"><table><thead><tr><th>Sev.</th><th>Reportado por</th><th>Canal</th><th>Resumen</th><th>Aviso</th><th>Estado</th></tr></thead>
+      <tbody>${filasTickets()}</tbody></table></div>
+      <div class="row" style="margin-top:12px"><button class="btn primary sm" id="btn_avisar">Avisar en Discord · #soporte-interno</button></div></div>`;
+  cont.innerHTML="";cont.appendChild(card);
+  $("#btn_avisar").onclick=()=>avisar("discord");}
+function avisar(dest){
+  if(!E.conex[dest]){ir("conexiones");return toast("Falta vincular",PLAT[dest].nom+" no está conectado.");}
+  const pend=E.tickets.filter(t=>!t.aviso);
+  if(!pend.length)return toast("Nada que avisar","Todos los tickets ya se avisaron.");
+  pend.forEach(t=>{t.aviso=dest;t.estado="En curso";});save();pintar();
+  toast(pend.length+" tickets avisados","Mensaje enviado a "+PLAT[dest].cuenta,true);}
+btn_discord.onclick=()=>avisar("discord"); btn_slack.onclick=()=>avisar("slack");
+
+/* ---------- PUBLICACIONES ---------- */
+function pintarPubs(){
+  b_pub.textContent=E.pubs.length;
+  const n=k=>E.pubs.filter(p=>p.plat===k).length;
+  stats_pub.innerHTML=[["LinkedIn",n("linkedin")],["X",n("x")],["FAQ web",n("web")],["Total semana",E.pubs.length]]
+   .map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div></div>`).join("");
+  tabla_pub.innerHTML=E.pubs.length?E.pubs.map(p=>{const m=msg(p.fuente);return `<tr>
+    <td class="muted">${p.fecha}</td><td><span class="pill p-pri">${PLAT[p.plat].nom}</span></td><td>${p.formato}</td>
+    <td class="muted" style="max-width:300px">${p.extracto}</td><td class="muted">${m.autor}</td>
+    <td><a href="#" onclick="return false" style="color:var(--link)">ver</a></td></tr>`;}).join("")
+    :'<tr><td colspan="6" class="empty">Aún no publicas nada esta semana. Publica desde el paso 3 · Curaduría.</td></tr>';}
+
+/* ---------- HISTORIAL ---------- */
+let semanaSel="2026-semana-04";
+function pintarHistorial(){
+  const semanas=["2026-semana-04","2026-semana-03","2026-semana-02"];
+  lista_semanas.innerHTML=semanas.map(s=>{
+    const d=s==="2026-semana-04"?{inter:E.procesado?12:0,publicados:E.pubs.length}:HIST[s];
+    return `<button class="semana-btn" data-s="${s}" aria-current="${semanaSel===s}">
+      <div style="flex:1"><b>${s.replace("2026-semana-","Semana ")}</b>
+        <div class="mini">${d.inter} interacciones · ${d.publicados} publicados</div></div>
+      ${s==="2026-semana-04"?'<span class="pill p-pri">actual</span>':""}</button>`;}).join("");
+  lista_semanas.querySelectorAll(".semana-btn").forEach(b=>b.onclick=()=>{semanaSel=b.dataset.s;pintarHistorial();});
+  const act=semanaSel==="2026-semana-04";
+  const d=act?{inter:E.procesado?12:0,pos:58,neg:25,activos:E.activos.length,publicados:E.pubs.length,
+    tickets:E.tickets.length,temas:["Acceso a laboratorios","Contratación / Logros","LangGraph"],
+    contenidos:E.activos.map(a=>[FORMATOS[a.formato].plat,a.formato,a.texto.slice(0,52)+"…",a.estado]),
+    tickets_list:E.tickets.map(t=>[msg(t.fuente).texto.slice(0,46)+"…",t.estado])}:HIST[semanaSel];
+  detalle_semana.innerHTML=`
+    <div class="stats" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat"><div class="k">Interacciones</div><div class="v">${d.inter}</div></div>
+      <div class="stat"><div class="k">% positivo</div><div class="v">${d.pos}%</div></div>
+      <div class="stat"><div class="k">Activos</div><div class="v">${d.activos}</div></div>
+      <div class="stat"><div class="k">Publicados</div><div class="v">${d.publicados}</div></div>
+    </div>
+    <div class="block"><p class="blk-title">Temas de la semana</p>
+      <div class="row" style="margin-top:8px">${d.temas.map(t=>`<span class="pill p-mute">${t}</span>`).join("")}</div></div>
+    <div class="block"><p class="blk-title">Contenidos</p>
+      <p class="blk-info">Todo lo que se generó esa semana, con su estado final.</p>
+      <div class="df"><table><thead><tr><th>Plataforma</th><th>Formato</th><th>Contenido</th><th>Estado</th></tr></thead><tbody>
+      ${d.contenidos.length?d.contenidos.map(c=>`<tr><td><span class="pill p-pri">${PLAT[c[0]].nom}</span></td><td>${c[1]}</td>
+        <td class="muted" style="max-width:280px">${c[2]}</td>
+        <td><span class="pill ${c[3]==="Publicado"?"p-ok":c[3]==="Descartado"?"p-mute":"p-warn"}">${c[3]}</span></td></tr>`).join("")
+        :'<tr><td colspan="4" class="empty">Sin contenidos todavía.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="block"><p class="blk-title">Tickets</p>
+      <div class="df"><table><thead><tr><th>Ticket</th><th>Estado</th></tr></thead><tbody>
+      ${d.tickets_list.length?d.tickets_list.map(t=>`<tr><td>${t[0]}</td>
+        <td><span class="pill ${t[1]==="Resuelto"?"p-ok":"p-warn"}">${t[1]}</span></td></tr>`).join("")
+        :'<tr><td colspan="2" class="empty">Sin tickets.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="mini">Ruta en OCI: <code>activos/${semanaSel}/</code></div>`;}
+
+/* ---------- CONEXIONES ---------- */
+function pintarConex(){
+  b_con.textContent=Object.values(E.conex).filter(Boolean).length+"/"+Object.keys(PLAT).length;
+  lista_conexiones.innerHTML=Object.entries(PLAT).map(([k,p])=>{const on=E.conex[k];
+    return `<div class="conn"><div class="mk" style="background:${p.color}">${p.ini}</div>
+      <div class="b"><b>${p.nom}</b><div class="dot ${on?"on":""}"><i></i>${on?"Conectado · "+p.cuenta:"Sin conectar"}</div>
+        <div class="mini">${p.modo}</div></div>
+      <button class="btn sm ${on?"":"primary"}" data-c="${k}">${on?"Desvincular":"Conectar"}</button></div>`;}).join("");
+  lista_conexiones.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>alternar(b.dataset.c));
+  lista_vinculadas.innerHTML=Object.entries(PLAT).filter(([k])=>E.conex[k]).map(([k,p])=>
+    `<div class="row" style="justify-content:space-between"><span class="dot on"><i></i>${p.nom} · ${p.cuenta}</span>
+      <button class="btn sm" data-c="${k}">Desvincular</button></div>`).join("")||'<p class="mini">No hay cuentas vinculadas.</p>';
+  lista_vinculadas.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>alternar(b.dataset.c));}
+function alternar(k){const p=PLAT[k],on=E.conex[k];E.conex[k]=!on;save();pintar();
+  toast(on?p.nom+" desvinculado":p.nom+" conectado",on?"Lo ya publicado no se borra.":p.cuenta,!on);}
+
+/* ---------- AJUSTES ---------- */
+const ESTILOS=["Cercano","Inspirador","Celebratorio","Didáctico","Técnico","Breve","Sobrio","Con emojis","Sin hashtags","Primera persona plural"];
+function pintarChips(){
+  voz_chips.innerHTML=E.chips.map(c=>`<span class="vchip">${c}<button data-q="${c}" title="Quitar">×</button></span>`).join("");
+  voz_chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{E.chips=E.chips.filter(x=>x!==b.dataset.q);save();pintarChips();});
+  chips_estilo.innerHTML=ESTILOS.map(e=>`<button aria-pressed="${E.chips.includes(e)}" data-e="${e}">${E.chips.includes(e)?"✓ ":"+ "}${e}</button>`).join("");
+  chips_estilo.querySelectorAll("button").forEach(b=>b.onclick=()=>{const e=b.dataset.e;
+    E.chips=E.chips.includes(e)?E.chips.filter(x=>x!==e):[...E.chips,e];save();pintarChips();});}
+btn_voz.onclick=()=>{voz_msg.textContent=E.chips.length?"Guardada con "+E.chips.length+" chips de estilo":"Guardada";
+  toast("Guía de voz guardada","config/voz.json actualizado",true);};
+btn_umbrales.onclick=()=>{U.descartar=+u_desc.value;U.exito_score=+u_ex.value;
+  if(E.procesado){const c=construir();E.activos=c.activos;E.tickets=c.tickets;save();}
+  pintar();toast("Umbrales aplicados",`descartar < ${U.descartar} · éxito ≥ ${U.exito_score}`,true);irPaso(2);ir("flujo");};
+
+function pintar(){pintarAnalisis();pintarCuraduria();pintarTickets();pintarPubs();pintarConex();pintarHistorial();}
+pintarChips();pintar();ir("flujo");irPaso(E.procesado?E.paso:1);
+if(E.procesado){validacion.hidden=false;analisis_resultado.hidden=false;}
+</script>
+
+</body></html>
