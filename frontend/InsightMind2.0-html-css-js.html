@@ -1,0 +1,1645 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insight Mind 2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ============================================================
+   Insight Mind · sistema de color
+   Tres bloques explícitos: claro por defecto, oscuro por sistema y
+   oscuro/claro elegidos a mano. Sin depender de light-dark().
+   Regla: el azul es el único acento. Todo lo demás es materia.
+   ============================================================ */
+/* ============================================================
+   Insight Mind · sistema de color
+   Oscuro ceniza (no negro absoluto) y claro gris cálido, al modo
+   de Discord. Acento azul equivalente al morado de Linear.
+   Claro por defecto, oscuro por sistema o por elección.
+   ============================================================ */
+:root{
+  color-scheme: light;
+  --primary-glow: #8A91CB;
+  --sobre-neutral: #FFFFFF;
+  --radius: 9px;
+  --radius-lg: 13px;
+  --font: "Schibsted Grotesk","Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono: "IBM Plex Mono",ui-monospace,Menlo,monospace;
+
+  /* ---- Tema claro: el valor por defecto ---- */
+  --bg: #F1F2F4;
+  --sunken: #E9EBEE;
+  --panel: #FAFAFB;
+  --block: #FAFAFB;
+  --panel-2: #F1F2F4;
+  --raised: #FFFFFF;
+  --secondary: #ECEEF1;
+  --ink: #15171B;
+  --ink-2: #3B424C;
+  --muted: #5A626D;
+  --faint: #6E7681;
+  --border: #E2E4E8;
+  --border-2: #CBD0D7;
+  --hairline: rgba(16,24,40,.035);
+  --primary: #5B63A8;
+  --primary-solid: #5B63A8;
+  --primary-2: #4E568F;
+  --primary-soft: #EEEFF7;
+  --primary-line: #CCD0E6;
+  --primary-ink: #4E568F;
+  --on-primary: #FFFFFF;
+  --ok: #2E7D5B;
+  --ok-soft: #E9F3EE;
+  --warn: #8A6212;
+  --warn-soft: #F6F1E4;
+  --alert: #B3424E;
+  --alert-soft: #F9ECEE;
+  --neutral: #78818D;
+  --link: #4F63D8;
+  --shadow: 0 1px 2px rgba(16,24,40,.05);
+}
+
+/* ---- Oscuro cuando lo pide el sistema y el usuario no eligió claro ---- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --sobre-neutral: #0E0F12;
+  --bg: #121317;
+  --sunken: #0E0F12;
+  --panel: #191B20;
+  --block: #191B20;
+  --panel-2: #1E2126;
+  --raised: #22252B;
+  --secondary: #22252B;
+  --ink: #ECEEF2;
+  --ink-2: #C6CCD6;
+  --muted: #A8B0BD;
+  --faint: #8A93A1;
+  --border: #24272E;
+  --border-2: #383C46;
+  --hairline: rgba(255,255,255,.04);
+  --primary: #8A91CB;
+  --primary-solid: #8A91CB;
+  --primary-2: #9BA2D8;
+  --primary-soft: #1A1D2B;
+  --primary-line: #343A52;
+  --primary-ink: #A8AEE2;
+  --on-primary: #111428;
+  --ok: #7FCCA5;
+  --ok-soft: #15241E;
+  --warn: #E0C089;
+  --warn-soft: #241F14;
+  --alert: #E8A0A6;
+  --alert-soft: #231519;
+  --neutral: #5C6470;
+  --link: #A3B2FF;
+  --shadow: 0 1px 2px rgba(0,0,0,.45);
+  }
+}
+
+/* ---- Oscuro elegido a mano: gana sobre el sistema ---- */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --sobre-neutral: #0E0F12;
+  --bg: #121317;
+  --sunken: #0E0F12;
+  --panel: #191B20;
+  --block: #191B20;
+  --panel-2: #1E2126;
+  --raised: #22252B;
+  --secondary: #22252B;
+  --ink: #ECEEF2;
+  --ink-2: #C6CCD6;
+  --muted: #A8B0BD;
+  --faint: #8A93A1;
+  --border: #24272E;
+  --border-2: #383C46;
+  --hairline: rgba(255,255,255,.04);
+  --primary: #8A91CB;
+  --primary-solid: #8A91CB;
+  --primary-2: #9BA2D8;
+  --primary-soft: #1A1D2B;
+  --primary-line: #343A52;
+  --primary-ink: #A8AEE2;
+  --on-primary: #111428;
+  --ok: #7FCCA5;
+  --ok-soft: #15241E;
+  --warn: #E0C089;
+  --warn-soft: #241F14;
+  --alert: #E8A0A6;
+  --alert-soft: #231519;
+  --neutral: #5C6470;
+  --link: #A3B2FF;
+  --shadow: 0 1px 2px rgba(0,0,0,.45);
+}
+
+/* ---- Claro elegido a mano: gana sobre un sistema oscuro ---- */
+:root[data-theme="light"]{
+  color-scheme: light;
+  --sobre-neutral: #FFFFFF;
+  --bg: #F1F2F4;
+  --sunken: #E9EBEE;
+  --panel: #FAFAFB;
+  --block: #FAFAFB;
+  --panel-2: #F1F2F4;
+  --raised: #FFFFFF;
+  --secondary: #ECEEF1;
+  --ink: #15171B;
+  --ink-2: #3B424C;
+  --muted: #5A626D;
+  --faint: #6E7681;
+  --border: #E2E4E8;
+  --border-2: #CBD0D7;
+  --hairline: rgba(16,24,40,.035);
+  --primary: #5B63A8;
+  --primary-solid: #5B63A8;
+  --primary-2: #4E568F;
+  --primary-soft: #EEEFF7;
+  --primary-line: #CCD0E6;
+  --primary-ink: #4E568F;
+  --on-primary: #FFFFFF;
+  --ok: #2E7D5B;
+  --ok-soft: #E9F3EE;
+  --warn: #8A6212;
+  --warn-soft: #F6F1E4;
+  --alert: #B3424E;
+  --alert-soft: #F9ECEE;
+  --neutral: #78818D;
+  --link: #4F63D8;
+  --shadow: 0 1px 2px rgba(16,24,40,.05);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+button,input,select,textarea{font-family:inherit}
+.app{display:grid;grid-template-columns:238px 1fr;min-height:100%}
+
+.sidebar{background:var(--panel-2);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-title{display:flex;gap:9px;align-items:center;padding:2px 4px 6px}
+.sb-title .mk{width:30px;height:30px;border-radius:var(--radius);background:var(--primary);color:var(--on-primary);display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.sb-title b{display:block;font-size:1rem;line-height:1.2}
+.sb-title span{font-size:.78rem;color:var(--muted)}
+.sb-lbl{font-size:.75rem;color:var(--muted);font-weight:600;padding:8px 6px 2px}
+.nav{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:1px solid transparent;background:none;border-radius:var(--radius);color:var(--ink-2);font-size:.92rem;cursor:pointer;text-align:left}
+.nav:hover{background:var(--panel);border-color:var(--border)}
+.nav[aria-current="page"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
+.nav .badge{margin-left:auto;display:inline-grid;place-items:center;min-width:19px;height:19px;
+  padding:0 5px;border-radius:999px;background:var(--secondary);border:1px solid var(--border);
+  font-size:.7rem;font-family:var(--mono);line-height:1;color:var(--muted)}
+.sb-foot{margin-top:auto;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--border);padding-top:12px}
+
+.block{background:var(--block);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.label{display:block;font-size:.83rem;color:var(--muted);font-weight:600;margin-bottom:5px}
+.blk-title{font-size:1.05rem;font-weight:600;margin:0 0 3px}
+.blk-info{font-size:.85rem;color:var(--muted);margin:0 0 12px}
+
+main{min-width:0;display:flex;flex-direction:column}
+.head{padding:18px 24px 0;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.head h1{margin:0;font-size:1.3rem;font-weight:700}
+.head p{margin:3px 0 0;color:var(--muted);font-size:.9rem}
+.wrap{padding:16px 24px 60px;display:flex;flex-direction:column;gap:14px;max-width:1180px;width:100%}
+
+/* stepper del flujo: distinto de las tabs a propósito */
+.stepper{display:flex;align-items:stretch;gap:2px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:6px}
+.stepper::-webkit-scrollbar{display:none}
+.stp{flex:1 1 0;min-width:0;display:flex;gap:10px;align-items:center;padding:10px 14px;border:1px solid transparent;background:none;border-radius:var(--radius);color:var(--muted);cursor:pointer;text-align:left;white-space:nowrap}
+.stp:hover{background:var(--block)}
+.stp[aria-current="step"]{background:var(--block);color:var(--ink);box-shadow:var(--shadow);border-color:var(--border)}
+.stp .n{width:24px;height:24px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-size:.78rem;font-family:var(--mono);flex:none}
+.stp[aria-current="step"] .n{background:var(--primary-solid);border-color:var(--primary-solid);color:var(--on-primary)}
+.stp.done{color:var(--ok)}
+
+.stp b{display:block;font-size:.92rem;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+.stp span.sub2{font-size:.76rem;opacity:.85;display:block;overflow:hidden;text-overflow:ellipsis}
+.stp>span:last-child{min-width:0}
+.sep{display:grid;place-items:center;color:var(--faint);padding:0 2px;flex:none}
+/* encabezado de sección dentro de un paso */
+.sec-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-top:4px}
+.sec-h h2{margin:0;font-size:1.08rem;font-weight:700}
+.sec-h .mini{margin:0}
+/* las tabs de plataforma van pegadas a su tarjeta */
+.platwrap{display:flex;flex-direction:column}
+.platwrap .tabs{border-bottom:none;margin-bottom:-1px;padding-left:2px}
+.platwrap .plat{border-top-left-radius:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:none;border:1px solid transparent;border-bottom:none;padding:9px 15px;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted);font-size:.92rem;cursor:pointer;margin-bottom:-1px;display:inline-flex;gap:7px;align-items:center}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--block);border-color:var(--border);color:var(--ink);font-weight:600}
+.tab .c{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;
+  border-radius:999px;background:var(--secondary);border:1px solid var(--border);
+  font-family:var(--mono);font-size:.7rem;line-height:1;color:var(--muted)}
+/* filtro de estado dentro de la tarjeta de plataforma */
+.plat-head{flex-wrap:wrap}
+.plat-filtros{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.plat-filtros button{border:1px solid var(--border-2);background:var(--block);color:var(--ink-2);padding:4px 10px;border-radius:999px;font-size:.82rem;cursor:pointer}
+.plat-filtros button[aria-pressed="true"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
+.plat-filtros .sep2{width:1px;height:20px;background:var(--border);margin:0 3px}
+
+.btn{padding:9px 16px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--secondary);color:var(--ink);font-size:.92rem;font-weight:600;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.btn:hover{background:var(--border)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2);color:var(--on-primary)}
+.btn.sm{padding:6px 11px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* modal de confirmación */
+dialog{border:none;padding:0;background:transparent;max-width:min(560px,94vw);width:100%}
+dialog::backdrop{background:rgba(3,7,18,.6);backdrop-filter:blur(2px)}
+.modal{background:var(--block);border:1px solid var(--border);border-radius:14px;box-shadow:0 14px 26px rgba(0,0,0,.3);overflow:hidden}
+.modal-head{display:flex;gap:11px;align-items:center;padding:15px 18px;border-bottom:1px solid var(--border);background:var(--panel-2)}
+.modal-head .mk{width:34px;height:34px;border-radius:var(--radius);display:grid;place-items:center;font-weight:700;font-size:.8rem;flex:none}
+.modal-head b{font-size:1.02rem}
+.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.modal-prev{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;font-size:.88rem;white-space:pre-wrap;max-height:230px;overflow:auto;line-height:1.55}
+.modal-foot{display:flex;gap:9px;justify-content:flex-end;padding:13px 18px;border-top:1px solid var(--border);background:var(--panel-2);flex-wrap:wrap}
+.modal-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+.modal-meta b{color:var(--ink)}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid{display:grid;gap:14px}
+
+.radio{display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel-2)}
+.radio button{border:1px solid var(--border-2);background:var(--block);color:var(--ink-2);padding:6px 12px;border-radius:999px;font-size:.87rem;cursor:pointer}
+.radio button[aria-pressed="true"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
+.radio .c{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-left:5px}
+
+input[type=text],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);color:var(--ink);font-size:.92rem}
+textarea{line-height:1.6;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+
+.acc{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel-2);overflow:hidden}
+.acc>summary{cursor:pointer;padding:10px 13px;font-size:.88rem;font-weight:600;color:var(--ink-2);list-style:none;display:flex;gap:8px;align-items:center}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.acc[open]>summary::before{transform:rotate(90deg)}
+.acc .body{padding:0 13px 13px;font-size:.89rem;color:var(--ink-2)}
+.acc .meta{font-family:var(--mono);font-size:.74rem;color:var(--muted);margin-bottom:6px}
+
+.df{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;background:var(--block);padding:8px}
+.df table{border-collapse:separate;border-spacing:0}
+.df th:first-child{border-top-left-radius:6px;border-bottom-left-radius:6px}
+.df th:last-child{border-top-right-radius:6px;border-bottom-right-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{background:var(--panel-2);font-size:.78rem;font-weight:600;color:var(--muted);text-align:left;padding:9px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+td{padding:9px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle}
+th:last-child,td:last-child{border-right:none}
+tr:last-child td{border-bottom:none}
+
+.stat{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.stat .k{font-size:.8rem;color:var(--muted);font-weight:600}
+.stat .v{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .d{font-size:.8rem;font-family:var(--mono)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.up{color:var(--ok)} .down{color:var(--alert)}
+.bars{display:flex;height:22px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.bars i{display:block}
+.legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);margin-top:9px;flex-wrap:wrap}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px}
+
+.pill{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap;font-weight:600}
+.p-ok{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.p-warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.p-alert{color:var(--alert);border-color:var(--alert);background:var(--alert-soft)}
+.p-mute{color:var(--muted);border-color:var(--border-2)}
+.p-pri{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.86rem}
+.muted{color:var(--muted)} .mini{font-size:.83rem;color:var(--muted)}
+code{font-family:var(--mono);font-size:.84rem;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+.note{border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--radius-lg);padding:12px 15px;font-size:.9rem}
+.note.err{border-color:var(--alert);background:var(--alert-soft)}
+.note.info{border-color:var(--primary);background:var(--primary-soft)}
+.prog{height:7px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.prog i{display:block;height:100%;background:var(--primary);transform-origin:left;transform:scaleX(0);transition:transform .35s ease}
+.steps{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:.85rem;margin-top:12px}
+.step{color:var(--faint)} .step.done{color:var(--ink-2)} .step.run{color:var(--primary);font-weight:500}
+
+.toasts{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:9px;z-index:80;max-width:360px}
+.toast{background:var(--block);border:1px solid var(--border-2);border-radius:var(--radius);padding:11px 14px;box-shadow:0 8px 20px rgba(0,0,0,.14);font-size:.88rem;display:flex;gap:10px;align-items:center}
+.toast b{display:block;font-size:.8rem;color:var(--primary);margin-bottom:2px}
+.toast.ok b{color:var(--ok)} .toast.ok b{color:var(--ok)}
+.toast .undo{margin-left:auto;flex:none}
+
+/* tarjeta por plataforma */
+.plat{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--block);box-shadow:var(--shadow);overflow:hidden}
+.plat-head{display:flex;gap:11px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--panel-2)}
+.plat-head .mk{width:32px;height:32px;border-radius:var(--radius);display:grid;place-items:center;font-weight:700;font-size:.78rem;flex:none}
+.plat-head b{font-size:1rem}
+.item{padding:15px 16px;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:none}
+.item.publicado{background:var(--primary-soft)}
+.item.descartado{opacity:.5}
+.dropzone{border:1px dashed var(--border-2);border-radius:var(--radius-lg);padding:26px;text-align:center;background:var(--panel-2);color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:34px 16px}
+.conn{display:flex;gap:12px;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border)}
+.conn:last-child{border-bottom:none}
+.conn .mk{width:34px;height:34px;border-radius:var(--radius);display:grid;place-items:center;font-weight:700;font-size:.8rem;flex:none}
+.conn .b{flex:1;min-width:0}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
+.dot i{width:8px;height:8px;border-radius:50%;background:var(--border-2)}
+.dot.on{color:var(--ok)} .dot.on i{background:var(--ok)}
+.themebtn{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--block);color:var(--ink-2);font-size:.87rem;cursor:pointer}
+
+/* campo de voz con chips dentro */
+.voz-box{border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);padding:9px}
+.voz-box:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.voz-box textarea{border:none;background:none;padding:4px 2px;box-shadow:none!important}
+.voz-box textarea:focus{outline:none}
+.voz-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.vchip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-soft);border:1px solid var(--primary);color:var(--ink);padding:3px 6px 3px 10px;border-radius:999px;font-size:.83rem;font-weight:600}
+.vchip button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:.95rem;line-height:1;padding:0 2px}
+.vchip button:hover{color:var(--alert)}
+.semana-btn{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:13px 15px;border:none;border-bottom:1px solid var(--border);background:none;color:var(--ink);cursor:pointer}
+.semana-btn:last-child{border-bottom:none}
+.semana-btn:hover{background:var(--panel-2)}
+.semana-btn[aria-current="true"]{background:var(--primary-soft)}
+.semana-btn b{font-size:.95rem}
+
+@media(max-width:1100px){.app{grid-template-columns:210px 1fr}.stats{grid-template-columns:repeat(3,1fr)}.cols3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.cols2,.cols3{grid-template-columns:1fr}.df table{min-width:640px}}
+@media(max-width:800px){
+  body{font-size:14px}
+  .app{grid-template-columns:1fr}
+  .sidebar{position:sticky;top:0;z-index:30;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px;gap:10px}
+  .sb-title{padding:0}
+  .sidebar nav{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:4px;scrollbar-width:none;display:flex}
+  .sidebar nav::-webkit-scrollbar{display:none}
+  .sb-lbl{display:none}
+  .nav{width:auto;white-space:nowrap;flex:none;padding:7px 12px;font-size:.88rem}
+  .sb-foot{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin-top:0;padding-top:10px}
+  .head{padding:14px 14px 0} .head h1{font-size:1.15rem}
+  .wrap{padding:12px 14px 48px;gap:12px}
+  .block,.item{padding:14px}
+  .stats{grid-template-columns:repeat(2,1fr);gap:9px}
+  .stat .v{font-size:1.35rem}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{white-space:nowrap;flex:none;padding:9px 12px}
+  textarea{font-size:16px}
+  .btn.sm{flex:1;justify-content:center;min-width:112px}
+  .toasts{left:12px;right:12px;top:10px;max-width:none}
+  .conn{flex-wrap:wrap} .conn>.btn{width:100%;justify-content:center}
+}
+@media(max-width:420px){.stats{grid-template-columns:1fr}}
+
+/* ============================================================
+   v2 · Navegación móvil, microinteracciones y calma cromática
+   ============================================================ */
+
+/* ---- 1. Jerarquía de color: el naranja solo para la acción principal ---- */
+.tab .c.pend{background:var(--primary-soft);color:var(--primary);border:1px solid var(--primary);font-weight:700}
+.pill{font-weight:600;background:transparent}
+.p-warn{color:var(--muted);border-color:var(--border-2)}          /* Pendiente: neutro */
+.p-ok{color:var(--ok);border-color:var(--ok);background:transparent} /* Listo: solo contorno */
+.p-pri{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
+.note.err b{color:var(--alert)}
+
+/* ---- 2. Botones de la misma altura, siempre ---- */
+.btn{min-height:38px;justify-content:center;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.btn.sm{min-height:34px}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible,.nav:focus-visible,.tab:focus-visible,.stp:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.acciones-activo{display:flex;gap:8px;flex-wrap:wrap}
+.acciones-activo .btn{flex:0 1 auto}
+
+/* ---- 3. Microinteracciones ---- */
+.nav{transition:background .15s,color .15s,transform .15s}
+.nav:hover{transform:translateX(2px)}
+.tab,.stp{transition:background .18s,color .18s,box-shadow .18s}
+.stp .n{transition:background .25s,border-color .25s,color .25s}
+.stp.done .n{animation:pop .32s ease}
+
+.item{animation:aparecer .3s ease both}
+.item:nth-child(2){animation-delay:.04s}
+.item:nth-child(3){animation-delay:.08s}
+.item:nth-child(4){animation-delay:.12s}
+.item:nth-child(n+5){animation-delay:.16s}
+.toast{animation:entrar .24s cubic-bezier(.2,.9,.3,1) both}
+dialog[open]{animation:subir .2s ease both}
+dialog[open]::backdrop{animation:fundir .2s ease both}
+.step.run{animation:latir 1.1s ease-in-out infinite}
+.plat-filtros button,.radio button{transition:background .15s,border-color .15s,transform .1s}
+.plat-filtros button:active,.radio button:active{transform:translateY(1px)}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes aparecer{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes entrar{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes subir{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes fundir{from{opacity:0}to{opacity:1}}
+@keyframes latir{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* ---- 4. Cabecera móvil y menú lateral deslizante ---- */
+.mtop{display:none}
+.hamb{width:40px;height:40px;border:1px solid var(--border);background:var(--block);border-radius:var(--radius);
+  display:grid;place-content:center;gap:4px;cursor:pointer;padding:0 10px}
+.hamb span{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px;
+  transition:transform .24s ease,opacity .18s ease}
+body.menu-abierto .hamb span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+body.menu-abierto .hamb span:nth-child(2){opacity:0}
+body.menu-abierto .hamb span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.scrim{position:fixed;inset:0;background:rgba(3,7,18,.55);z-index:55;opacity:0;transition:opacity .24s ease}
+body.menu-abierto .scrim{opacity:1}
+
+@media(max-width:900px){
+  .mtop{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40;
+    padding:10px 14px;background:var(--panel-2);border-bottom:1px solid var(--border)}
+  .mtop-brand{display:flex;align-items:center;gap:9px;min-width:0}
+  .mtop-brand .mk{width:28px;height:28px;border-radius:7px;background:var(--primary);color:var(--on-primary);
+    display:grid;place-items:center;font-weight:700;font-size:.78rem;flex:none}
+  .mtop-brand b{font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:min(280px,82vw);height:100dvh;z-index:60;
+    border-right:1px solid var(--border);transform:translateX(-102%);transition:transform .26s cubic-bezier(.2,.9,.3,1);
+    padding:16px 12px;gap:14px}
+  body.menu-abierto .sidebar{transform:none;box-shadow:12px 0 40px rgba(0,0,0,.35)}
+  .sidebar nav{flex-direction:column;flex-wrap:nowrap;overflow:visible}
+  .sb-lbl{display:block}
+  .nav{width:100%;white-space:normal;font-size:.95rem;padding:10px 12px}
+  .sb-foot{flex-direction:column;align-items:stretch;margin-top:auto;padding-top:14px}
+  .head{display:none}                      /* el título vive en la cabecera móvil */
+  .wrap{padding:14px 14px 56px}
+}
+
+/* ---- 5. Móvil: todo del mismo ancho, sin apretujones ---- */
+@media(max-width:620px){
+  .acciones-activo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .acciones-activo .btn{width:100%}
+  .acciones-activo .sep2{display:none}
+  .item .row{gap:10px}
+  .plat-head{gap:10px}
+  .plat-filtros{width:100%;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .plat-filtros button{width:100%;justify-content:center;display:flex;gap:6px;align-items:center}
+  .plat-filtros .btn{grid-column:1 / -1}
+  .plat-filtros .sep2{display:none}
+  .stepper{gap:0}
+  .stp{min-width:118px;padding:9px 10px}
+  .stp .sub2{display:none}
+  .modal-foot .btn{flex:1}
+  .stats{grid-template-columns:1fr 1fr}
+  .toasts{left:12px;right:12px;top:auto;bottom:12px;max-width:none}
+  .toast{animation:entrar-abajo .24s ease both}
+  @keyframes entrar-abajo{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+}
+
+/* ---- 6. Respetar la preferencia de menos movimiento ---- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important}
+}
+
+/* ---- 7. Ajustes finos de móvil ---- */
+@media(max-width:620px){
+  .dropzone .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dropzone .row .btn{width:100%}
+  .stepper{padding:5px}
+  .stp{min-width:0;flex:1 1 0;padding:9px 6px;gap:7px}
+  .stp b{font-size:.86rem;overflow:hidden;text-overflow:ellipsis}
+  .sep{padding:0}
+  .modal-meta{gap:10px;font-size:.82rem}
+}
+
+/* ---- 8. Nada se desborda: los contenedores pueden encogerse ---- */
+main,.wrap,section,.grid,.grid>*,.platwrap,.plat,.item,.cols2,.cols2>*,.cols3,.cols3>*,.stat,.block{min-width:0}
+.plat-head>div{min-width:0}
+.item .row{min-width:0}
+@media(max-width:620px){
+  .plat-head>div[style]{min-width:0!important;flex:1 1 100%}
+  .plat-filtros{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* el sello de la plataforma nunca se estira */
+@media(max-width:620px){ .plat-head>.mk{flex:0 0 32px!important;width:32px;min-width:32px} }
+
+/* ---- 9. Historial y métricas: retículas que sí se adaptan ---- */
+.hist-layout{display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:start}
+.stats-4{grid-template-columns:repeat(4,1fr)}
+.stats-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1100px){.hist-layout{grid-template-columns:240px 1fr}}
+@media(max-width:900px){
+  .hist-layout{grid-template-columns:1fr}
+  .stats-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .stats-4,.stats-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* la lista de semanas se vuelve un carrusel horizontal */
+  .hist-layout>.plat:first-child{overflow:hidden}
+  .hist-layout .semana-btn{border-bottom:1px solid var(--border)}
+  #detalle_semana .df table{min-width:520px}
+}
+@media(max-width:360px){.stats-4,.stats-3{grid-template-columns:1fr}}
+
+/* ============================================================
+   v3 · Pase de acabado: iconografía dibujada, superficies del
+   navegador y limpieza de recursos prestados
+   ============================================================ */
+
+/* ---- Iconos: un solo trazo, un solo tamaño ---- */
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.ico{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+.btn .ico,.plat-filtros .ico{width:15px;height:15px;stroke-width:1.9}
+.nav .ico{opacity:.85}
+.nav[aria-current="page"] .ico{opacity:1}
+.note .ico{width:17px;height:17px;flex:none;margin-top:1px}
+.note{display:flex;gap:10px;align-items:flex-start}
+[hidden]{display:none!important}
+
+/* ---- Superficies que pinta el navegador, no el diseño ---- */
+:root{accent-color:var(--primary);caret-color:var(--primary);scrollbar-color:var(--border-2) transparent}
+*::-webkit-scrollbar{width:11px;height:11px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:99px;border:3px solid var(--bg)}
+*::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.df::-webkit-scrollbar-thumb,textarea::-webkit-scrollbar-thumb{border-color:var(--panel-2)}
+a{color:var(--link);text-underline-offset:3px;text-decoration-thickness:1px}
+td .mono,th .mono,.stat .v,.kpi .val{font-variant-numeric:tabular-nums}
+
+/* ---- Sin bordes de color prestados: el estado se dice con tinte ---- */
+.note{border:1px solid var(--warn);background:var(--warn-soft);border-left-width:1px}
+.note.err{border-color:var(--alert);background:var(--alert-soft);border-left-width:1px}
+.note.err .ico{color:var(--alert)}
+.note.info{border-color:var(--primary);background:var(--primary-soft);border-left-width:1px}
+.item.publicado{background:color-mix(in srgb,var(--primary) 7%,transparent);box-shadow:none}
+
+/* ---- Indicador de nodo del grafo, sin glifos de texto ---- */
+.step{display:flex;gap:9px;align-items:center}
+.sdot{width:14px;height:14px;border-radius:50%;border:1.6px solid var(--border-2);flex:none;position:relative}
+.step.run .sdot{border-color:var(--primary);border-top-color:transparent;animation:girar .8s linear infinite}
+.step.done .sdot{border-color:var(--ok);background:var(--ok)}
+.step.done .sdot::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:7.5px;
+  border:1.8px solid var(--bg);border-top:0;border-left:0;transform:rotate(42deg)}
+.step.run{animation:none}
+@keyframes girar{to{transform:rotate(360deg)}}
+
+/* ---- El paso completado del flujo usa el mismo icono ---- */
+.stp .n .ico{width:13px;height:13px;stroke-width:2.4}
+
+/* ---- La marca en naranja lleva texto oscuro: 7.4:1 en vez de 2.6:1 ---- */
+.btn.primary{color:var(--on-primary)}
+.btn.primary:hover{color:var(--on-primary)}
+.logo,.sb-title .mk,.mtop-brand .mk{color:var(--on-primary)}
+::selection{background:var(--primary);color:var(--on-primary)}
+
+/* ---- El stepper se compacta por grados, sin saltos ---- */
+@media(max-width:1000px){ .stp .sub2{display:none} .stp{padding:9px 11px} }
+@media(max-width:620px){
+  .stepper{padding:4px;gap:0}
+  .stp{padding:8px 6px;gap:7px;justify-content:center}
+  .stp b{font-size:.82rem}
+  .sep{display:none}
+  .stp .n{width:21px;height:21px;font-size:.72rem}
+}
+@media(max-width:380px){ .stp b{display:none} .stp{justify-content:center} }
+
+/* El subtítulo del paso se oculta por especificidad igual, no por orden */
+@media(max-width:1000px){ .stp span.sub2{display:none} }
+@media(max-width:380px){ .stp b{display:none} }
+
+/* ============================================================
+   Acabado: materia, halo y un solo acento
+   ============================================================ */
+
+/* Halo ambiental: una sola fuente de luz arriba, muy baja.
+   Es lo que separa "fondo negro" de "espacio con profundidad". */
+body{position:relative;isolation:isolate}
+body::before{content:"";position:fixed;inset:0 0 auto;height:60vh;z-index:-1;pointer-events:none;
+  background:radial-gradient(70% 55% at 50% -12%,
+    color-mix(in srgb, var(--primary-glow) 11%, transparent), transparent 72%)}
+
+/* Las tarjetas se sostienen en un hilo de luz, no en un borde grueso */
+.block,.plat,.kpi,.stat,.df,.acc,.modal,.toast{box-shadow:var(--shadow),inset 0 0 0 1px var(--hairline)}
+.block,.plat,.df,.modal{border-color:var(--border)}
+
+/* Tipografía: el peso hace la jerarquía, no el color */
+h1,.blk-title,.sb-title b,.modal-head b,.plat-head b{letter-spacing:-.018em}
+.head h1{letter-spacing:-.025em;font-weight:700}
+.stat .v,.kpi .val{letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.sb-lbl,.label{letter-spacing:.09em;text-transform:uppercase;font-size:.68rem}
+.label{color:var(--faint)}
+
+/* El acento aparece como luz, no como relleno plano */
+.btn.primary{background:var(--primary-solid);border-color:var(--primary-solid);color:var(--on-primary);
+  box-shadow:0 6px 16px -12px rgba(0,0,0,.55)}
+.btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2)}
+.nav[aria-current="page"]{background:var(--primary-soft);border-color:var(--primary-line);color:var(--ink)}
+.nav[aria-current="page"] .ico{color:var(--primary)}
+.stp[aria-current="step"]{background:var(--raised);border-color:var(--border-2)}
+.stp[aria-current="step"] .n{background:var(--primary-solid);border-color:var(--primary-solid);color:var(--on-primary)}
+.stp.done{color:var(--muted)}
+.stp.done .n{background:transparent;border-color:var(--ok);color:var(--ok)}
+.tab .c.pend{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:700}
+.tab[aria-selected="true"] .c{border-color:var(--border-2)}
+.plat-filtros button[aria-pressed="true"],.radio button[aria-pressed="true"]{
+  background:var(--primary-soft);border-color:var(--primary-line);color:var(--ink)}
+
+/* Estados: contorno tenue, sin semáforos */
+.pill{background:transparent;border-color:var(--border-2);color:var(--muted)}
+.p-ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.p-warn{color:var(--muted);border-color:var(--border-2)}
+.p-alert{color:var(--alert);border-color:color-mix(in srgb,var(--alert) 45%,transparent)}
+.p-pri{color:var(--primary);border-color:var(--primary-line);background:var(--primary-soft)}
+.item.publicado{background:color-mix(in srgb,var(--primary) 5%,transparent)}
+.note{border-color:var(--border);background:var(--sunken)}
+.note.err{border-color:color-mix(in srgb,var(--alert) 40%,transparent);background:var(--alert-soft)}
+.note.info{border-color:var(--primary-line);background:var(--primary-soft)}
+.note .ico{color:var(--muted)}
+.note.err .ico{color:var(--alert)}
+.note.info .ico{color:var(--primary)}
+
+/* Sellos de plataforma: el color de marca se mezcla con la superficie
+   en lugar de imponerse. Se reconocen sin gritar. */
+.mk{background:color-mix(in srgb, var(--pc, var(--primary)) 18%, var(--raised))!important;
+  color:var(--ink)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--pc, var(--primary)) 38%, transparent);
+  font-size:.72rem;letter-spacing:.02em}
+
+/* Superficies hundidas: campos, cabeceras de tabla, código */
+textarea,input[type=text],select,.dropzone,.prog,code,th,.acc{background:var(--sunken)}
+.acc{border-color:var(--border)}
+.fuente{background:var(--sunken);border-color:var(--border)}
+.sidebar{background:var(--panel);border-right-color:var(--border)}
+.mtop{background:var(--panel);border-bottom-color:var(--border)}
+.modal-head,.modal-foot{background:var(--sunken)}
+.bars{border-color:var(--border)}
+
+/* Deshabilitado legible: se apaga la superficie, no el texto */
+.btn:disabled{opacity:1;background:var(--sunken);border-color:var(--border);color:var(--faint);
+  box-shadow:none;cursor:not-allowed}
+.item.descartado{opacity:1;background:transparent}
+.item.descartado .fuente,.item.descartado textarea{opacity:.62}
+
+/* Superficies del navegador, en el mismo idioma */
+::selection{background:color-mix(in srgb,var(--primary) 30%,transparent);color:var(--ink)}
+:root{accent-color:var(--primary);caret-color:var(--primary);
+  scrollbar-color:var(--border-2) transparent}
+*::-webkit-scrollbar-thumb{background:var(--border-2);border-color:var(--bg)}
+.btn:focus-visible,.nav:focus-visible,.tab:focus-visible,.stp:focus-visible,
+button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* Los pasos completados se apagan en vez de teñirse de verde:
+   el color queda reservado para lo que aún pide atención. */
+.stp.done{color:var(--muted)}
+.stp.done .n{background:transparent;border-color:var(--border-2);color:var(--muted)}
+.step.done{color:var(--muted)}
+.step.done .sdot{background:var(--border-2);border-color:var(--border-2)}
+.step.done .sdot::after{border-color:var(--panel)}
+.step.run .sdot{border-color:var(--primary);border-top-color:transparent}
+
+/* Identidad en el sidebar: una línea, sin envolver */
+.sb-title b{font-size:1.02rem;letter-spacing:-.02em}
+.sb-title span{font-size:.74rem;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:150px}
+.sb-title .mk{background:var(--primary-solid)!important;color:var(--on-primary)!important;box-shadow:none;font-weight:700}
+.mtop-brand .mk{background:var(--primary-solid)!important;color:var(--on-primary)!important}
+
+/* Las versalitas quedan solo para los rótulos de navegación del sidebar.
+   Las etiquetas de campo vuelven a caja normal y a tamaño legible. */
+.label{text-transform:none;letter-spacing:0;font-size:.82rem;color:var(--muted);font-weight:600}
+.sb-lbl{font-size:.7rem;letter-spacing:.1em}
+
+/* Una tarjeta, un plano. Las superficies interiores se distinguen por
+   tinte y línea, nunca por otra sombra encima de la sombra. */
+.block .df,.block .stat,.block .acc,.plat .df,.plat .acc,.item .fuente,.item .acc,
+.block .kpi,.hist-layout .stat{box-shadow:none}
+.stat{background:var(--sunken);border-color:var(--border)}
+.df{box-shadow:none;border-color:var(--border)}
+.acc{box-shadow:none}
+
+/* Las tablas respiran: antes de apretar una columna, la tabla se desplaza */
+#detalle_semana .df table{min-width:620px}
+#detalle_semana td:nth-child(3){min-width:240px}
+.df td,.df th{white-space:nowrap}
+.df td:nth-child(3),.df td:nth-child(4){white-space:normal}
+
+.p-pri{color:var(--primary-ink)}
+.nav[aria-current="page"] .badge{color:var(--primary-ink);border-color:var(--primary-line)}
+
+/* ============================================================
+   Cierre: equilibrio del tema claro y microinteracciones
+   ============================================================ */
+
+/* El punto de nodo completado era casi invisible en claro:
+   el relleno gris claro se comía la palomita. */
+.step.done .sdot{background:var(--neutral);border-color:var(--neutral)}
+.step.done .sdot::after{border-color:var(--sobre-neutral)}
+
+/* En claro, el halo superior desaparecía contra el lienzo gris.
+   Se apoya en la sombra propia de las tarjetas. */
+.block,.plat,.modal{box-shadow:var(--shadow), inset 0 0 0 1px var(--hairline)}
+
+/* — Microinteracciones — */
+
+/* La pestaña activa crece desde el centro en vez de aparecer */
+.tab{position:relative}
+.tab::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;
+  background:var(--primary);border-radius:2px;transform:scaleX(0);transform-origin:center;
+  transition:transform .22s cubic-bezier(.2,.9,.3,1)}
+.tab[aria-selected="true"]::after{transform:scaleX(1)}
+
+/* La fila de contenido responde al cursor sin moverse de sitio */
+.item{transition:background .18s ease}
+.item:hover{background:color-mix(in srgb, var(--ink) 3%, transparent)}
+.item.publicado:hover{background:color-mix(in srgb, var(--primary) 8%, transparent)}
+
+/* El icono del menú acompaña al hover del propio ítem */
+.nav .ico{transition:transform .18s cubic-bezier(.2,.9,.3,1),opacity .18s}
+.nav:hover .ico{transform:translateX(1px) scale(1.06);opacity:1}
+
+/* Las tarjetas de métrica marcan el paso del cursor con la línea, no con sombra */
+.stat,.kpi{transition:border-color .18s ease,background .18s ease}
+.stat:hover,.kpi:hover{border-color:var(--border-2)}
+
+/* Los botones secundarios se levantan un pelo; el primario solo se ilumina */
+.btn{transition:background .16s ease,border-color .16s ease,color .16s ease,transform .12s ease}
+.btn:not(.primary):hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+
+/* Las semanas del historial deslizan al pasar el cursor.
+   Con transform, no con padding: no provoca recálculo de layout. */
+.semana-btn>div{transition:transform .18s cubic-bezier(.2,.9,.3,1)}
+.semana-btn:hover>div{transform:translateX(4px)}
+
+/* El acordeón gira su punta y el contenido entra */
+.acc[open] .body{animation:aparecer .22s ease both}
+
+/* El sello de plataforma respira al abrir su pestaña */
+.plat-head .mk{animation:pop .3s cubic-bezier(.2,.9,.3,1) both}
+
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-flujo" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11l-1 8.5 9-11.5h-6.5z"/></symbol>
+  <symbol id="i-tickets" viewBox="0 0 24 24"><path d="M3 9.5V7a1.5 1.5 0 0 1 1.5-1.5h15A1.5 1.5 0 0 1 21 7v2.5a2.5 2.5 0 0 0 0 5V17a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17v-2.5a2.5 2.5 0 0 0 0-5Z"/><path d="M14 7v10" stroke-dasharray="2 2.5"/></symbol>
+  <symbol id="i-publicaciones" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14.5h3M13.5 14.5h3"/></symbol>
+  <symbol id="i-historial" viewBox="0 0 24 24"><path d="M3.5 7.5 5 5.2A2 2 0 0 1 6.7 4.3h10.6A2 2 0 0 1 19 5.2l1.5 2.3"/><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9.5 12h5"/></symbol>
+  <symbol id="i-conexiones" viewBox="0 0 24 24"><path d="M10.5 13.5 7.8 16.2a3.8 3.8 0 0 1-5.4-5.4l2.7-2.7"/><path d="M13.5 10.5l2.7-2.7a3.8 3.8 0 0 1 5.4 5.4l-2.7 2.7"/><path d="M9.5 14.5l5-5"/></symbol>
+  <symbol id="i-ajustes" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.3"/><circle cx="10" cy="17" r="2.3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-corto" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></symbol>
+  <symbol id="i-largo" viewBox="0 0 24 24"><path d="M12 20V9m0 0-4 4m4-4 4 4M5 4h14"/></symbol>
+  <symbol id="i-regenerar" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4.5 21 19.5H3z"/><path d="M12 10v4"/><circle cx="12" cy="16.8" r=".6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-enchufe" viewBox="0 0 24 24"><path d="M9 3v6M15 3v6"/><path d="M6.5 9h11v3.2a5.5 5.5 0 0 1-11 0z"/><path d="M12 17.7V21"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4L19.5 12z"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></symbol>
+  <symbol id="i-luna" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
+  <symbol id="i-sistema" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-guardado" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.3 2.5 2.5 4.5-5"/></symbol>
+</defs></svg>
+
+<header class="mtop">
+  <button class="hamb" id="hamb" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mtop-brand"><span class="mk">IM</span><b id="mtop_pag">Procesar lote</b></div>
+</header>
+<div class="scrim" id="scrim" hidden></div>
+<div class="app">
+<div class="sidebar" id="sidebar">
+  <div class="sb-title"><div class="mk">IM</div><div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div></div>
+  <nav>
+    <div class="sb-lbl">Producción</div>
+    <button class="nav" data-p="flujo" aria-current="page"><svg class="ico"><use href="#i-flujo"/></svg>Procesar lote</button>
+    <div class="sb-lbl">Seguimiento</div>
+    <button class="nav" data-p="tickets"><svg class="ico"><use href="#i-tickets"/></svg>Tickets<span class="badge" id="b_tic">—</span></button>
+    <button class="nav" data-p="publicaciones"><svg class="ico"><use href="#i-publicaciones"/></svg>Publicaciones<span class="badge" id="b_pub">0</span></button>
+    <button class="nav" data-p="historial"><svg class="ico"><use href="#i-historial"/></svg>Historial</button>
+    <div class="sb-lbl">Configuración</div>
+    <button class="nav" data-p="conexiones"><svg class="ico"><use href="#i-conexiones"/></svg>Conexiones<span class="badge" id="b_con">—</span></button>
+    <button class="nav" data-p="ajustes"><svg class="ico"><use href="#i-ajustes"/></svg>Ajustes</button>
+  </nav>
+  <div class="sb-foot">
+    <button class="themebtn" id="tema"><svg class="ico" id="tema_ico"><use href="#i-sistema"/></svg><span id="tema_txt">Tema: sistema</span></button>
+    <div class="mini">Modo demo · caché activa</div>
+  </div>
+</div>
+
+<main>
+  <div class="head"><div><h1 id="titulo">Procesar lote</h1><p id="subtitulo">Ingesta, análisis y curaduría en un solo flujo.</p></div>
+    <div style="flex:1"></div><div class="row" id="acciones"></div></div>
+  <div class="wrap">
+
+  <!-- FLUJO -->
+  <section id="p_flujo">
+    <div class="grid">
+      <div class="stepper" id="tabs_flujo">
+        <button class="stp" data-s="1" aria-current="step"><span class="n">1</span><span><b>Ingesta</b><span class="sub2">cargar y validar</span></span></button>
+        <div class="sep">›</div>
+        <button class="stp" data-s="2"><span class="n">2</span><span><b>Análisis</b><span class="sub2">sentimiento y router</span></span></button>
+        <div class="sep">›</div>
+        <button class="stp" data-s="3"><span class="n">3</span><span><b>Curaduría</b><span class="sub2">revisar y publicar</span></span></button>
+      </div>
+
+      <!-- PASO 1 -->
+      <div id="paso_1">
+        <div class="block">
+          <p class="blk-title">Lote de interacciones</p>
+          <p class="blk-info">Acepta <code>.json</code> y <code>.csv</code>. También puede llegar por webhook desde Discord o un formulario.</p>
+          <div class="dropzone" id="drop">Arrastra el archivo aquí
+            <div class="row" style="justify-content:center;margin-top:11px">
+              <button class="btn sm" id="btn_file">Subir archivo</button>
+              <button class="btn primary sm" id="btn_ejemplo">Usar lote de ejemplo</button>
+            </div><input type="file" id="file" accept=".json,.csv" hidden></div>
+          <div id="validacion" hidden style="margin-top:14px">
+            <span class="label">Reporte de validación</span>
+            <div class="df"><table><tbody>
+              <tr><td class="muted">Interacciones válidas</td><td class="mono"><b>12</b></td></tr>
+              <tr><td class="muted">Inválidas (faltan campos)</td><td class="mono">2</td></tr>
+              <tr><td class="muted">Duplicadas eliminadas</td><td class="mono">1</td></tr>
+              <tr><td class="muted">Datos personales enmascarados</td><td class="mono">3 · 2 correos, 1 teléfono</td></tr>
+            </tbody></table></div>
+            <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_procesar"><svg class="ico"><use href="#i-play"/></svg>Procesar con IA</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: ANÁLISIS -->
+      <div id="paso_2" hidden>
+        <div class="grid">
+          <div class="block" id="blk_proceso">
+            <p class="blk-title">Ejecución del grafo</p>
+            <div class="prog"><i id="barra" style="width:0%"></i></div>
+            <div class="steps" id="steps"></div>
+            <div class="note info" id="oci_linea" style="margin-top:13px" hidden><svg class="ico"><use href="#i-guardado"/></svg><span>Paquete guardado en <code id="oci_ruta"></code></span></div>
+          </div>
+          <div id="analisis_resultado" hidden>
+            <div class="grid">
+              <div id="banner_slot"></div>
+              <div class="stats" id="stats"></div>
+              <div class="cols2">
+                <div class="block">
+                  <p class="blk-title">Sentimiento del lote</p>
+                  <div class="bars" id="bars"></div>
+                  <div class="legend">
+                    <span><i style="background:var(--ok)"></i>Positivo <b id="l_pos"></b></span>
+                    <span><i style="background:var(--border-2)"></i>Neutral <b id="l_neu"></b></span>
+                    <span><i style="background:var(--alert)"></i>Negativo <b id="l_neg"></b></span></div>
+                  <p class="blk-title" style="margin-top:18px">Temas de la semana</p>
+                  <div class="df" style="margin-top:8px"><table><tbody id="temas"></tbody></table></div>
+                </div>
+                <div class="block">
+                  <p class="blk-title">Qué produjo este lote</p>
+                  <p class="blk-info">Resumen antes de pasar a curaduría.</p>
+                  <div class="grid" id="resumen_produccion" style="gap:9px"></div>
+                  <p class="blk-title" style="margin-top:16px">Miembros que necesitan apoyo</p>
+                  <div class="grid" id="apoyo" style="gap:8px;margin-top:8px"></div>
+                </div>
+              </div>
+              <details class="acc"><summary>Ver los 12 mensajes analizados</summary><div class="body">
+                <div class="df"><table><thead><tr><th>Autor</th><th>Mensaje</th><th>Tipo</th><th>Sent.</th><th>Score</th><th>Por qué</th><th>Ruta</th></tr></thead>
+                  <tbody id="tabla"></tbody></table></div></div></details>
+              <div class="row"><button class="btn primary" id="btn_a_3">Ir a curaduría →</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3: CURADURÍA -->
+      <div id="paso_3" hidden>
+        <div class="grid">
+          <div class="sec-h">
+            <h2>Contenido generado</h2>
+            <p class="mini">Elige la plataforma y revisa sus borradores.</p>
+          </div>
+          <div id="conexion_aviso"></div>
+          <div class="platwrap">
+            <div class="tabs" id="tabs_formato"></div>
+            <div id="curaduria"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TICKETS -->
+  <section id="p_tickets" hidden>
+    <div class="grid">
+      <div class="block">
+        <p class="blk-title">Cola de tickets</p>
+        <p class="blk-info">Se avisan en el canal del equipo. No se publican en redes ni salen del panel.</p>
+        <div class="df"><table><thead><tr><th>Sev.</th><th>Reportado por</th><th>Canal</th><th>Resumen</th><th>Aviso</th><th>Estado</th></tr></thead>
+          <tbody id="tabla_tickets"></tbody></table></div>
+        <div class="row" style="margin-top:13px">
+          <button class="btn primary" id="btn_discord">Avisar en Discord · #soporte-interno</button>
+          <button class="btn" id="btn_slack">Avisar en Slack</button></div>
+      </div>
+      <details class="acc"><summary>Historial de tickets de semanas anteriores</summary><div class="body">
+        <div class="df"><table><thead><tr><th>Semana</th><th>Ticket</th><th>Canal</th><th>Abierto</th><th>Resuelto</th><th>Estado</th></tr></thead>
+          <tbody id="tabla_tickets_hist"></tbody></table></div></div></details>
+    </div>
+  </section>
+
+  <!-- PUBLICACIONES -->
+  <section id="p_publicaciones" hidden>
+    <div class="grid">
+      <div class="stats stats-4" id="stats_pub"></div>
+      <div class="block">
+        <p class="blk-title">Publicado esta semana</p>
+        <div class="df"><table><thead><tr><th>Fecha</th><th>Plataforma</th><th>Formato</th><th>Contenido</th><th>Origen</th><th>Enlace</th></tr></thead>
+          <tbody id="tabla_pub"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section id="p_historial" hidden>
+    <div class="grid">
+      <div class="hist-layout" id="hist_layout">
+        <div class="plat">
+          <div class="plat-head"><b>Semanas</b></div>
+          <div id="lista_semanas"></div>
+        </div>
+        <div class="grid" id="detalle_semana"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONEXIONES -->
+  <section id="p_conexiones" hidden>
+    <div class="grid">
+      <p class="mini" style="margin:0">Cada destino se vincula una vez. Después, publicar es un clic desde curaduría.</p>
+      <div class="plat" id="lista_conexiones"></div>
+      <div class="note">LinkedIn y X usan publicación asistida. Las FAQ se publican por API en la web de la comunidad y el newsletter se exporta a Mailchimp. Los tickets solo avisan en el canal del equipo.</div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="p_ajustes" hidden>
+    <div class="grid">
+      <div class="block">
+        <p class="blk-title">Guía de voz</p>
+        <p class="blk-info">Escribe las reglas y agrega chips de estilo. Todo junto se inyecta en los prompts de redacción.</p>
+        <div class="voz-box">
+          <div class="voz-chips" id="voz_chips"></div>
+          <textarea rows="5" id="voz">Tono cercano, inspirador y concreto. Celebramos a la persona, no a la marca.
+Español neutro, sin regionalismos. Frases cortas.
+Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
+        </div>
+        <span class="label" style="margin-top:14px">Sugerencias · toca para agregarlas al campo</span>
+        <div class="radio" id="chips_estilo"></div>
+        <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_voz">Guardar guía de voz</button><span class="mini" id="voz_msg"></span></div>
+      </div>
+      <div class="cols2">
+        <div class="block">
+          <p class="blk-title">Umbrales de decisión</p>
+          <div class="grid" style="gap:12px">
+            <div><span class="label">Descartar si el score es menor a</span>
+              <select id="u_desc"><option>30</option><option selected>40</option><option>50</option></select></div>
+            <div><span class="label">Caso de éxito si el score es mayor o igual a</span>
+              <select id="u_ex"><option>60</option><option selected>70</option><option>80</option></select></div>
+          </div>
+          <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_umbrales">Aplicar y recalcular</button></div>
+        </div>
+        <div class="block">
+          <p class="blk-title">Cuentas vinculadas</p>
+          <p class="blk-info">Desvincular no borra lo ya publicado.</p>
+          <div class="grid" id="lista_vinculadas" style="gap:9px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+</main>
+</div>
+<div class="toasts" id="toasts"></div>
+<dialog id="dlg"><div class="modal" id="dlg_cont"></div></dialog>
+<script>
+/* Capa de comunicación con el backend.
+   Todo el panel habla con el servidor SOLO a través de este archivo.
+   Así el front avanza con datos falsos mientras la API se construye. */
+
+const API = {
+  base: "http://localhost:8000",
+
+  /* Con true, el panel usa los datos de datos-ejemplo.js y no llama al servidor.
+     Cámbialo a false cuando la API de Jorge esté arriba. */
+  modoDemo: true,
+
+  async _fetch(ruta, opciones = {}) {
+    const r = await fetch(this.base + ruta, {
+      headers: { "Content-Type": "application/json" },
+      ...opciones,
+    });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText} en ${ruta}`);
+    return r.json();
+  },
+
+  /* POST /procesar — manda el lote y recibe el paquete completo.
+     Contrato: docs/contratos/ejemplo_respuesta.json */
+  async procesarLote(lote) {
+    if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
+    return this._fetch("/procesar", { method: "POST", body: JSON.stringify(lote) });
+  },
+
+  /* GET /semanas — lista de semanas disponibles en el bucket de OCI */
+  async semanas() {
+    if (this.modoDemo) return null;   // en demo se usa el objeto HIST de datos-ejemplo.js
+    return this._fetch("/semanas");
+  },
+
+  /* GET /semanas/{slug} — paquete completo de una semana anterior */
+  async semana(slug) {
+    if (this.modoDemo) return null;   // en demo se usa el objeto HIST de datos-ejemplo.js
+    return this._fetch(`/semanas/${slug}`);
+  },
+
+  /* PUT /curaduria/{slug} — guarda el estado de todos los activos */
+  async guardarCuraduria(slug, activos) {
+    if (this.modoDemo) return { status: "exito", guardado_en: `activos/${slug}/curaduria.json` };
+    return this._fetch(`/curaduria/${slug}`, { method: "PUT", body: JSON.stringify({ activos }) });
+  },
+
+  /* POST /publicar — publica un activo en su plataforma */
+  async publicar(activoId, plataforma) {
+    if (this.modoDemo) return { status: "exito", url: `https://${plataforma}.com/demo/${activoId}` };
+    return this._fetch("/publicar", {
+      method: "POST",
+      body: JSON.stringify({ activo_id: activoId, plataforma }),
+    });
+  },
+
+  /* POST /tickets/avisar — manda los tickets al webhook de Discord o Slack */
+  async avisarTickets(ticketIds, destino) {
+    if (this.modoDemo) return { status: "exito", enviados: ticketIds.length };
+    return this._fetch("/tickets/avisar", {
+      method: "POST",
+      body: JSON.stringify({ tickets: ticketIds, destino }),
+    });
+  },
+
+  /* PUT /config/voz — guarda la guía de voz y los chips de estilo */
+  async guardarVoz(texto, chips) {
+    if (this.modoDemo) return { status: "exito" };
+    return this._fetch("/config/voz", { method: "PUT", body: JSON.stringify({ texto, chips }) });
+  },
+
+  /* GET /conexiones y PUT /conexiones/{plataforma} */
+  async conexiones() {
+    if (this.modoDemo) return null;
+    return this._fetch("/conexiones");
+  },
+  async cambiarConexion(plataforma, conectar) {
+    if (this.modoDemo) return { status: "exito" };
+    return this._fetch(`/conexiones/${plataforma}`, {
+      method: "PUT",
+      body: JSON.stringify({ conectado: conectar }),
+    });
+  },
+};
+
+/* Muestra el error al usuario en vez de dejar la pantalla congelada.
+   Envuelve cualquier llamada: await conError(API.procesarLote(lote), "No se pudo procesar el lote") */
+async function conError(promesa, mensaje) {
+  try {
+    return await promesa;
+  } catch (e) {
+    console.error(e);
+    if (typeof toast === "function") toast(mensaje, e.message);
+    return null;
+  }
+}
+
+/* Datos simulados para el modo demo.
+   Cuando el backend responda, estos se reemplazan por la respuesta de /procesar. */
+
+const DATOS=[
+ {id:"m1",autor:"Mariana Souza",canal:"#logros-y-empleos",tipo:"testimonio",sent:.94,score:96,idioma:"es",
+  texto:"Comunidad, ¡quedé seleccionada para el puesto de Desarrolladora Junior de IA! El proyecto del curso de LangChain y OCI que construí en mi portfolio marcó toda la diferencia en la entrevista técnica.",
+  por_que:"Contratación confirmada con el proyecto del curso como detonante",temas:["Contratación / Logros","Portafolio"],
+  cita:"El proyecto del curso de LangChain y OCI marcó toda la diferencia en la entrevista técnica"},
+ {id:"m2",autor:"Lucas Albuquerque",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:.05,score:82,idioma:"es",
+  texto:"Tengo dudas sobre cómo estructurar los nodos condicionales en LangGraph cuando la respuesta del LLM necesita reintento.",
+  por_que:"Duda repetida por 3 personas esta semana",temas:["LangGraph / Nodos condicionales"]},
+ {id:"m3",autor:"Camila Rojas",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:-.1,score:74,idioma:"es",
+  texto:"¿Cómo hago que un nodo vuelva a intentar si Gemini me devuelve un JSON roto? Me pasa 1 de cada 10 veces.",
+  por_que:"Misma duda que Lucas: se agrupa en una sola FAQ",temas:["LangGraph / Reintentos"]},
+ {id:"m4",autor:"Diego Fuentes",canal:"#soporte-labs",tipo:"queja",sent:-.72,score:88,idioma:"es",apoyo:true,
+  texto:"Llevo tres días sin poder entrar al laboratorio de OCI, me sale error de tenancy y ya escribí dos veces sin respuesta.",
+  por_que:"Bloqueo de acceso con riesgo de abandono",temas:["Acceso a laboratorios"]},
+ {id:"m5",autor:"Ana Beatriz Lima",canal:"#logros-y-empleos",tipo:"logro",sent:.88,score:91,idioma:"pt",
+  texto:"Pessoal, passei na certificação Oracle Cloud Infrastructure Foundations! Estudei 6 semanas com o grupo de estudos.",
+  por_que:"Certificación lograda con apoyo del grupo de estudio",temas:["Certificaciones"],
+  cita:"Passei na certificação OCI Foundations estudando com o grupo da comunidade"},
+ {id:"m6",autor:"Rodrigo Pérez",canal:"#feedback-cursos",tipo:"feedback",sent:.42,score:63,idioma:"es",
+  texto:"El módulo de agentes está buenísimo, pero los ejercicios del final saltan de nivel muy rápido.",
+  por_que:"Feedback accionable sobre la curva del módulo",temas:["Diseño del curso"]},
+ {id:"m7",autor:"Valeria Núñez",canal:"#soporte-labs",tipo:"problema_acceso",sent:-.55,score:71,idioma:"es",apoyo:true,
+  texto:"Mi cuenta de estudiante no reconoce el bucket que creé ayer. Necesito entregar el viernes.",
+  por_que:"Segundo reporte de acceso: posible falla generalizada",temas:["Acceso a laboratorios"]},
+ {id:"m8",autor:"Héctor Salas",canal:"#general",tipo:"conversacion",sent:.3,score:18,idioma:"es",
+  texto:"¡Buenos días a todos! ☕ feliz lunes",por_que:"Saludo sin contenido aprovechable",temas:["Convivencia"]},
+ {id:"m9",autor:"Paula Iriarte",canal:"#logros-y-empleos",tipo:"testimonio",sent:.79,score:84,idioma:"es",
+  texto:"Después de 4 meses, hoy firmé como Data Analyst Jr. Las mentorías de los martes me sirvieron muchísimo.",
+  por_que:"Contratación atribuida a las mentorías del programa",temas:["Contratación / Logros","Mentorías"],
+  cita:"Las mentorías de los martes me sirvieron muchísimo para preparar la entrevista"},
+ {id:"m10",autor:"Joao Martins",canal:"#dudas-oci",tipo:"pregunta_tecnica",sent:.12,score:69,idioma:"pt",
+  texto:"Alguém sabe como configurar o bucket Always Free sem gerar custo?",
+  por_que:"Duda frecuente sobre costos de la capa gratuita",temas:["OCI Always Free"]},
+ {id:"m11",autor:"Sofía Mendoza",canal:"#general",tipo:"conversacion",sent:.55,score:31,idioma:"es",
+  texto:"gracias equipo, todo claro 🙌",por_que:"Agradecimiento breve, sin contenido",temas:["Convivencia"]},
+ {id:"m12",autor:"Andrés Gutiérrez",canal:"#feedback-cursos",tipo:"queja",sent:-.48,score:66,idioma:"es",apoyo:true,
+  texto:"Los videos del módulo 3 se cortan a la mitad y ya reporté el bug la semana pasada.",
+  por_que:"Bug reincidente con frustración acumulada",temas:["Plataforma / Video"]}];
+
+const PLAT={
+ linkedin:{nom:"LinkedIn",cuenta:"Página ONE G10 LATAM",color:"#0A66C2",ini:"in",modo:"Publicación asistida",on:true},
+ x:{nom:"X",cuenta:"@comunidadONE_g10",color:"#111827",ini:"X",modo:"Publicación asistida",on:true},
+ web:{nom:"Web de la comunidad",cuenta:"ayuda.one-g10.dev/faq",color:"#7C3AED",ini:"FAQ",modo:"API · publica el tip",on:true},
+ newsletter:{nom:"Newsletter",cuenta:"Mailchimp · lista general",color:"#059669",ini:"NL",modo:"Exporta el markdown",on:false},
+ discord:{nom:"Discord",cuenta:"#soporte-interno",color:"#5865F2",ini:"DC",modo:"Webhook · avisa los tickets",on:true},
+ slack:{nom:"Slack",cuenta:"Sin espacio de trabajo",color:"#611F69",ini:"SL",modo:"Webhook · avisa los tickets",on:false}};
+const FORMATOS={"Post de LinkedIn":{plat:"linkedin",limite:3000},"Hilo de X":{plat:"x",limite:280,porPost:true},
+ "Tip / FAQ":{plat:"web",limite:2500},"Destaque de newsletter":{plat:"newsletter",limite:4000}};
+const TABS=[["linkedin","LinkedIn"],["x","X"],["web","Tip / FAQ"],["newsletter","Newsletter"],["tickets","Tickets"]];
+
+let U={descartar:40,exito_score:70};
+function ruta(m){if(m.score<U.descartar)return "descartado";
+ if(m.sent<=-.4||m.tipo==="queja"||m.tipo==="problema_acceso"||m.apoyo)return "ticket";
+ if((m.tipo==="testimonio"||m.tipo==="logro")&&m.sent>=.6&&m.score>=U.exito_score)return "exito";
+ if(m.tipo==="pregunta_tecnica")return "faq";return "insight";}
+const NOM={exito:"Caso de éxito",faq:"Tip / FAQ",ticket:"Ticket",descartado:"Descartado",insight:"Insight"};
+const PILL={exito:"p-ok",faq:"p-warn",ticket:"p-alert",descartado:"p-mute",insight:"p-pri"};
+
+const linkedinTxt=m=>m.idioma==="pt"
+ ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${m.cita}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
+ : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo==="testimonio"?"ser contratada":"lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${m.cita}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
+const hiloTxt=m=>{const n=m.autor.split(" ")[0];return [
+ `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
+ `"${m.cita}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
+ `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
+ `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`].join("\n\n———\n\n");};
+const faq1=()=>`**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const faq2=()=>`**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
+const newsTxt=()=>`## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
+
+/* semanas anteriores simuladas */
+const HIST={
+ "2026-semana-03":{inter:9,pos:67,neg:8,activos:7,publicados:6,tickets:2,
+  temas:["Certificaciones","Entrevistas técnicas","Java Spring"],
+  contenidos:[["linkedin","Post de LinkedIn","Tres estudiantes aprobaron la certificación OCI…","Publicado"],
+   ["x","Hilo de X","De cero a la nube en 8 semanas: el camino de…","Publicado"],
+   ["web","Tip / FAQ","Cómo preparar el entorno de Java Spring en…","Publicado"],
+   ["linkedin","Post de LinkedIn","Nuestra mentoría de los martes cumple un año…","Publicado"],
+   ["newsletter","Destaque de newsletter","Community Highlights · Semana 03","Publicado"],
+   ["web","Tip / FAQ","Errores comunes al configurar el tenancy","Publicado"],
+   ["x","Hilo de X","5 recursos gratis para practicar SQL","Descartado"]],
+  tickets_list:[["Error 500 al subir el proyecto final","Resuelto"],["Video del módulo 2 sin audio","Resuelto"]]},
+ "2026-semana-02":{inter:11,pos:71,neg:5,activos:8,publicados:5,tickets:1,
+  temas:["Onboarding","Git y GitHub","Empleabilidad"],
+  contenidos:[["linkedin","Post de LinkedIn","La primera semana de la generación 2026 arrancó…","Publicado"],
+   ["web","Tip / FAQ","Cómo resolver conflictos de merge sin miedo","Publicado"],
+   ["x","Hilo de X","Cómo armar tu primer portafolio dev","Publicado"],
+   ["newsletter","Destaque de newsletter","Community Highlights · Semana 02","Publicado"],
+   ["linkedin","Post de LinkedIn","Dos egresados consiguieron empleo este mes","Publicado"],
+   ["x","Hilo de X","Preguntas frecuentes de la semana","Listo"],
+   ["web","Tip / FAQ","Comandos de Git que sí vas a usar","Listo"],
+   ["linkedin","Post de LinkedIn","Testimonio de la mentoría de carrera","Descartado"]],
+  tickets_list:[["Certificado no se descarga","En curso"]]}};
+
+/* Lógica del panel: navegación, render y acciones.
+   Las llamadas al backend viven en api.js */
+
+const MODOS_TEMA=["sistema","claro","oscuro"];let tIdx=0;
+try{tIdx=Math.max(0,MODOS_TEMA.indexOf(localStorage.getItem("clg-tema")||"sistema"));}catch(e){}
+function aplicarTema(){const t=MODOS_TEMA[tIdx];
+  if(t==="sistema")document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme",t==="claro"?"light":"dark");
+  tema_txt.textContent="Tema: "+t;
+  tema_ico.innerHTML=`<use href="#i-${t==="claro"?"sol":t==="oscuro"?"luna":"sistema"}"/>`;
+  try{localStorage.setItem("clg-tema",t);}catch(e){}}
+tema.onclick=()=>{tIdx=(tIdx+1)%MODOS_TEMA.length;aplicarTema();};aplicarTema();
+
+let E={activos:[],tickets:[],pubs:[],procesado:false,paso:1,conex:{},chips:[]};
+Object.keys(PLAT).forEach(k=>E.conex[k]=PLAT[k].on);
+/* El prototipo arranca siempre limpio: el usuario ejecuta el flujo desde "Usar lote de ejemplo".
+   Solo el historial trae semanas anteriores con datos. */
+const save=()=>{};   /* el estado vive en memoria durante la sesión; en producción lo persiste OCI */
+const ic=n=>`<svg class="ico"><use href="#i-${n}"/></svg>`;
+const $=s=>document.querySelector(s), el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!==undefined)e.innerHTML=h;return e;};
+const msg=id=>DATOS.find(d=>d.id===id);
+function toast(titulo,texto,ok,undo){
+  const t=el("div","toast"+(ok?" ok":""),`<div><b>${titulo}</b>${texto||""}</div>`);
+  if(undo){const u=el("button","btn sm undo","Deshacer");u.onclick=()=>{undo();t.remove();};t.appendChild(u);}
+  toasts.appendChild(t);setTimeout(()=>t.remove(),undo?6500:3400);}
+
+function construir(){
+  const a=[];let n=1;const add=o=>a.push(Object.assign({id:"A"+(n++),estado:"Pendiente"},o));
+  DATOS.filter(m=>ruta(m)==="exito").forEach(m=>{
+    add({formato:"Post de LinkedIn",fuente:m.id,score:m.score,texto:linkedinTxt(m)});
+    if(m.id==="m1")add({formato:"Hilo de X",fuente:m.id,score:m.score-4,texto:hiloTxt(m)});});
+  add({formato:"Tip / FAQ",fuente:"m2",score:82,texto:faq1()});
+  add({formato:"Tip / FAQ",fuente:"m10",score:69,texto:faq2()});
+  add({formato:"Destaque de newsletter",fuente:"m1",score:90,texto:newsTxt()});
+  const t=DATOS.filter(m=>ruta(m)==="ticket").map((m,i)=>({id:"T"+(i+1),fuente:m.id,sev:m.sent<=-.6?"Alta":"Media",aviso:null,estado:"Abierto"}));
+  return {activos:a,tickets:t};}
+
+const META={flujo:["Procesar lote","Ingesta, análisis y curaduría en un solo flujo."],
+ tickets:["Tickets","Lo que no se publica: se avisa al equipo."],
+ publicaciones:["Publicaciones","Qué salió publicado, dónde y cuándo."],
+ historial:["Historial","Entra a cualquier semana y revisa qué pasó."],
+ conexiones:["Conexiones","Vincula los destinos donde se publica."],
+ ajustes:["Ajustes","Voz de marca, umbrales y cuentas."]};
+const PAGS=Object.keys(META);
+function ir(p){
+  document.querySelectorAll(".nav").forEach(b=>b.setAttribute("aria-current",b.dataset.p===p?"page":"false"));
+  PAGS.forEach(x=>$("#p_"+x).hidden=(x!==p));
+  titulo.textContent=META[p][0];subtitulo.textContent=META[p][1];
+  mtop_pag.textContent=META[p][0];cerrarMenu();
+  acciones.innerHTML="";
+  if(p==="flujo"&&E.procesado)acciones.appendChild(el("span","mini","Lote 2026-semana-04 · 12 mensajes · 41 s"));
+  window.scrollTo({top:0,behavior:"smooth"});}
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>ir(b.dataset.p));
+
+/* ---------- MENÚ MÓVIL ---------- */
+function abrirMenu(){document.body.classList.add("menu-abierto");scrim.hidden=false;
+  hamb.setAttribute("aria-expanded","true");hamb.setAttribute("aria-label","Cerrar menú");}
+function cerrarMenu(){if(!document.body.classList.contains("menu-abierto"))return;
+  document.body.classList.remove("menu-abierto");hamb.setAttribute("aria-expanded","false");
+  hamb.setAttribute("aria-label","Abrir menú");setTimeout(()=>{scrim.hidden=true;},260);}
+hamb.onclick=()=>document.body.classList.contains("menu-abierto")?cerrarMenu():abrirMenu();
+scrim.onclick=cerrarMenu;
+addEventListener("keydown",e=>{if(e.key==="Escape")cerrarMenu();});
+document.querySelectorAll("#tabs_flujo .stp").forEach(b=>b.onclick=()=>{
+  const n=+b.dataset.s;if(n>1&&!E.procesado)return toast("Falta procesar","Sube un lote y ejecuta el grafo.");irPaso(n);});
+function irPaso(n){E.paso=n;save();
+  document.querySelectorAll("#tabs_flujo .stp").forEach(b=>{
+    const i=+b.dataset.s, hecho=E.procesado&&i<n;
+    b.className="stp"+(hecho?" done":"");
+    b.querySelector(".n").innerHTML=hecho?ic("check"):i;
+    if(i===n)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");});
+  [1,2,3].forEach(i=>$("#paso_"+i).hidden=(i!==n));}
+
+btn_file.onclick=()=>file.click(); file.onchange=validar; btn_ejemplo.onclick=validar;
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.style.borderColor="var(--primary)";});
+drop.addEventListener("dragleave",()=>drop.style.borderColor="");
+drop.addEventListener("drop",e=>{e.preventDefault();drop.style.borderColor="";validar();});
+function validar(){validacion.hidden=false;toast("Archivo cargado","12 interacciones válidas · 1 duplicada eliminada");}
+
+const PASOS=["validar · esquema Pydantic","limpiar · enmascarar datos personales","analizar · sentimiento y temas","agrupar_preguntas · dudas similares","router · 4 reglas condicionales","generar · LinkedIn, X, FAQ y newsletter","newsletter_semanal · highlights","consolidar · paquete oficial","guardar · OCI Object Storage"];
+btn_procesar.onclick=()=>{
+  irPaso(2);steps.innerHTML="";oci_linea.hidden=true;oci_ruta.textContent="";analisis_resultado.hidden=true;barra.style.transform="scaleX(0)";
+  PASOS.forEach(p=>steps.appendChild(el("div","step",'<span class="sdot"></span><span>'+p+'</span>')));
+  const nodos=[...steps.children];let i=0;
+  (function paso(){
+    if(i>0)nodos[i-1].className="step done";
+    barra.style.transform=`scaleX(${i/nodos.length})`;
+    if(i>=nodos.length){barra.style.transform="scaleX(1)";return fin();}
+    nodos[i].className="step run";i++;setTimeout(paso,360);})();};
+function fin(){
+  oci_ruta.textContent="activos/2026-semana-04/paquete-distribucion.json";oci_linea.hidden=false;
+  const c=construir();E.activos=c.activos;E.tickets=c.tickets;E.procesado=true;save();
+  pintar();analisis_resultado.hidden=false;toast("Lote procesado","7 activos y 3 tickets generados",true);}
+btn_a_3.onclick=()=>irPaso(3);
+
+/* ---------- ANÁLISIS ---------- */
+function pintarAnalisis(){
+  const pos=DATOS.filter(m=>m.sent>.2).length,neg=DATOS.filter(m=>m.sent<-.2).length,neu=DATOS.length-pos-neg;
+  const pct=n=>Math.round(n/DATOS.length*100);
+  stats.innerHTML=[["Interacciones",DATOS.length,"+3 vs sem 03","up"],["% positivas",pct(pos)+"%","−9 pts","down"],
+   ["Activos generados",E.activos.length,"","up"],["Tickets abiertos",E.tickets.filter(t=>t.estado!=="Resuelto").length,"+2","down"],
+   ["Publicados",E.pubs.length,"","up"]].map(k=>
+   `<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="d ${k[3]}">${k[2]}</div></div>`).join("");
+  bars.innerHTML=`<i style="background:var(--ok);width:${pct(pos)}%"></i><i style="background:var(--border-2);width:${pct(neu)}%"></i><i style="background:var(--alert);width:${pct(neg)}%"></i>`;
+  l_pos.textContent=pct(pos)+"%";l_neu.textContent=pct(neu)+"%";l_neg.textContent=pct(neg)+"%";
+  const t={};DATOS.forEach(m=>m.temas.forEach(x=>t[x]=(t[x]||0)+1));
+  const nuevos=["Acceso a laboratorios","Plataforma / Video"];
+  temas.innerHTML=Object.entries(t).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,c])=>
+    `<tr><td>${k} ${nuevos.includes(k)?'<span class="pill p-pri">nuevo</span>':""}</td><td class="mono" style="width:60px">${c}</td></tr>`).join("");
+  banner_slot.innerHTML=`<div class="note err">${ic("alerta")}<div><b>Alerta de sentimiento.</b> Los negativos pasaron de 8% a ${pct(neg)}% frente a la semana 03. Origen: acceso a laboratorios de OCI con 2 reportes y videos del módulo 3.</div></div>`;
+  const cuenta={};E.activos.forEach(a=>cuenta[a.formato]=(cuenta[a.formato]||0)+1);
+  resumen_produccion.innerHTML=Object.entries(cuenta).map(([f,c])=>{const p=PLAT[FORMATOS[f].plat];
+    return `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:7px">
+      <span class="row" style="gap:8px"><span class="mk" style="--pc:${p.color};width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:.62rem;font-weight:700">${p.ini}</span>${f}</span>
+      <b class="mono">${c}</b></div>`;}).join("")+
+   `<div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">
+     <span class="mk" style="--pc:var(--alert);width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:.62rem;font-weight:700">!</span>Tickets internos</span>
+     <b class="mono">${E.tickets.length}</b></div>`;
+  apoyo.innerHTML=DATOS.filter(m=>m.apoyo).map(m=>
+    `<div class="mini" style="border-left:2px solid var(--alert);padding-left:9px"><b>${m.autor}</b> · ${m.canal}<br>${m.texto.slice(0,72)}…</div>`).join("");
+  tabla.innerHTML=DATOS.slice().sort((a,b)=>b.score-a.score).map(m=>{const r=ruta(m);return `<tr>
+    <td><b>${m.autor}</b></td><td style="max-width:240px" class="muted">${m.texto.slice(0,70)}…</td>
+    <td class="muted">${m.tipo}</td><td class="mono ${m.sent>.2?"up":m.sent<-.2?"down":""}">${m.sent.toFixed(2)}</td>
+    <td class="mono"><b>${m.score}</b></td><td class="muted" style="max-width:170px">${m.por_que}</td>
+    <td><span class="pill ${PILL[r]}">${NOM[r]}</span></td></tr>`;}).join("");}
+
+/* ---------- CURADURÍA ---------- */
+let tabFmt="linkedin",fEstado={};
+const ESTADOS=["Todos","Pendiente","Listo","Publicado"];
+const pendientesDe=k=>E.activos.filter(a=>FORMATOS[a.formato].plat===k&&a.estado==="Pendiente").length;
+function pintarCuraduria(){
+  if(!E.procesado){tabs_formato.innerHTML="";
+    curaduria.innerHTML='<div class="block empty">Procesa un lote para ver el contenido generado.</div>';return;}
+  tabs_formato.innerHTML=TABS.map(([k,n])=>{
+    const total=k==="tickets"?E.tickets.length:E.activos.filter(a=>FORMATOS[a.formato].plat===k).length;
+    const pend=k==="tickets"?E.tickets.filter(t=>!t.aviso).length:pendientesDe(k);
+    const badge=pend?`<span class="c pend" title="${pend} sin revisar">${pend}</span>`:`<span class="c" title="${total} en total">${total}</span>`;
+    return `<button class="tab" data-t="${k}" aria-selected="${tabFmt===k}">${n}${badge}</button>`;}).join("");
+  tabs_formato.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tabFmt=b.dataset.t;pintarCuraduria();});
+  if(tabFmt==="tickets"){conexion_aviso.innerHTML="";return pintarTicketsEn(curaduria);}
+  const p=PLAT[tabFmt],conn=E.conex[tabFmt],fE=fEstado[tabFmt]||"Todos";
+  conexion_aviso.innerHTML=conn?"":`<div class="note">${ic("enchufe")}<div><b>${p.nom}</b> no está vinculado. Puedes aprobar, pero no publicar hasta conectarlo en Conexiones.</div></div>`;
+  const todos=E.activos.filter(a=>FORMATOS[a.formato].plat===tabFmt);
+  const lista=todos.filter(a=>fE==="Todos"||a.estado===fE);
+  const pend=pendientesDe(tabFmt);
+  const listos=todos.filter(a=>a.estado==="Listo").length;
+  const card=el("div","plat");
+  card.innerHTML=`<div class="plat-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
+    <div style="flex:1;min-width:160px"><b>${p.nom}</b><div class="mini">${conn?p.cuenta+" · "+p.modo:"sin vincular"}</div></div>
+    <div class="plat-filtros">
+      ${ESTADOS.map(e=>{const n=e==="Todos"?todos.length:todos.filter(a=>a.estado===e).length;
+        return `<button aria-pressed="${fE===e}" data-e="${e}">${e} <span class="mono mini">${n}</span></button>`;}).join("")}
+      ${pend?'<span class="sep2"></span><button class="btn sm" id="btn_aprobar_todo">'+ic("check")+'Guardar los '+pend+' pendientes</button>':""}
+      ${listos&&conn?'<button class="btn primary sm" id="btn_publicar_listos">Publicar los '+listos+' listos</button>':""}
+    </div></div>`;
+  if(!lista.length)card.appendChild(el("div","empty",fE==="Todos"
+    ?"Este lote no generó contenido para "+p.nom+"."
+    :`Nada en estado “${fE}” en ${p.nom}.`));
+  lista.forEach(a=>{
+    const m=msg(a.fuente),cfg=FORMATOS[a.formato];
+    const pillC=a.estado==="Publicado"?"p-pri":a.estado==="Listo"?"p-ok":a.estado==="Descartado"?"p-mute":"p-warn";
+    const it=el("div","item "+a.estado.toLowerCase());
+    it.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:9px">
+        <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
+        <span class="pill ${pillC}">${a.estado}</span></div>
+      <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${m.autor}</summary>
+        <div class="body"><div class="meta">${m.canal} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${m.texto}
+        <div class="meta" style="margin-top:7px">POR QUÉ ESTE SCORE: ${m.por_que}</div></div></details>
+      <textarea rows="${cfg.porPost?8:6}" id="ta_${a.id}" ${a.estado==="Publicado"?"readonly":""}>${a.texto}</textarea>
+      <div class="row" style="justify-content:space-between;margin-top:9px">
+        <span class="mini mono" id="c_${a.id}"></span>
+        <div class="acciones-activo">${a.estado==="Publicado"
+          ? `<span class="mini">Publicado el ${a.publicado}</span>`
+          : `<button class="btn primary sm" data-ac="publicar" data-id="${a.id}" ${conn?"":"disabled"}>Publicar en ${p.nom}</button>
+             <button class="btn sm" data-ac="listo" data-id="${a.id}" ${a.estado==="Listo"?"disabled":""}>${a.estado==="Listo"?ic("check")+"En cola":"Guardar para después"}</button>
+             <span class="sep2"></span>
+             <button class="btn sm" data-ac="corto" data-id="${a.id}" title="Acorta el texto">${ic("corto")}Más corto</button>
+             <button class="btn sm" data-ac="largo" data-id="${a.id}" title="Alarga el texto o revierte el recorte">${ic("largo")}Más largo</button>
+             <button class="btn sm" data-ac="nuevo" data-id="${a.id}" title="Otra versión desde el mismo mensaje">${ic("regenerar")}Volver a generar</button>
+             <button class="btn sm" data-ac="descartar" data-id="${a.id}">Descartar</button>`}</div></div>`;
+    card.appendChild(it);
+    const ta=it.querySelector("textarea"),c=it.querySelector("#c_"+a.id);
+    const cuenta=()=>{if(cfg.porPost){const ps=ta.value.split("———"),mx=Math.max(...ps.map(x=>x.trim().length));
+        c.textContent=`${ps.length} posts · máx ${mx}/280`;c.style.color=mx>280?"var(--alert)":"";}
+      else{c.textContent=`${ta.value.length}/${cfg.limite} caracteres`;c.style.color=ta.value.length>cfg.limite?"var(--alert)":"";}};
+    cuenta();ta.oninput=()=>{cuenta();if(ta.value!==a.texto){a.editado=true;a.texto=ta.value;save();}};
+  });
+  curaduria.innerHTML="";curaduria.appendChild(card);
+  card.querySelectorAll(".plat-filtros [data-e]").forEach(b=>b.onclick=()=>{fEstado[tabFmt]=b.dataset.e;pintarCuraduria();});
+  const ba=card.querySelector("#btn_aprobar_todo");
+  if(ba)ba.onclick=()=>aprobarPendientes(tabFmt);
+  const bp=card.querySelector("#btn_publicar_listos");
+  if(bp)bp.onclick=()=>publicarLote(tabFmt);
+  curaduria.querySelectorAll('[data-ac]').forEach(b=>b.onclick=()=>accion(b.dataset.ac,b.dataset.id));}
+function aprobarPendientes(plat){
+  const n=E.activos.filter(a=>FORMATOS[a.formato].plat===plat&&a.estado==="Pendiente");
+  n.forEach(a=>a.estado="Listo");save();pintar();
+  toast(n.length+" en cola de "+PLAT[plat].nom,"Listos para publicar cuando quieras",true);}
+
+/* modal de confirmación antes de publicar */
+function confirmarPublicacion(id){
+  const a=E.activos.find(x=>x.id===id),cfg=FORMATOS[a.formato],p=PLAT[cfg.plat],m=msg(a.fuente);
+  const largo=cfg.porPost
+    ? a.texto.split("———").length+" posts · máximo "+Math.max(...a.texto.split("———").map(x=>x.trim().length))+"/280 caracteres"
+    : a.texto.length+"/"+cfg.limite+" caracteres";
+  dlg_cont.innerHTML=`
+    <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
+      <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+    <div class="modal-body">
+      <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
+        <span>Longitud: <b>${largo}</b></span>${a.editado?"<span>Estado: <b>editado a mano</b></span>":""}</div>
+      <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g,"&lt;")}</div></div>
+      <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="dlg_no">Cancelar</button>
+      <button class="btn primary" id="dlg_si">Publicar ahora</button>
+    </div>`;
+  dlg.showModal();
+  dlg_no.onclick=()=>dlg.close();
+  dlg_si.onclick=()=>{dlg.close();publicar(id);};
+  setTimeout(()=>dlg_si.focus(),50);}
+
+function publicar(id){
+  const a=E.activos.find(x=>x.id===id),p=PLAT[FORMATOS[a.formato].plat];
+  const previo=a.estado;
+  a.estado="Publicado";a.publicado="23 sep, 10:4"+Math.floor(Math.random()*9);
+  const pub={fecha:a.publicado,plat:FORMATOS[a.formato].plat,formato:a.formato,extracto:a.texto.slice(0,64)+"…",fuente:a.fuente};
+  E.pubs.unshift(pub);save();pintar();
+  toast("Publicado en "+p.nom,p.cuenta,true,()=>{
+    a.estado=previo;delete a.publicado;E.pubs=E.pubs.filter(x=>x!==pub);save();pintar();
+    toast("Publicación revertida","El contenido volvió a "+previo);});}
+
+const GANCHOS=[
+ "Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀",
+ "Hay historias que explican mejor que cualquier folleto para qué sirve una comunidad 👇",
+ "Esto no pasó por suerte: pasó por un proyecto terminado y publicado 💼",
+ "De hacer ejercicios a firmar contrato. Así se ve el camino cuando se recorre acompañado 🌱"];
+const CIERRE="\n\n¿Tú también estás construyendo tu portafolio? Cuéntanos en qué andas 👇\n\n#ComunidadONE #AprenderHaciendo";
+
+function accion(ac,id){
+  const a=E.activos.find(x=>x.id===id);
+  if(ac==="publicar")return confirmarPublicacion(id);
+  if(ac==="listo"){a.estado="Listo";save();pintar();
+    toast("Guardado en la cola","Listo para publicar cuando quieras · curaduria.json",true);return;}
+  if(ac==="descartar"){a.estado="Descartado";save();pintar();toast("Descartado","Se puede recuperar desde el filtro Todos");return;}
+  /* variantes de texto: siempre parten del original generado */
+  if(!a.base)a.base=a.texto;
+  const partes=a.base.split("\n\n");
+  if(ac==="corto"){
+    a.texto=partes.slice(0,Math.max(2,Math.ceil(partes.length/2))).join("\n\n")+"\n\n#ComunidadONE";
+    a.version="corta";toast("Versión más corta",a.texto.length+" caracteres · 1 llamada al LLM");}
+  if(ac==="largo"){
+    a.texto=(a.version==="corta"||a.version==="variante")?a.base:a.base+CIERRE;
+    a.version=(a.version==="corta"||a.version==="variante")?"original":"larga";
+    toast(a.version==="original"?"Texto original restaurado":"Versión más larga",a.texto.length+" caracteres");}
+  if(ac==="nuevo"){
+    a.variante=((a.variante||0)+1)%GANCHOS.length;
+    const resto=a.base.split("\n\n").slice(1).join("\n\n");
+    a.texto=GANCHOS[a.variante]+"\n\n"+resto;a.version="variante";
+    toast("Nueva versión","Gancho "+(a.variante+1)+" de "+GANCHOS.length+" · 1 llamada al LLM");}
+  const t=$("#ta_"+id);if(t){t.value=a.texto;t.dispatchEvent(new Event("input"));}
+  save();pintarCuraduria();}
+
+function publicarLote(plat){
+  const lista=E.activos.filter(a=>FORMATOS[a.formato].plat===plat&&a.estado==="Listo"),p=PLAT[plat];
+  dlg_cont.innerHTML=`
+    <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
+      <div style="flex:1"><b>Publicar ${lista.length} contenidos en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+    <div class="modal-body">
+      <div class="modal-prev">${lista.map(a=>"• "+a.texto.split("\n")[0].slice(0,70).replace(/</g,"&lt;")+"…").join("\n\n")}</div>
+      <div class="mini">Se publican en orden y quedan registrados en Publicaciones. Tendrás 6 segundos para deshacer.</div></div>
+    <div class="modal-foot"><button class="btn" id="dlg_no">Cancelar</button>
+      <button class="btn primary" id="dlg_si">Publicar los ${lista.length}</button></div>`;
+  dlg.showModal();dlg_no.onclick=()=>dlg.close();
+  dlg_si.onclick=()=>{dlg.close();
+    const previos=lista.map(a=>({a,estado:a.estado})),nuevas=[];
+    lista.forEach(a=>{a.estado="Publicado";a.publicado="23 sep, 10:4"+Math.floor(Math.random()*9);
+      const pub={fecha:a.publicado,plat,formato:a.formato,extracto:a.texto.slice(0,64)+"…",fuente:a.fuente};
+      nuevas.push(pub);E.pubs.unshift(pub);});
+    save();pintar();
+    toast(lista.length+" publicados en "+p.nom,p.cuenta,true,()=>{
+      previos.forEach(x=>{x.a.estado=x.estado;delete x.a.publicado;});
+      E.pubs=E.pubs.filter(x=>!nuevas.includes(x));save();pintar();toast("Publicaciones revertidas","Todo volvió a la cola");});};}
+
+/* ---------- TICKETS ---------- */
+function filasTickets(){
+  return E.tickets.map(t=>{const m=msg(t.fuente);return `<tr>
+    <td><span class="pill ${t.sev==="Alta"?"p-alert":"p-warn"}">${t.sev}</span></td>
+    <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
+    <td>${t.aviso?`<span class="pill p-mute">${PLAT[t.aviso].nom}</span>`:'<span class="mini">sin avisar</span>'}</td>
+    <td><span class="pill ${t.estado==="Resuelto"?"p-ok":"p-mute"}">${t.estado}</span></td></tr>`;}).join("");}
+function pintarTickets(){
+  b_tic.textContent=E.procesado?E.tickets.filter(t=>t.estado!=="Resuelto").length:"—";
+  tabla_tickets.innerHTML=E.procesado?filasTickets():'<tr><td colspan="6" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  tabla_tickets_hist.innerHTML=[["2026-semana-03","Error 500 al subir el proyecto final","discord","15 sep","17 sep","Resuelto"],
+   ["2026-semana-03","Video del módulo 2 sin audio","discord","16 sep","18 sep","Resuelto"],
+   ["2026-semana-02","Certificado no se descarga","discord","09 sep","—","En curso"]].map(f=>
+   `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
+    <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5]==="Resuelto"?"p-ok":"p-warn"}">${f[5]}</span></td></tr>`).join("");}
+function pintarTicketsEn(cont){
+  const card=el("div","plat");
+  card.innerHTML=`<div class="plat-head"><div class="mk" style="--pc:var(--alert)">!</div>
+    <div style="flex:1"><b>Tickets internos</b><div class="mini">No se publican: se avisan en el canal del equipo</div></div>
+    <span class="mini mono">${E.tickets.length}</span></div>
+    <div class="item"><div class="df"><table><thead><tr><th>Sev.</th><th>Reportado por</th><th>Canal</th><th>Resumen</th><th>Aviso</th><th>Estado</th></tr></thead>
+      <tbody>${filasTickets()}</tbody></table></div>
+      <div class="row" style="margin-top:12px"><button class="btn primary sm" id="btn_avisar">Avisar en Discord · #soporte-interno</button></div></div>`;
+  cont.innerHTML="";cont.appendChild(card);
+  $("#btn_avisar").onclick=()=>avisar("discord");}
+function avisar(dest){
+  if(!E.conex[dest]){ir("conexiones");return toast("Falta vincular",PLAT[dest].nom+" no está conectado.");}
+  const pend=E.tickets.filter(t=>!t.aviso);
+  if(!pend.length)return toast("Nada que avisar","Todos los tickets ya se avisaron.");
+  pend.forEach(t=>{t.aviso=dest;t.estado="En curso";});save();pintar();
+  toast(pend.length+" tickets avisados","Mensaje enviado a "+PLAT[dest].cuenta,true);}
+btn_discord.onclick=()=>avisar("discord"); btn_slack.onclick=()=>avisar("slack");
+
+/* ---------- PUBLICACIONES ---------- */
+function pintarPubs(){
+  b_pub.textContent=E.pubs.length;
+  const n=k=>E.pubs.filter(p=>p.plat===k).length;
+  stats_pub.innerHTML=[["LinkedIn",n("linkedin")],["X",n("x")],["FAQ web",n("web")],["Total semana",E.pubs.length]]
+   .map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div></div>`).join("");
+  tabla_pub.innerHTML=E.pubs.length?E.pubs.map(p=>{const m=msg(p.fuente);return `<tr>
+    <td class="muted">${p.fecha}</td><td><span class="pill p-mute">${PLAT[p.plat].nom}</span></td><td>${p.formato}</td>
+    <td class="muted" style="max-width:300px">${p.extracto}</td><td class="muted">${m.autor}</td>
+    <td><a href="#" onclick="return false" style="color:var(--link)">ver</a></td></tr>`;}).join("")
+    :'<tr><td colspan="6" class="empty">Aún no publicas nada esta semana. Publica desde el paso 3 · Curaduría.</td></tr>';}
+
+/* ---------- HISTORIAL ---------- */
+let semanaSel="2026-semana-03";
+function pintarHistorial(){
+  const semanas=["2026-semana-04","2026-semana-03","2026-semana-02"];
+  lista_semanas.innerHTML=semanas.map(s=>{
+    const d=s==="2026-semana-04"?{inter:E.procesado?12:0,publicados:E.pubs.length}:HIST[s];
+    return `<button class="semana-btn" data-s="${s}" aria-current="${semanaSel===s}">
+      <div style="flex:1"><b>${s.replace("2026-semana-","Semana ")}</b>
+        <div class="mini">${d.inter} interacciones · ${d.publicados} publicados</div></div>
+      ${s==="2026-semana-04"?'<span class="pill p-pri">actual</span>':""}</button>`;}).join("");
+  lista_semanas.querySelectorAll(".semana-btn").forEach(b=>b.onclick=()=>{semanaSel=b.dataset.s;pintarHistorial();});
+  const act=semanaSel==="2026-semana-04";
+  const d=act?{inter:E.procesado?12:0,pos:58,neg:25,activos:E.activos.length,publicados:E.pubs.length,
+    tickets:E.tickets.length,temas:["Acceso a laboratorios","Contratación / Logros","LangGraph"],
+    contenidos:E.activos.map(a=>[FORMATOS[a.formato].plat,a.formato,a.texto.slice(0,52)+"…",a.estado]),
+    tickets_list:E.tickets.map(t=>[msg(t.fuente).texto.slice(0,46)+"…",t.estado])}:HIST[semanaSel];
+  detalle_semana.innerHTML=`
+    <div class="stats stats-4">
+      <div class="stat"><div class="k">Interacciones</div><div class="v">${d.inter}</div></div>
+      <div class="stat"><div class="k">% positivo</div><div class="v">${d.pos}%</div></div>
+      <div class="stat"><div class="k">Activos</div><div class="v">${d.activos}</div></div>
+      <div class="stat"><div class="k">Publicados</div><div class="v">${d.publicados}</div></div>
+    </div>
+    <div class="block"><p class="blk-title">Temas de la semana</p>
+      <div class="row" style="margin-top:8px">${d.temas.map(t=>`<span class="pill p-mute">${t}</span>`).join("")}</div></div>
+    <div class="block"><p class="blk-title">Contenidos</p>
+      <p class="blk-info">Todo lo que se generó esa semana, con su estado final.</p>
+      <div class="df"><table><thead><tr><th>Plataforma</th><th>Formato</th><th>Contenido</th><th>Estado</th></tr></thead><tbody>
+      ${d.contenidos.length?d.contenidos.map(c=>`<tr><td><span class="pill p-mute">${PLAT[c[0]].nom}</span></td><td>${c[1]}</td>
+        <td class="muted" style="max-width:280px">${c[2]}</td>
+        <td><span class="pill ${c[3]==="Publicado"?"p-ok":c[3]==="Descartado"?"p-mute":"p-warn"}">${c[3]}</span></td></tr>`).join("")
+        :'<tr><td colspan="4" class="empty">Sin contenidos todavía.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="block"><p class="blk-title">Tickets</p>
+      <div class="df"><table><thead><tr><th>Ticket</th><th>Estado</th></tr></thead><tbody>
+      ${d.tickets_list.length?d.tickets_list.map(t=>`<tr><td>${t[0]}</td>
+        <td><span class="pill ${t[1]==="Resuelto"?"p-ok":"p-warn"}">${t[1]}</span></td></tr>`).join("")
+        :'<tr><td colspan="2" class="empty">Sin tickets.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="mini">Ruta en OCI: <code>activos/${semanaSel}/</code></div>`;}
+
+/* ---------- CONEXIONES ---------- */
+function pintarConex(){
+  b_con.textContent=Object.values(E.conex).filter(Boolean).length+"/"+Object.keys(PLAT).length;
+  lista_conexiones.innerHTML=Object.entries(PLAT).map(([k,p])=>{const on=E.conex[k];
+    return `<div class="conn"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
+      <div class="b"><b>${p.nom}</b><div class="dot ${on?"on":""}"><i></i>${on?"Conectado · "+p.cuenta:"Sin conectar"}</div>
+        <div class="mini">${p.modo}</div></div>
+      <button class="btn sm ${on?"":"primary"}" data-c="${k}">${on?"Desvincular":"Conectar"}</button></div>`;}).join("");
+  lista_conexiones.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>alternar(b.dataset.c));
+  lista_vinculadas.innerHTML=Object.entries(PLAT).filter(([k])=>E.conex[k]).map(([k,p])=>
+    `<div class="row" style="justify-content:space-between"><span class="dot on"><i></i>${p.nom} · ${p.cuenta}</span>
+      <button class="btn sm" data-c="${k}">Desvincular</button></div>`).join("")||'<p class="mini">No hay cuentas vinculadas.</p>';
+  lista_vinculadas.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>alternar(b.dataset.c));}
+function alternar(k){const p=PLAT[k],on=E.conex[k];E.conex[k]=!on;save();pintar();
+  toast(on?p.nom+" desvinculado":p.nom+" conectado",on?"Lo ya publicado no se borra.":p.cuenta,!on);}
+
+/* ---------- AJUSTES ---------- */
+const ESTILOS=["Cercano","Inspirador","Celebratorio","Didáctico","Técnico","Breve","Sobrio","Con emojis","Sin hashtags","Primera persona plural"];
+function pintarChips(){
+  voz_chips.innerHTML=E.chips.map(c=>`<span class="vchip">${c}<button data-q="${c}" title="Quitar">×</button></span>`).join("");
+  voz_chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{E.chips=E.chips.filter(x=>x!==b.dataset.q);save();pintarChips();});
+  chips_estilo.innerHTML=ESTILOS.map(e=>`<button aria-pressed="${E.chips.includes(e)}" data-e="${e}">${E.chips.includes(e)?ic("check"):""}${e}</button>`).join("");
+  chips_estilo.querySelectorAll("button").forEach(b=>b.onclick=()=>{const e=b.dataset.e;
+    E.chips=E.chips.includes(e)?E.chips.filter(x=>x!==e):[...E.chips,e];save();pintarChips();});}
+btn_voz.onclick=()=>{voz_msg.textContent=E.chips.length?"Guardada con "+E.chips.length+" chips de estilo":"Guardada";
+  toast("Guía de voz guardada","Se aplica al siguiente lote",true);};
+function recalcular(){
+  U.descartar=+u_desc.value;U.exito_score=+u_ex.value;
+  if(E.procesado){
+    const previos=E.activos, c=construir();
+    /* Conserva el trabajo humano: si el activo sigue existiendo tras el recálculo,
+       mantiene su texto editado y su estado. Solo nacen los que cambian de rama. */
+    c.activos.forEach(n=>{
+      const v=previos.find(x=>x.formato===n.formato&&x.fuente===n.fuente);
+      if(v)Object.assign(n,{estado:v.estado,texto:v.texto,editado:v.editado,
+        publicado:v.publicado,base:v.base,version:v.version,variante:v.variante});
+    });
+    const perdidos=previos.filter(v=>!c.activos.some(n=>n.formato===v.formato&&n.fuente===v.fuente)
+      &&(v.estado!=="Pendiente"||v.editado)).length;
+    E.activos=c.activos;E.tickets=c.tickets;save();
+    if(perdidos)toast(`${perdidos} borrador${perdidos===1?"":"es"} ya no aplica${perdidos===1?"":"n"}`,
+      "Cambiaron de rama con los nuevos umbrales");
+  }
+  pintar();toast("Umbrales aplicados",`descartar < ${U.descartar} · éxito ≥ ${U.exito_score}`,true);
+  irPaso(2);ir("flujo");}
+
+btn_umbrales.onclick=()=>{
+  const enRiesgo=E.activos.filter(a=>a.estado!=="Pendiente"||a.editado);
+  if(!enRiesgo.length)return recalcular();
+  const editados=enRiesgo.filter(a=>a.editado).length,
+        cola=E.activos.filter(a=>a.estado==="Listo").length,
+        pub=E.activos.filter(a=>a.estado==="Publicado").length;
+  dlg_cont.innerHTML=`
+    <div class="modal-head"><div class="mk" style="--pc:var(--warn)">!</div>
+      <div style="flex:1"><b>Recalcular el lote con los nuevos umbrales</b>
+        <div class="mini">descartar &lt; ${u_desc.value} · caso de éxito ≥ ${u_ex.value}</div></div></div>
+    <div class="modal-body">
+      <div class="modal-meta">
+        <span>Borradores editados a mano: <b>${editados}</b></span>
+        <span>En cola: <b>${cola}</b></span>
+        <span>Ya publicados: <b>${pub}</b></span></div>
+      <div class="mini">Los contenidos que sigan existiendo conservan su texto y su estado.
+        Los que cambien de rama con los nuevos umbrales desaparecen. Lo ya publicado no se borra
+        del registro de Publicaciones.</div></div>
+    <div class="modal-foot"><button class="btn" id="dlg_no">Cancelar</button>
+      <button class="btn primary" id="dlg_si">Recalcular</button></div>`;
+  dlg.showModal();dlg_no.onclick=()=>dlg.close();
+  dlg_si.onclick=()=>{dlg.close();recalcular();};
+  setTimeout(()=>dlg_no.focus(),50);};
+
+function pintar(){pintarAnalisis();pintarCuraduria();pintarTickets();pintarPubs();pintarConex();pintarHistorial();}
+pintarChips();pintar();ir("flujo");irPaso(1);
+
+</script>
+</body>
+</html>
