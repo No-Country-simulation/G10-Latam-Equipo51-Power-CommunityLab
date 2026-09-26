@@ -449,7 +449,7 @@ Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
    completa a mano, ej: "http://192.0.2.10:8000" */
 const API_BASE = window.location.origin;
 /* N8N_WEBHOOK_URL sí la tienes que poner a mano: es otro servicio. */
-const N8N_WEBHOOK_URL = "https://<tu-n8n>/webhook/procesar-lote";
+const N8N_WEBHOOK_URL = "http://129.213.94.45:5678/webhook/procesar-lote";
 
 const temas=["sistema","claro","oscuro"];let tIdx=0;
 try{tIdx=Math.max(0,temas.indexOf(localStorage.getItem("clg-tema")||"sistema"));}catch(e){}

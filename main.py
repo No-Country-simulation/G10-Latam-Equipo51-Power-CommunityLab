@@ -115,3 +115,4 @@ def delete_file(filename: str):
 # la misma instancia, en el mismo puerto que la API: http://<tu-ip>:8000/ui/
 # Va al final para no pisar las rutas /files, /upload, /download definidas arriba.
 app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
+#app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")

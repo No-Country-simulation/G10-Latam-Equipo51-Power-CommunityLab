@@ -441,3 +441,13 @@ btn_umbrales.onclick=()=>{
 
 function pintar(){pintarAnalisis();pintarCuraduria();pintarTickets();pintarPubs();pintarConex();pintarHistorial();}
 pintarChips();pintar();ir("flujo");irPaso(1);
+
+
+/* ---------- CONEXIÓN CON BACKEND REAL (FastAPI + n8n) ---------- */
+/* API_BASE se toma automáticamente del origen donde cargó esta página
+   (http://<tu-ip>:8000, ya que FastAPI la sirve desde /ui/). Si algún día
+   sirves el HTML desde otro lado que no sea la misma API, pon aquí la URL
+   completa a mano, ej: "http://192.0.2.10:8000" */
+const API_BASE = window.location.origin;
+/* N8N_WEBHOOK_URL sí la tienes que poner a mano: es otro servicio. */
+const N8N_WEBHOOK_URL = "http://129.213.94.45:5678/webhook/procesar-lote";

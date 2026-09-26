@@ -92,3 +92,4 @@ async function conError(promesa, mensaje) {
     return null;
   }
 }
+
