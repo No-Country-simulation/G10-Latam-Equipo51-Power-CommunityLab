@@ -1,69 +1,166 @@
 /* ============================================================
    Insight Mind · sistema de color
-   Un solo bloque de tokens con light-dark(): claro primero,
-   oscuro después. Sin duplicar el tema en tres sitios.
+   Tres bloques explícitos: claro por defecto, oscuro por sistema y
+   oscuro/claro elegidos a mano. Sin depender de light-dark().
    Regla: el azul es el único acento. Todo lo demás es materia.
    ============================================================ */
 /* ============================================================
    Insight Mind · sistema de color
    Oscuro ceniza (no negro absoluto) y claro gris cálido, al modo
    de Discord. Acento azul equivalente al morado de Linear.
-   Un solo bloque con light-dark(): claro primero, oscuro después.
+   Claro por defecto, oscuro por sistema o por elección.
    ============================================================ */
 :root{
-  color-scheme: light dark;
+  color-scheme: light;
+  --primary-glow: #8A91CB;
+  --sobre-neutral: #FFFFFF;
+  --radius: 9px;
+  --radius-lg: 13px;
+  --font: "Schibsted Grotesk","Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono: "IBM Plex Mono",ui-monospace,Menlo,monospace;
 
-  /* — Superficies. Cinco escalones de ceniza; el claro nunca
-       llega al blanco puro salvo en el modal. — */
-  --bg:        light-dark(#F1F2F4, #121317);
-  --sunken:    light-dark(#E9EBEE, #0E0F12);
-  --panel:     light-dark(#FAFAFB, #191B20);
-  --block:     light-dark(#FAFAFB, #191B20);
-  --panel-2:   light-dark(#F1F2F4, #1E2126);
-  --raised:    light-dark(#FFFFFF, #22252B);
-  --secondary: light-dark(#ECEEF1, #22252B);
-
-  /* — Tinta: off-white real, nunca #FFF sobre ceniza. — */
-  --ink:    light-dark(#15171B, #ECEEF2);
-  --ink-2:  light-dark(#3B424C, #C6CCD6);
-  --muted:  light-dark(#5A626D, #A8B0BD);
-  --faint:  light-dark(#6E7681, #7C8593);
-
-  /* — Líneas: charcoal en oscuro, hilo de luz para el volumen. — */
-  --border:    light-dark(#E2E4E8, #24272E);
-  --border-2:  light-dark(#CBD0D7, #383C46);
-  --hairline:  light-dark(rgba(16,24,40,.035), rgba(255,255,255,.04));
-
-  /* — Acento: el azul equivalente al morado de Linear.
-       Sólido para rellenos (texto blanco, 5.11:1), tinte claro
-       para texto e iconos sobre ceniza (7.4:1). — */
-  --primary:       light-dark(#5B63A8, #8A91CB);  /* texto, iconos y bordes de acento */
-  --primary-solid: light-dark(#5B63A8, #8A91CB);  /* rellenos: el pastel lleva texto oscuro */
-  --primary-2:     light-dark(#4E568F, #9BA2D8);  /* hover */
-  --primary-soft:  light-dark(#EEEFF7, #1A1D2B);  /* fondo de lo seleccionado */
-  --primary-line:  light-dark(#CCD0E6, #343A52);  /* borde de lo seleccionado */
-  --primary-glow:  #8A91CB;                       /* el halo superior */
-  --primary-ink:   light-dark(#4E568F, #A8AEE2);  /* acento como texto pequeño */
-  --on-primary:    light-dark(#FFFFFF, #111428);  /* lo que va encima del relleno */
-
-  /* — Semánticos: el mismo criterio que el acento, claro y oscuro
-       llevan versiones distintas del mismo color. — */
-  --ok:    light-dark(#2E7D5B, #7FCCA5);
-  --ok-soft: light-dark(#E9F3EE, #15241E);
-  --warn:  light-dark(#8A6212, #E0C089);
-  --warn-soft: light-dark(#F6F1E4, #241F14);
-  --alert: light-dark(#B3424E, #E8A0A6);
-  --alert-soft: light-dark(#F9ECEE, #231519);
-  --neutral: light-dark(#78818D, #5C6470);
-  --link:  light-dark(#4F63D8, #A3B2FF);
-
-  --radius:9px; --radius-lg:13px;
-  --shadow: light-dark(0 1px 2px rgba(16,24,40,.05), 0 1px 2px rgba(0,0,0,.45));
-  --font:"Schibsted Grotesk","Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  /* ---- Tema claro: el valor por defecto ---- */
+  --bg: #F1F2F4;
+  --sunken: #E9EBEE;
+  --panel: #FAFAFB;
+  --block: #FAFAFB;
+  --panel-2: #F1F2F4;
+  --raised: #FFFFFF;
+  --secondary: #ECEEF1;
+  --ink: #15171B;
+  --ink-2: #3B424C;
+  --muted: #5A626D;
+  --faint: #6E7681;
+  --border: #E2E4E8;
+  --border-2: #CBD0D7;
+  --hairline: rgba(16,24,40,.035);
+  --primary: #5B63A8;
+  --primary-solid: #5B63A8;
+  --primary-2: #4E568F;
+  --primary-soft: #EEEFF7;
+  --primary-line: #CCD0E6;
+  --primary-ink: #4E568F;
+  --on-primary: #FFFFFF;
+  --ok: #2E7D5B;
+  --ok-soft: #E9F3EE;
+  --warn: #8A6212;
+  --warn-soft: #F6F1E4;
+  --alert: #B3424E;
+  --alert-soft: #F9ECEE;
+  --neutral: #78818D;
+  --link: #4F63D8;
+  --shadow: 0 1px 2px rgba(16,24,40,.05);
 }
-:root[data-theme="light"]{color-scheme:light}
-:root[data-theme="dark"]{color-scheme:dark}
+
+/* ---- Oscuro cuando lo pide el sistema y el usuario no eligió claro ---- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --sobre-neutral: #0E0F12;
+  --bg: #121317;
+  --sunken: #0E0F12;
+  --panel: #191B20;
+  --block: #191B20;
+  --panel-2: #1E2126;
+  --raised: #22252B;
+  --secondary: #22252B;
+  --ink: #ECEEF2;
+  --ink-2: #C6CCD6;
+  --muted: #A8B0BD;
+  --faint: #8A93A1;
+  --border: #24272E;
+  --border-2: #383C46;
+  --hairline: rgba(255,255,255,.04);
+  --primary: #8A91CB;
+  --primary-solid: #8A91CB;
+  --primary-2: #9BA2D8;
+  --primary-soft: #1A1D2B;
+  --primary-line: #343A52;
+  --primary-ink: #A8AEE2;
+  --on-primary: #111428;
+  --ok: #7FCCA5;
+  --ok-soft: #15241E;
+  --warn: #E0C089;
+  --warn-soft: #241F14;
+  --alert: #E8A0A6;
+  --alert-soft: #231519;
+  --neutral: #5C6470;
+  --link: #A3B2FF;
+  --shadow: 0 1px 2px rgba(0,0,0,.45);
+  }
+}
+
+/* ---- Oscuro elegido a mano: gana sobre el sistema ---- */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --sobre-neutral: #0E0F12;
+  --bg: #121317;
+  --sunken: #0E0F12;
+  --panel: #191B20;
+  --block: #191B20;
+  --panel-2: #1E2126;
+  --raised: #22252B;
+  --secondary: #22252B;
+  --ink: #ECEEF2;
+  --ink-2: #C6CCD6;
+  --muted: #A8B0BD;
+  --faint: #8A93A1;
+  --border: #24272E;
+  --border-2: #383C46;
+  --hairline: rgba(255,255,255,.04);
+  --primary: #8A91CB;
+  --primary-solid: #8A91CB;
+  --primary-2: #9BA2D8;
+  --primary-soft: #1A1D2B;
+  --primary-line: #343A52;
+  --primary-ink: #A8AEE2;
+  --on-primary: #111428;
+  --ok: #7FCCA5;
+  --ok-soft: #15241E;
+  --warn: #E0C089;
+  --warn-soft: #241F14;
+  --alert: #E8A0A6;
+  --alert-soft: #231519;
+  --neutral: #5C6470;
+  --link: #A3B2FF;
+  --shadow: 0 1px 2px rgba(0,0,0,.45);
+}
+
+/* ---- Claro elegido a mano: gana sobre un sistema oscuro ---- */
+:root[data-theme="light"]{
+  color-scheme: light;
+  --sobre-neutral: #FFFFFF;
+  --bg: #F1F2F4;
+  --sunken: #E9EBEE;
+  --panel: #FAFAFB;
+  --block: #FAFAFB;
+  --panel-2: #F1F2F4;
+  --raised: #FFFFFF;
+  --secondary: #ECEEF1;
+  --ink: #15171B;
+  --ink-2: #3B424C;
+  --muted: #5A626D;
+  --faint: #6E7681;
+  --border: #E2E4E8;
+  --border-2: #CBD0D7;
+  --hairline: rgba(16,24,40,.035);
+  --primary: #5B63A8;
+  --primary-solid: #5B63A8;
+  --primary-2: #4E568F;
+  --primary-soft: #EEEFF7;
+  --primary-line: #CCD0E6;
+  --primary-ink: #4E568F;
+  --on-primary: #FFFFFF;
+  --ok: #2E7D5B;
+  --ok-soft: #E9F3EE;
+  --warn: #8A6212;
+  --warn-soft: #F6F1E4;
+  --alert: #B3424E;
+  --alert-soft: #F9ECEE;
+  --neutral: #78818D;
+  --link: #4F63D8;
+  --shadow: 0 1px 2px rgba(16,24,40,.05);
+}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
@@ -79,7 +176,9 @@ button,input,select,textarea{font-family:inherit}
 .nav{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:1px solid transparent;background:none;border-radius:var(--radius);color:var(--ink-2);font-size:.92rem;cursor:pointer;text-align:left}
 .nav:hover{background:var(--panel);border-color:var(--border)}
 .nav[aria-current="page"]{background:var(--primary-soft);border-color:var(--primary);color:var(--ink);font-weight:600}
-.nav .badge{margin-left:auto;font-size:.76rem;font-family:var(--mono);color:var(--muted)}
+.nav .badge{margin-left:auto;display:inline-grid;place-items:center;min-width:19px;height:19px;
+  padding:0 5px;border-radius:999px;background:var(--secondary);border:1px solid var(--border);
+  font-size:.7rem;font-family:var(--mono);line-height:1;color:var(--muted)}
 .sb-foot{margin-top:auto;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--border);padding-top:12px}
 
 .block{background:var(--block);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
@@ -119,7 +218,9 @@ main{min-width:0;display:flex;flex-direction:column}
 .tab{background:none;border:1px solid transparent;border-bottom:none;padding:9px 15px;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted);font-size:.92rem;cursor:pointer;margin-bottom:-1px;display:inline-flex;gap:7px;align-items:center}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{background:var(--block);border-color:var(--border);color:var(--ink);font-weight:600}
-.tab .c{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.tab .c{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;
+  border-radius:999px;background:var(--secondary);border:1px solid var(--border);
+  font-family:var(--mono);font-size:.7rem;line-height:1;color:var(--muted)}
 /* filtro de estado dentro de la tarjeta de plataforma */
 .plat-head{flex-wrap:wrap}
 .plat-filtros{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
@@ -509,7 +610,7 @@ h1,.blk-title,.sb-title b,.modal-head b,.plat-head b{letter-spacing:-.018em}
 
 /* El acento aparece como luz, no como relleno plano */
 .btn.primary{background:var(--primary-solid);border-color:var(--primary-solid);color:var(--on-primary);
-  box-shadow:0 6px 18px -12px color-mix(in srgb,var(--primary-solid) 85%,transparent)}
+  box-shadow:0 6px 16px -12px rgba(0,0,0,.55)}
 .btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2)}
 .nav[aria-current="page"]{background:var(--primary-soft);border-color:var(--primary-line);color:var(--ink)}
 .nav[aria-current="page"] .ico{color:var(--primary)}
@@ -517,7 +618,8 @@ h1,.blk-title,.sb-title b,.modal-head b,.plat-head b{letter-spacing:-.018em}
 .stp[aria-current="step"] .n{background:var(--primary-solid);border-color:var(--primary-solid);color:var(--on-primary)}
 .stp.done{color:var(--muted)}
 .stp.done .n{background:transparent;border-color:var(--ok);color:var(--ok)}
-.tab .c.pend{background:var(--primary-soft);border:1px solid var(--primary-line);color:var(--primary-ink)}
+.tab .c.pend{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:700}
+.tab[aria-selected="true"] .c{border-color:var(--border-2)}
 .plat-filtros button[aria-pressed="true"],.radio button[aria-pressed="true"]{
   background:var(--primary-soft);border-color:var(--primary-line);color:var(--ink)}
 
@@ -609,13 +711,11 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outl
 /* El punto de nodo completado era casi invisible en claro:
    el relleno gris claro se comía la palomita. */
 .step.done .sdot{background:var(--neutral);border-color:var(--neutral)}
-.step.done .sdot::after{border-color:light-dark(#FFFFFF,#0E0F12)}
+.step.done .sdot::after{border-color:var(--sobre-neutral)}
 
 /* En claro, el halo superior desaparecía contra el lienzo gris.
    Se apoya en la sombra propia de las tarjetas. */
-.block,.plat,.modal{box-shadow:light-dark(
-  0 1px 2px rgba(16,24,40,.04) ,
-  0 1px 2px rgba(0,0,0,.45)), inset 0 0 0 1px var(--hairline)}
+.block,.plat,.modal{box-shadow:var(--shadow), inset 0 0 0 1px var(--hairline)}
 
 /* — Microinteracciones — */
 
