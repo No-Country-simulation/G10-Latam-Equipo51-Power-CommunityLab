@@ -9,6 +9,6 @@ js   = "\n".join((raiz/f"js/{f}").read_text() for f in ["api.js","datos-ejemplo.
 html = re.sub(r'<link rel="stylesheet" href="css/styles.css">', f"<style>\n{css}\n</style>", html)
 html = re.sub(r'<script src="js/[^"]+"></script>\s*', "", html)
 html = html.replace("</body>", f"<script>\n{js}\n</script>\n</body>")
-salida = raiz.parent/"prototipo-un-archivo.html"
+salida = raiz.parent/"InsightMind2.0-html-css-js.html"
 salida.write_text(html)
 print(f"{salida} · {len(html)//1024} KB")

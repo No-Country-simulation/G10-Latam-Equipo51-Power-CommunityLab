@@ -5,7 +5,7 @@
 | Ruta | Qué es | Estado |
 |---|---|---|
 | **`panel-v2/`** | **Panel de curaduría V2. Es la versión de trabajo.** HTML, CSS y JS separados, sin framework ni build | ✅ Actual |
-| `panel-v2-un-archivo.html` | El mismo panel V2 en un solo archivo, para compartir por link o servir directo | ✅ Actual |
+| `InsightMind2.0-html-css-js.html` | El mismo panel V2 en un solo archivo, para compartir por link o servir directo | ✅ Actual |
 | `InsightMind-gradioV1.html` | V1, exportación con el diseño naranja | 📦 Referencia |
 | `communitylab_mockup.html` | Mockup inicial | 📦 Referencia |
 | `../static/index.html` | Lo que hoy se sirve en `/ui`. Es la V1 con la conexión a `/upload` | ⚠️ Desactualizado |
