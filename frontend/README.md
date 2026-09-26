@@ -4,9 +4,9 @@
 
 | Ruta | Qué es | Estado |
 |---|---|---|
-| **`panel-v2/`** | **Panel de curaduría V2. Es la versión de trabajo.** HTML, CSS y JS separados, sin framework ni build | ✅ Actual |
-| `InsightMind2.0-html-css-js.html` | El mismo panel V2 en un solo archivo, para compartir por link o servir directo | ✅ Actual |
-| `InsightMind-gradioV1.html` | V1, exportación con el diseño naranja | 📦 Referencia |
+| **`panel-v2/`** | **Insight Mind 2.0. Es la versión de trabajo.** HTML, CSS y JS separados, sin framework ni build | ✅ Actual |
+| `InsightMind2.0-html-css-js.html` | Insight Mind 2.0 en un solo archivo, para compartir por link o servir directo | ✅ Actual |
+| `InsightMind-gradioV1.html` | Insight Mind V1, con el diseño anterior | 📦 Referencia |
 | `communitylab_mockup.html` | Mockup inicial | 📦 Referencia |
 | `../static/index.html` | Lo que hoy se sirve en `/ui`. Es la V1 con la conexión a `/upload` | ⚠️ Desactualizado |
 
@@ -36,7 +36,7 @@ Y abrir `http://localhost:5500`.
 
 ## Estado de la conexión con el backend
 
-**Hoy la V2 está en modo mockup**: `modoDemo: true` en `js/api.js`. Funciona completa con datos
+**Hoy Insight Mind 2.0 está en modo mockup**: `modoDemo: true` en `js/api.js`. Funciona completa con datos
 simulados, sin necesidad de servidor. El código de conexión ya está escrito y comentado.
 
 Lo que revisamos de la V1 desplegada:
@@ -49,14 +49,14 @@ Lo que revisamos de la V1 desplegada:
 | `POST /procesar` con el contrato del brief | ❌ No existe todavía |
 | `/semanas`, `/curaduria`, `/publicar`, `/tickets/avisar` | ❌ No existen todavía |
 
-Para encender la V2 cuando el backend esté listo:
+Para encenderlo cuando el backend esté listo:
 
 1. Poner la URL real en `N8N_WEBHOOK_URL` (arriba de `js/api.js`).
 2. Cambiar `modoDemo: true` por `false`.
 
 ## Para servirlo desde `main.py`
 
-Hoy la línea final de `main.py` sirve `static/` en `/ui`. Para servir la V2:
+Hoy la línea final de `main.py` sirve `static/` en `/ui`. Para servir Insight Mind 2.0:
 
 ```python
 app.mount("/ui", StaticFiles(directory="frontend/panel-v2", html=True), name="ui")

@@ -1,11 +1,11 @@
-# Panel de curaduría V2 · HTML + CSS + JavaScript
+# Insight Mind 2.0 · HTML + CSS + JavaScript
 
-Front del panel de Insight Mind. Sin frameworks, sin build, sin `npm install`.
+Front de Insight Mind. Sin frameworks, sin build, sin `npm install`.
 
 ## Estructura
 
 ```
-panel/
+frontend/panel-v2/
 ├── index.html          # estructura de todas las secciones
 ├── css/
 │   └── styles.css      # variables de tema, componentes, responsive
