@@ -4,7 +4,7 @@
 
 | Ruta | Qué es | Estado |
 |---|---|---|
-| **`panel-v2/`** | **Insight Mind 2.0. Es la versión de trabajo.** HTML, CSS y JS separados, sin framework ni build | ✅ Actual |
+| **`insightmind-v2/`** | **Insight Mind 2.0. Es la versión de trabajo.** HTML, CSS y JS separados, sin framework ni build | ✅ Actual |
 | `InsightMind2.0-html-css-js.html` | Insight Mind 2.0 en un solo archivo, para compartir por link o servir directo | ✅ Actual |
 | `InsightMind-gradioV1.html` | Insight Mind V1, con el diseño anterior | 📦 Referencia |
 | `communitylab_mockup.html` | Mockup inicial | 📦 Referencia |
@@ -29,7 +29,7 @@
 No se abre con doble clic: el navegador bloquea las peticiones con `file://`.
 
 ```bash
-python3 -m http.server 5500 --directory frontend/panel-v2
+python3 -m http.server 5500 --directory frontend/insightmind-v2
 ```
 
 Y abrir `http://localhost:5500`.
@@ -59,7 +59,7 @@ Para encenderlo cuando el backend esté listo:
 Hoy la línea final de `main.py` sirve `static/` en `/ui`. Para servir Insight Mind 2.0:
 
 ```python
-app.mount("/ui", StaticFiles(directory="frontend/panel-v2", html=True), name="ui")
+app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")
 ```
 
 Al quedar en el mismo origen que la API, deja de hacer falta el CORS abierto a `*`.

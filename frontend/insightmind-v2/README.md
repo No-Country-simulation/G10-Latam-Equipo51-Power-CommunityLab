@@ -5,7 +5,7 @@ Front de Insight Mind. Sin frameworks, sin build, sin `npm install`.
 ## Estructura
 
 ```
-frontend/panel-v2/
+frontend/insightmind-v2/
 ├── index.html          # estructura de todas las secciones
 ├── css/
 │   └── styles.css      # variables de tema, componentes, responsive
@@ -20,7 +20,7 @@ frontend/panel-v2/
 No se abre con doble clic (el navegador bloquea las peticiones con `file://`). Levanta un servidor:
 
 ```bash
-python3 -m http.server 5500 --directory frontend/panel-v2
+python3 -m http.server 5500 --directory frontend/insightmind-v2
 ```
 
 Y abre `http://localhost:5500`.
