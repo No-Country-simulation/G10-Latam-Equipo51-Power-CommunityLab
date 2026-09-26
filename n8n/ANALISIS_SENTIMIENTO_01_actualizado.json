@@ -1,0 +1,793 @@
+{
+  "name": "ANALISIS_SENTIMIENTO_01_actualizado",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -672
+      ],
+      "id": "6fb7a7e5-c385-43b9-b793-771fd335626e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "http://129.213.94.45:8000/files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -608,
+        -576
+      ],
+      "id": "ffb95136-1684-456b-a193-c17e75fde65c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "=http://129.213.94.45:8000/download/{{ $json.name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -384,
+        -576
+      ],
+      "id": "5e27d50e-ddc4-4315-9dcf-fb08058e6b2b",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        -576
+      ],
+      "id": "b66ffd51-4c64-4099-83c3-3a44ddf5ef61",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1ba3687f-a3cb-473c-ab85-33e87182c7f6",
+              "name": "prompt",
+              "value": "=Analiza el siguiente texto.  Devuelve únicamente un JSON válido:  {   \"sentimiento\":\"POSITIVO|NEUTRAL|NEGATIVO\",   \"tematica\":\"tema principal\",   \"resumen\":\"resumen breve\" }  Texto: {{ $json.data.interaccion.texto }}  ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        64,
+        -576
+      ],
+      "id": "21a96e42-7f20-4fd0-a153-53e4bc10b7c7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cohere.ai/v2/chat",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <API KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"command-r-08-2024\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($json.prompt) }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        496,
+        -576
+      ],
+      "id": "e3c47337-87d4-451a-87dd-64ae575b9d90",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -576
+      ],
+      "id": "fa63be67-3035-4da7-873e-c861aed5138b",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "procesar-lote",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        -432
+      ],
+      "id": "0b9e0053-c2bb-410d-9298-1d412fa39c4b",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp = $json;\nlet raw = resp.message?.content?.[0]?.text || \"\";\nraw = raw.replace(/```json|```/g, \"\").trim();\n\nlet ia;\ntry { ia = JSON.parse(raw); }\ncatch (e) { ia = { sentimiento: \"NEUTRAL\", tematica: \"sin_tema\", resumen: raw.slice(0,120) }; }\n\nconst original = $('Edit Fields').item.json;\n\nreturn {\n  json: {\n    autor: original.data?.interaccion?.autor ?? null,\n    texto: original.data?.interaccion?.texto ?? null,\n    mensaje_entrada: original.data?.interaccion?.texto ?? null,\n    respuesta_ia: raw,\n    sentimiento: ia.sentimiento,\n    tematica: ia.tematica,\n    resumen: ia.resumen\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -576
+      ],
+      "id": "f89992e8-fedd-49db-b2d3-23fbd8708bd7",
+      "name": "Interpretar respuesta IA"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst contar = s => items.filter(m => m.sentimiento === s).length;\n\nreturn [{\n  json: {\n    total: items.length,\n    positivo: contar(\"POSITIVO\"),\n    neutral: contar(\"NEUTRAL\"),\n    negativo: contar(\"NEGATIVO\"),\n    mensajes: items\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -576
+      ],
+      "id": "234893b9-d480-4659-b390-b13e0c42855e",
+      "name": "Consolidar sentimiento"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1168,
+        -576
+      ],
+      "id": "b834e2bf-7bc9-406d-ae4f-0ce1a4923b64",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {
+    "HTTP Request": [
+      {
+        "json": {
+          "name": "mensaje_0001.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0002.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0003.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0004.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0005.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0006.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0007.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0008.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0009.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0010.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0011.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0012.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0013.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0014.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0015.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0016.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0017.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0018.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0019.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0020.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0021.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0022.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0023.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0024.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0025.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0026.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0027.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0028.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0029.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0030.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0031.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0032.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0033.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0034.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0035.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0036.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0037.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0038.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0039.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0040.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0041.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0042.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0043.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0044.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0045.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0046.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0047.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0048.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0049.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0050.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0051.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0052.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0053.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0054.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0055.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0056.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0057.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0058.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0059.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      },
+      {
+        "json": {
+          "name": "mensaje_0060.json",
+          "size": null,
+          "etag": null,
+          "modified": "None"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Interpretar respuesta IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpretar respuesta IA": {
+      "main": [
+        [
+          {
+            "node": "Consolidar sentimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar sentimiento": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6de05d2b-a455-4ab2-996c-0215b214bb9b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4ebc323aefaa6cd8decbe9fd2c8dbc4f71bf95f85775bfebcd8cdea154014a28"
+  },
+  "nodeGroups": [],
+  "id": "LMpgGvxws1c1PZ46",
+  "tags": []
+}

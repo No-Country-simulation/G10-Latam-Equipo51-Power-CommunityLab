@@ -1,10 +1,22 @@
 from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 import oci
 import io
 
 app = FastAPI(
     title="OCI Object Storage API"
+)
+
+# Necesario para que el frontend (InsightMind-gradioV1.html) pueda hacer
+# fetch() a esta API desde otro origen. En producción, cambia allow_origins
+# por la URL exacta donde sirvas el frontend en vez de "*".
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 config = oci.config.from_file()
@@ -97,3 +109,9 @@ def delete_file(filename: str):
         "message": "Archivo eliminado",
         "file": filename
     }
+
+
+# Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde
+# la misma instancia, en el mismo puerto que la API: http://<tu-ip>:8000/ui/
+# Va al final para no pisar las rutas /files, /upload, /download definidas arriba.
+app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
