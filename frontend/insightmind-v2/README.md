@@ -61,10 +61,10 @@ En producción, el mismo servidor sirve la API y el panel. En `api/main.py`:
 ```python
 from fastapi.staticfiles import StaticFiles
 
-app.mount("/panel", StaticFiles(directory="panel", html=True), name="panel")
+app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")
 ```
 
-El panel queda en `http://localhost:8000/panel`. Al estar en el mismo origen, no hace falta CORS.
+El panel queda en `http://localhost:8000/ui`. Al estar en el mismo origen, no hace falta CORS.
 
 Si prefieren tenerlos separados durante el desarrollo, agreguen CORS en la API:
 
