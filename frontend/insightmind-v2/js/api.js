@@ -3,11 +3,14 @@
    Así el front avanza con datos falsos mientras la API se construye. */
 
 const API = {
-  base: "http://localhost:8000",
+  /* FastAPI sirve el frontend en /ui y la API en el mismo puerto, así que
+     tomamos el origen real de la página en vez de fijar "localhost". */
+  base: window.location.origin,
 
   /* Con true, el panel usa los datos de datos-ejemplo.js y no llama al servidor.
-     Cámbialo a false cuando la API de Jorge esté arriba. */
-  modoDemo: true,
+     En false, /procesar llama de verdad a FastAPI (main.py), que a su vez
+     invoca analizador_sentimiento.py (Cohere) por cada archivo del bucket. */
+  modoDemo: false,
 
   async _fetch(ruta, opciones = {}) {
     const r = await fetch(this.base + ruta, {
@@ -23,6 +26,19 @@ const API = {
   async procesarLote(lote) {
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
     return this._fetch("/procesar", { method: "POST", body: JSON.stringify(lote) });
+  },
+
+  /* POST /upload — sube un archivo real al bucket de OCI.
+     No usa _fetch porque FormData necesita fijar su propio boundary
+     en Content-Type; si lo forzamos a application/json, el backend no
+     puede leer el archivo. */
+  async subirArchivo(archivo) {
+    if (this.modoDemo) return { message: "Archivo subido (demo)", file: archivo.name };
+    const fd = new FormData();
+    fd.append("file", archivo);
+    const r = await fetch(this.base + "/upload", { method: "POST", body: fd });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText} en /upload`);
+    return r.json();
   },
 
   /* GET /semanas — lista de semanas disponibles en el bucket de OCI */
@@ -92,4 +108,3 @@ async function conError(promesa, mensaje) {
     return null;
   }
 }
-

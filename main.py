@@ -1,9 +1,20 @@
+import json
+
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 import oci
 import io
+
+from analizador_sentimiento import analizar_lote
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+BUCKET_NAME  = os.getenv("BUCKET_NAME")
 
 app = FastAPI(
     title="OCI Object Storage API"
@@ -24,8 +35,6 @@ config = oci.config.from_file()
 client = oci.object_storage.ObjectStorageClient(config)
 
 namespace = client.get_namespace().data
-
-BUCKET_NAME = "comunity_bucket_51"
 
 
 @app.get("/files")
@@ -49,7 +58,6 @@ def list_files():
     return files
 
 
-
 @app.post("/upload")
 async def upload_file(file: UploadFile):
 
@@ -66,7 +74,6 @@ async def upload_file(file: UploadFile):
         "message": "Archivo subido",
         "file": file.filename
     }
-
 
 
 @app.get("/download/{filename}")
@@ -111,8 +118,50 @@ def delete_file(filename: str):
     }
 
 
+def _extraer_interaccion(contenido: dict) -> dict:
+    """
+    Soporta las 3 formas que puede traer un archivo del bucket:
+    - {"interaccion": {"autor":..., "texto":...}, "origen_comunidad":..., ...}  <- tu formato real
+    - {"data": {"interaccion": {...}}}                                          <- formato original de n8n
+    - {"autor":..., "texto":...}                                                <- archivo plano
+    """
+    data = contenido.get("data")
+    if isinstance(data, dict) and isinstance(data.get("interaccion"), dict):
+        return data["interaccion"]
+    if isinstance(contenido.get("interaccion"), dict):
+        return contenido["interaccion"]
+    return contenido
+
+
+@app.post("/procesar")
+def procesar_lote():
+    """
+    Reemplaza el workflow de n8n "ANALISIS_SENTIMIENTO_01_actualizado":
+      1. Lista los archivos del bucket (igual que GET /files)
+      2. Descarga cada uno (igual que GET /download/{name})
+      3. Extrae la interacción (autor/texto)
+      4. Analiza cada mensaje con Cohere (analizador_sentimiento.py)
+      5. Devuelve el paquete consolidado que espera la grilla del frontend
+    """
+    archivos = client.list_objects(
+        namespace_name=namespace,
+        bucket_name=BUCKET_NAME
+    ).data.objects
+
+    interacciones = []
+    for obj in archivos:
+        raw_obj = client.get_object(
+            namespace_name=namespace,
+            bucket_name=BUCKET_NAME,
+            object_name=obj.name
+        )
+        contenido = json.loads(raw_obj.data.content)
+        interacciones.append(_extraer_interaccion(contenido))
+
+    return analizar_lote(interacciones)
+
+
 # Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde
 # la misma instancia, en el mismo puerto que la API: http://<tu-ip>:8000/ui/
 # Va al final para no pisar las rutas /files, /upload, /download definidas arriba.
-app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
-#app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")
+app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")

@@ -26,12 +26,16 @@ function toast(titulo,texto,ok,undo){
 
 function construir(){
   const a=[];let n=1;const add=o=>a.push(Object.assign({id:"A"+(n++),estado:"Pendiente"},o));
-  DATOS.filter(m=>ruta(m)==="exito").forEach(m=>{
+  const exitos=DATOS.filter(m=>ruta(m)==="exito").sort((x,y)=>y.score-x.score);
+  exitos.forEach((m,i)=>{
     add({formato:"Post de LinkedIn",fuente:m.id,score:m.score,texto:linkedinTxt(m)});
-    if(m.id==="m1")add({formato:"Hilo de X",fuente:m.id,score:m.score-4,texto:hiloTxt(m)});});
-  add({formato:"Tip / FAQ",fuente:"m2",score:82,texto:faq1()});
-  add({formato:"Tip / FAQ",fuente:"m10",score:69,texto:faq2()});
-  add({formato:"Destaque de newsletter",fuente:"m1",score:90,texto:newsTxt()});
+    if(i===0)add({formato:"Hilo de X",fuente:m.id,score:m.score-4,texto:hiloTxt(m)});});
+  DATOS.filter(m=>ruta(m)==="faq").sort((x,y)=>y.score-x.score).slice(0,2)
+    .forEach(m=>add({formato:"Tip / FAQ",fuente:m.id,score:m.score,texto:faqGenerico(m)}));
+  if(DATOS.length){
+    const pos=DATOS.filter(m=>m.sent>.2).length;
+    add({formato:"Destaque de newsletter",fuente:(exitos[0]||DATOS[0]).id,score:90,
+      texto:newsletterGenerico(DATOS,Math.round(pos/DATOS.length*100))});}
   const t=DATOS.filter(m=>ruta(m)==="ticket").map((m,i)=>({id:"T"+(i+1),fuente:m.id,sev:m.sent<=-.6?"Alta":"Media",aviso:null,estado:"Abierto"}));
   return {activos:a,tickets:t};}
 
@@ -48,7 +52,7 @@ function ir(p){
   titulo.textContent=META[p][0];subtitulo.textContent=META[p][1];
   mtop_pag.textContent=META[p][0];cerrarMenu();
   acciones.innerHTML="";
-  if(p==="flujo"&&E.procesado)acciones.appendChild(el("span","mini","Lote 2026-semana-04 · 12 mensajes · 41 s"));
+  if(p==="flujo"&&E.procesado)acciones.appendChild(el("span","mini",`Lote 2026-semana-04 · ${DATOS.length} mensajes`));
   window.scrollTo({top:0,behavior:"smooth"});}
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>ir(b.dataset.p));
 
@@ -71,26 +75,50 @@ function irPaso(n){E.paso=n;save();
     if(i===n)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");});
   [1,2,3].forEach(i=>$("#paso_"+i).hidden=(i!==n));}
 
-btn_file.onclick=()=>file.click(); file.onchange=validar; btn_ejemplo.onclick=validar;
+btn_file.onclick=()=>file.click(); file.onchange=subirYValidar; btn_ejemplo.onclick=validar;
 drop.addEventListener("dragover",e=>{e.preventDefault();drop.style.borderColor="var(--primary)";});
 drop.addEventListener("dragleave",()=>drop.style.borderColor="");
-drop.addEventListener("drop",e=>{e.preventDefault();drop.style.borderColor="";validar();});
+drop.addEventListener("drop",e=>{e.preventDefault();drop.style.borderColor="";
+  if(e.dataTransfer.files[0]){file.files=e.dataTransfer.files;subirYValidar();}});
 function validar(){validacion.hidden=false;toast("Archivo cargado","12 interacciones válidas · 1 duplicada eliminada");}
+async function subirYValidar(){
+  const archivo=file.files[0];if(!archivo)return;
+  const r=await conError(API.subirArchivo(archivo),"No se pudo subir el archivo a OCI");
+  if(!r)return;
+  validacion.hidden=false;
+  toast("Archivo subido a OCI",archivo.name,true);}
 
 const PASOS=["validar · esquema Pydantic","limpiar · enmascarar datos personales","analizar · sentimiento y temas","agrupar_preguntas · dudas similares","router · 4 reglas condicionales","generar · LinkedIn, X, FAQ y newsletter","newsletter_semanal · highlights","consolidar · paquete oficial","guardar · OCI Object Storage"];
 btn_procesar.onclick=()=>{
   irPaso(2);steps.innerHTML="";oci_linea.hidden=true;oci_ruta.textContent="";analisis_resultado.hidden=true;barra.style.transform="scaleX(0)";
   PASOS.forEach(p=>steps.appendChild(el("div","step",'<span class="sdot"></span><span>'+p+'</span>')));
   const nodos=[...steps.children];let i=0;
+  /* La llamada real a /procesar arranca ya (lee el bucket, analiza cada
+     mensaje con Cohere). La animación de pasos corre en paralelo solo
+     como feedback visual; cuando termina, esperamos la respuesta real. */
+  const peticion=conError(API.procesarLote({}),
+    "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
   (function paso(){
     if(i>0)nodos[i-1].className="step done";
     barra.style.transform=`scaleX(${i/nodos.length})`;
-    if(i>=nodos.length){barra.style.transform="scaleX(1)";return fin();}
+    if(i>=nodos.length){barra.style.transform="scaleX(1)";return peticion.then(fin);}
     nodos[i].className="step run";i++;setTimeout(paso,360);})();};
-function fin(){
+function fin(resultado){
+  if(!resultado){irPaso(1);return;}   /* conError ya mostró el toast de error */
   oci_ruta.textContent="activos/2026-semana-04/paquete-distribucion.json";oci_linea.hidden=false;
+
+  /* Reemplaza el lote de ejemplo por los mensajes reales que analizó Cohere.
+     DATOS es const: se muta el arreglo en vez de reasignarlo. */
+  DATOS.length=0;
+  resultado.mensajes.forEach((m,i)=>DATOS.push({
+    id:"m"+(i+1),autor:m.autor,canal:m.canal||"general",tipo:m.tipo,
+    sent:m.sent,score:m.score,idioma:m.idioma||"es",texto:m.texto,
+    por_que:m.por_que,temas:[m.tipo],
+    apoyo:m.tipo==="queja"||m.tipo==="problema_acceso"}));
+
   const c=construir();E.activos=c.activos;E.tickets=c.tickets;E.procesado=true;save();
-  pintar();analisis_resultado.hidden=false;toast("Lote procesado","7 activos y 3 tickets generados",true);}
+  pintar();analisis_resultado.hidden=false;
+  toast("Lote procesado",`${c.activos.length} activos y ${c.tickets.length} tickets generados`,true);}
 btn_a_3.onclick=()=>irPaso(3);
 
 /* ---------- ANÁLISIS ---------- */
@@ -107,7 +135,8 @@ function pintarAnalisis(){
   const nuevos=["Acceso a laboratorios","Plataforma / Video"];
   temas.innerHTML=Object.entries(t).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,c])=>
     `<tr><td>${k} ${nuevos.includes(k)?'<span class="pill p-pri">nuevo</span>':""}</td><td class="mono" style="width:60px">${c}</td></tr>`).join("");
-  banner_slot.innerHTML=`<div class="note err">${ic("alerta")}<div><b>Alerta de sentimiento.</b> Los negativos pasaron de 8% a ${pct(neg)}% frente a la semana 03. Origen: acceso a laboratorios de OCI con 2 reportes y videos del módulo 3.</div></div>`;
+  const nivel=pct(neg)>=25?"err":pct(neg)>=15?"warn":"info";
+  banner_slot.innerHTML=`<div class="note ${nivel}">${ic("alerta")}<div><b>${nivel==="err"?"Alerta de sentimiento.":"Resumen del lote."}</b> ${pct(neg)}% de los mensajes analizados fueron negativos, sobre ${DATOS.length} interacciones.</div></div>`;
   const cuenta={};E.activos.forEach(a=>cuenta[a.formato]=(cuenta[a.formato]||0)+1);
   resumen_produccion.innerHTML=Object.entries(cuenta).map(([f,c])=>{const p=PLAT[FORMATOS[f].plat];
     return `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:7px">
@@ -441,13 +470,3 @@ btn_umbrales.onclick=()=>{
 
 function pintar(){pintarAnalisis();pintarCuraduria();pintarTickets();pintarPubs();pintarConex();pintarHistorial();}
 pintarChips();pintar();ir("flujo");irPaso(1);
-
-
-/* ---------- CONEXIÓN CON BACKEND REAL (FastAPI + n8n) ---------- */
-/* API_BASE se toma automáticamente del origen donde cargó esta página
-   (http://<tu-ip>:8000, ya que FastAPI la sirve desde /ui/). Si algún día
-   sirves el HTML desde otro lado que no sea la misma API, pon aquí la URL
-   completa a mano, ej: "http://192.0.2.10:8000" */
-const API_BASE = window.location.origin;
-/* N8N_WEBHOOK_URL sí la tienes que poner a mano: es otro servicio. */
-const N8N_WEBHOOK_URL = "http://129.213.94.45:5678/webhook/procesar-lote";

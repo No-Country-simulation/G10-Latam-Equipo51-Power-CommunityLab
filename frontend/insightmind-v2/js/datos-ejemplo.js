@@ -59,17 +59,26 @@ function ruta(m){if(m.score<U.descartar)return "descartado";
 const NOM={exito:"Caso de éxito",faq:"Tip / FAQ",ticket:"Ticket",descartado:"Descartado",insight:"Insight"};
 const PILL={exito:"p-ok",faq:"p-warn",ticket:"p-alert",descartado:"p-mute",insight:"p-pri"};
 
+const citaDe=m=>m.cita||(m.texto.length>140?m.texto.slice(0,140)+"…":m.texto);
 const linkedinTxt=m=>m.idioma==="pt"
- ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${m.cita}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
- : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo==="testimonio"?"ser contratada":"lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${m.cita}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
+ ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${citaDe(m)}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
+ : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo==="testimonio"?"ser contratada":"lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${citaDe(m)}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
 const hiloTxt=m=>{const n=m.autor.split(" ")[0];return [
  `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
- `"${m.cita}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
+ `"${citaDe(m)}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
  `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
  `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`].join("\n\n———\n\n");};
+/* faq1/faq2/newsTxt quedan como muestra fija del modo demo.
+   faqGenerico/newsletterGenerico arman el contenido a partir de los mensajes
+   reales que devuelve /procesar, sin nombres ni temas hardcodeados. */
 const faq1=()=>`**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
 const faq2=()=>`**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
 const newsTxt=()=>`## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
+const faqGenerico=m=>`**Pregunta de ${m.autor} · ${m.canal||"general"}**\n\n${m.texto}\n\n_Motivo de la clasificación: ${m.por_que}_\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const newsletterGenerico=(mensajes,pctPos)=>{
+ const top=mensajes.slice().sort((a,b)=>b.score-a.score)[0];
+ const preguntas=mensajes.filter(m=>m.tipo==="pregunta_tecnica").length;
+ return `## Community Highlights\n\n**🏆 Mensaje destacado de la semana**\n${top?top.autor+": "+top.texto.slice(0,140)+(top.texto.length>140?"…":""):"Sin datos"}\n\n**❓ Preguntas técnicas**\n${preguntas} pregunta(s) recibidas.\n\n**🔢 Cifra de la semana**\n${mensajes.length} interacciones · ${pctPos}% positivas.`;};
 
 /* semanas anteriores simuladas */
 const HIST={
