@@ -1283,10 +1283,33 @@ const API = {
 
   /* POST /tickets/avisar — manda los tickets al webhook de Discord o Slack */
   async avisarTickets(ticketIds, destino) {
-    if (this.modoDemo) return { status: "exito", enviados: ticketIds.length };
+
+    // validamos destino de plataformas
+    const destinosValidos = ["slack", "discord"];
+
+    if (!destinosValidos.includes(destino)) {
+        throw new Error(
+            `Destino no válido: ${destino}. ` +
+            `Debe ser slack o discord.`
+        );
+    }
+
+    if (this.modoDemo) 
+      return { 
+        status: "exito", enviados: ticketIds.length
+      };
+
+    const mensaje = "🎫 **Tickets para atención**\n\n" + 
+      ticketIds.map(ticket => `• \`${ticket}\``).join("\n");
+
     return this._fetch("/tickets/avisar", {
       method: "POST",
-      body: JSON.stringify({ tickets: ticketIds, destino }),
+      body: JSON.stringify(
+        { 
+          tickets: ticketIds,
+          destino
+        }
+      ),
     });
   },
 

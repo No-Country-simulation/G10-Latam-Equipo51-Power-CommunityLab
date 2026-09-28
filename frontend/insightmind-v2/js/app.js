@@ -88,6 +88,7 @@ function abrirMenu() {
   document.body.classList.add("menu-abierto"); scrim.hidden = false;
   hamb.setAttribute("aria-expanded", "true"); hamb.setAttribute("aria-label", "Cerrar menú");
 }
+
 function cerrarMenu() {
   if (!document.body.classList.contains("menu-abierto")) return;
   document.body.classList.remove("menu-abierto"); hamb.setAttribute("aria-expanded", "false");
@@ -118,7 +119,9 @@ drop.addEventListener("drop", e => {
   e.preventDefault(); drop.style.borderColor = "";
   if (e.dataTransfer.files[0]) { file.files = e.dataTransfer.files; subirYValidar(); }
 });
+
 function validar() { validacion.hidden = false; toast("Archivo cargado", "12 interacciones válidas · 1 duplicada eliminada"); }
+
 async function subirYValidar() {
   const archivo = file.files[0]; if (!archivo) return;
   const r = await conError(API.subirArchivo(archivo), "No se pudo subir el archivo a OCI");
@@ -504,7 +507,8 @@ function visualizarTicketsEn(cont) {
   $("#btn_avisar").onclick = () => avisar("discord");
 }
 
-function avisar(dest) {
+// función para enviar mensajes de los tickets pendientes mediante slack/discord
+async function avisar(dest) {
  
   if (!E.conex[dest]) { 
     ir("conexiones"); 
@@ -514,7 +518,16 @@ function avisar(dest) {
   const pend = E.tickets.filter(t => !t.aviso);
   if (!pend.length) return toast("Nada que avisar", "Todos los tickets ya se avisaron.");
 
-  pend.forEach(t => { t.aviso = dest; t.estado = "En curso"; }); 
+  console.log("Avisando tickets a " + dest, pend);
+
+  pend.forEach(t => { 
+    t.aviso = dest; 
+    t.estado = "En curso"; 
+  }); 
+
+  await conError(API.avisarTickets(
+    { tickets: pend.map(t => t.id), destino: dest }
+  ), "No se pudo enviar avisar tickets pendientes.");
   
   save(); 
   visualizar();

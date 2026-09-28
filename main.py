@@ -4,6 +4,7 @@ from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
+import requests
 import oci
 import io
 
@@ -159,6 +160,68 @@ def procesar_lote():
         interacciones.append(_extraer_interaccion(contenido))
 
     return analizar_lote(interacciones)
+
+@app.post("/tickets/avisar")
+def avisar_mensaje(mensaje: str, destino: str):
+
+    """
+    Envia un mensaje a un destino (slack o discord) 
+    usando los webhooks configurados en el frontend.":
+    """
+ 
+    destino = destino.lower().strip()
+
+    if destino == "slack":
+        _enviar_slack(mensaje)
+    elif destino == "discord":
+        _enviar_discord(mensaje)
+    else:
+        raise ValueError(
+            f"Destino no soportado: {destino}"
+        )
+
+def _enviar_slack(mensaje: str):
+
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+
+    if not webhook_url:
+        raise RuntimeError(
+            "No está configurado SLACK_WEBHOOK_URL"
+        )
+
+    payload = {
+        "text": mensaje
+    }
+
+    response = requests.post(
+        webhook_url,
+        json=payload,
+        timeout=10
+    )
+
+    response.raise_for_status()
+
+
+def _enviar_discord(mensaje: str):
+
+    webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+
+    if not webhook_url:
+        raise RuntimeError(
+            "No está configurado DISCORD_WEBHOOK_URL"
+        )
+
+    payload = {
+        "content": mensaje
+    }
+
+    response = requests.post(
+        webhook_url,
+        json=payload,
+        timeout=10
+    )
+
+    response.raise_for_status()
 
 
 # Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde
