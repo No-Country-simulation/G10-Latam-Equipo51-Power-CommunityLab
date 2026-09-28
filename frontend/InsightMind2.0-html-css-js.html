@@ -1299,9 +1299,6 @@ const API = {
         status: "exito", enviados: ticketIds.length
       };
 
-    const mensaje = "🎫 **Tickets para atención**\n\n" + 
-      ticketIds.map(ticket => `• \`${ticket}\``).join("\n");
-
     return this._fetch("/tickets/avisar", {
       method: "POST",
       body: JSON.stringify(

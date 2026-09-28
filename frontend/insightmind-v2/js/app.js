@@ -525,8 +525,11 @@ async function avisar(dest) {
     t.estado = "En curso"; 
   }); 
 
+  const mensaje = "🎫 **Tickets para atención**\n\n" + 
+     pend.map(t => `• \`${t.id}\``).join("\n");
+
   await conError(API.avisarTickets(
-    { tickets: pend.map(t => t.id), destino: dest }
+    { mensaje, destino: dest }
   ), "No se pudo enviar avisar tickets pendientes.");
   
   save(); 
