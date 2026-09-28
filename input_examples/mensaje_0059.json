@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_30",
+  "interaccion": {
+    "autor": "Cristiane Rocha",
+    "canal": "#proyectos",
+    "tipo": "avance_proyecto",
+    "texto": "Lance una plataforma de gestion de conocimiento basada en agentes y busqueda semantica."
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_04",
+  "interaccion": {
+    "autor": "Gustavo Rocha",
+    "canal": "#dudas-fastapi",
+    "tipo": "pregunta_tecnica",
+    "texto": "Existe alguna estrategia recomendada para manejar tareas asincronas de larga duracion en FastAPI?"
+  }
+}

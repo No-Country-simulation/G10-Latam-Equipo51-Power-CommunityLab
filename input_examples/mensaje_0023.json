@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_12",
+  "interaccion": {
+    "autor": "Ricardo Melo",
+    "canal": "#proyectos",
+    "tipo": "avance_proyecto",
+    "texto": "Estoy integrando Oracle Object Storage con una API personalizada para almacenamiento de documentos."
+  }
+}

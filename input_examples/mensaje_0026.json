@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_13",
+  "interaccion": {
+    "autor": "Lucas Albuquerque",
+    "canal": "#dudas-langgraph",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como estructurar routers con reintentos automaticos en LangGraph?"
+  }
+}

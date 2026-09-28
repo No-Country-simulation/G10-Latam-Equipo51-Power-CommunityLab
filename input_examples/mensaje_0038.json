@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_19",
+  "interaccion": {
+    "autor": "Kelly Moraes",
+    "canal": "#dudas-devops",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como gestionan secretos en pipelines CI/CD?"
+  }
+}

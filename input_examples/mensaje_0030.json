@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_15",
+  "interaccion": {
+    "autor": "Cintia Barros",
+    "canal": "#dudas-kubernetes",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como exponen servicios internos de manera segura en Kubernetes?"
+  }
+}

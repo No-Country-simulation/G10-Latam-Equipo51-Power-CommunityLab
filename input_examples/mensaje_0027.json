@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_14",
+  "interaccion": {
+    "autor": "Joao Pereira",
+    "canal": "#proyectos",
+    "tipo": "avance_proyecto",
+    "texto": "Complete una API para procesamiento de documentos PDF usando OCR e inteligencia artificial."
+  }
+}

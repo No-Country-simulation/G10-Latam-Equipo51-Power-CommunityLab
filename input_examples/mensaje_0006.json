@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_03",
+  "interaccion": {
+    "autor": "Pedro Santos",
+    "canal": "#dudas-api",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como gestionan la autenticacion OAuth2 cuando desarrollan integraciones con multiples proveedores?"
+  }
+}

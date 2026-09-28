@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_12",
+  "interaccion": {
+    "autor": "Sabrina Rocha",
+    "canal": "#dudas-oci",
+    "tipo": "pregunta_tecnica",
+    "texto": "Como gestionan credenciales de OCI de forma segura en ambientes de desarrollo?"
+  }
+}

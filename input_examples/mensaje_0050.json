@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_25",
+  "interaccion": {
+    "autor": "Denise Ferreira",
+    "canal": "#dudas-vector-db",
+    "tipo": "pregunta_tecnica",
+    "texto": "Que base vectorial ofrece mejor balance entre rendimiento y simplicidad?"
+  }
+}

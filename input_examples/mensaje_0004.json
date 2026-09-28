@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_02",
+  "interaccion": {
+    "autor": "Rafael Lima",
+    "canal": "#dudas-sql",
+    "tipo": "pregunta_tecnica",
+    "texto": "Alguien puede explicar la diferencia practica entre INNER JOIN y EXISTS en consultas de gran volumen?"
+  }
+}
