@@ -2,7 +2,11 @@
    Las llamadas al backend viven en api.js */
 
 const MODOS_TEMA = ["sistema", "claro", "oscuro"]; let tIdx = 0;
-try { tIdx = Math.max(0, MODOS_TEMA.indexOf(localStorage.getItem("clg-tema") || "sistema")); } catch (e) { }
+
+try { 
+  tIdx = Math.max(0, MODOS_TEMA.indexOf(localStorage.getItem("clg-tema") || "sistema")); 
+} catch (e) { }
+
 function aplicarTema() {
   const t = MODOS_TEMA[tIdx];
   if (t === "sistema") document.documentElement.removeAttribute("data-theme");
@@ -11,9 +15,13 @@ function aplicarTema() {
   tema_ico.innerHTML = `<use href="#i-${t === "claro" ? "sol" : t === "oscuro" ? "luna" : "sistema"}"/>`;
   try { localStorage.setItem("clg-tema", t); } catch (e) { }
 }
+
 tema.onclick = () => { tIdx = (tIdx + 1) % MODOS_TEMA.length; aplicarTema(); }; aplicarTema();
 
-let E = { activos: [], tickets: [], pubs: [], procesado: false, paso: 1, conex: {}, chips: [] };
+let E = { 
+  activos: [], tickets: [], pubs: [], procesado: false, paso: 1, conex: {}, chips: [] 
+};
+
 Object.keys(PLAT).forEach(k => E.conex[k] = PLAT[k].on);
 /* El prototipo arranca siempre limpio: el usuario ejecuta el flujo desde "Usar lote de ejemplo".
    Solo el historial trae semanas anteriores con datos. */
@@ -21,6 +29,7 @@ const save = () => { };   /* el estado vive en memoria durante la sesión; en pr
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
+
 function toast(titulo, texto, ok, undo) {
   const t = el("div", "toast" + (ok ? " ok" : ""), `<div><b>${titulo}</b>${texto || ""}</div>`);
   if (undo) { const u = el("button", "btn sm undo", "Deshacer"); u.onclick = () => { undo(); t.remove(); }; t.appendChild(u); }
@@ -28,15 +37,19 @@ function toast(titulo, texto, ok, undo) {
 }
 
 function construir() {
+  
   const a = []; let n = 1; const add = o => a.push(Object.assign({ id: "A" + (n++), estado: "Pendiente" }, o));
   const exitos = DATOS.filter(m => ruta(m) === "exito").sort((x, y) => y.score - x.score);
+  
   exitos.forEach((m, i) => {
     add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) });
     if (i === 0) add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) });
   });
+
   DATOS.filter(m => ruta(m) === "faq").sort((x, y) => y.score - x.score).slice(0, 2)
     .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
-  if (DATOS.length) {
+  
+    if (DATOS.length) {
     const pos = DATOS.filter(m => m.sent > .2).length;
     add({
       formato: "Destaque de newsletter", fuente: (exitos[0] || DATOS[0]).id, score: 90,
@@ -55,7 +68,9 @@ const META = {
   conexiones: ["Conexiones", "Vincula los destinos donde se publica."],
   ajustes: ["Ajustes", "Voz de marca, umbrales y cuentas."]
 };
+
 const PAGS = Object.keys(META);
+
 function ir(p) {
   document.querySelectorAll(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.p === p ? "page" : "false"));
   PAGS.forEach(x => $("#p_" + x).hidden = (x !== p));
@@ -65,6 +80,7 @@ function ir(p) {
   if (p === "flujo" && E.procesado) acciones.appendChild(el("span", "mini", `Lote 2026-semana-04 · ${DATOS.length} mensajes`));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
 document.querySelectorAll(".nav").forEach(b => b.onclick = () => ir(b.dataset.p));
 
 /* ---------- MENÚ MÓVIL ---------- */
@@ -158,14 +174,14 @@ function fin(resultado) {
   }));
 
   const c = construir(); E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
-  pintar(); 
+  visualizar(); 
   analisis_resultado.hidden = false;
   toast("Lote procesado", `${c.activos.length} activos y ${c.tickets.length} tickets generados`, true);
 }
 btn_a_3.onclick = () => irPaso(3);
 
 /* ---------- ANÁLISIS ---------- */
-function pintarAnalisis() {
+function visualizarAnalisis() {
   const pos = DATOS.filter(m => m.sent > .2).length, neg = DATOS.filter(m => m.sent < -.2).length, neu = DATOS.length - pos - neg;
   const pct = n => Math.round(n / DATOS.length * 100);
   
@@ -269,7 +285,7 @@ function cargarTablaMensajes(mensajes = DATOS) {
 let tabFmt = "linkedin", fEstado = {};
 const ESTADOS = ["Todos", "Pendiente", "Listo", "Publicado"];
 const pendientesDe = k => E.activos.filter(a => FORMATOS[a.formato].plat === k && a.estado === "Pendiente").length;
-function pintarCuraduria() {
+function visualizarCuraduria() {
   if (!E.procesado) {
     tabs_formato.innerHTML = "";
     curaduria.innerHTML = '<div class="block empty">Procesa un lote para ver el contenido generado.</div>'; return;
@@ -280,8 +296,8 @@ function pintarCuraduria() {
     const badge = pend ? `<span class="c pend" title="${pend} sin revisar">${pend}</span>` : `<span class="c" title="${total} en total">${total}</span>`;
     return `<button class="tab" data-t="${k}" aria-selected="${tabFmt === k}">${n}${badge}</button>`;
   }).join("");
-  tabs_formato.querySelectorAll(".tab").forEach(b => b.onclick = () => { tabFmt = b.dataset.t; pintarCuraduria(); });
-  if (tabFmt === "tickets") { conexion_aviso.innerHTML = ""; return pintarTicketsEn(curaduria); }
+  tabs_formato.querySelectorAll(".tab").forEach(b => b.onclick = () => { tabFmt = b.dataset.t; visualizarCuraduria(); });
+  if (tabFmt === "tickets") { conexion_aviso.innerHTML = ""; return visualizarTicketsEn(curaduria); }
   const p = PLAT[tabFmt], conn = E.conex[tabFmt], fE = fEstado[tabFmt] || "Todos";
   conexion_aviso.innerHTML = conn ? "" : `<div class="note">${ic("enchufe")}<div><b>${p.nom}</b> no está vinculado. Puedes aprobar, pero no publicar hasta conectarlo en Conexiones.</div></div>`;
   const todos = E.activos.filter(a => FORMATOS[a.formato].plat === tabFmt);
@@ -336,7 +352,7 @@ function pintarCuraduria() {
     cuenta(); ta.oninput = () => { cuenta(); if (ta.value !== a.texto) { a.editado = true; a.texto = ta.value; save(); } };
   });
   curaduria.innerHTML = ""; curaduria.appendChild(card);
-  card.querySelectorAll(".plat-filtros [data-e]").forEach(b => b.onclick = () => { fEstado[tabFmt] = b.dataset.e; pintarCuraduria(); });
+  card.querySelectorAll(".plat-filtros [data-e]").forEach(b => b.onclick = () => { fEstado[tabFmt] = b.dataset.e; visualizarCuraduria(); });
   const ba = card.querySelector("#btn_aprobar_todo");
   if (ba) ba.onclick = () => aprobarPendientes(tabFmt);
   const bp = card.querySelector("#btn_publicar_listos");
@@ -345,7 +361,9 @@ function pintarCuraduria() {
 }
 function aprobarPendientes(plat) {
   const n = E.activos.filter(a => FORMATOS[a.formato].plat === plat && a.estado === "Pendiente");
-  n.forEach(a => a.estado = "Listo"); save(); pintar();
+  n.forEach(a => a.estado = "Listo"); 
+  save(); 
+  visualizar();
   toast(n.length + " en cola de " + PLAT[plat].nom, "Listos para publicar cuando quieras", true);
 }
 
@@ -379,9 +397,9 @@ function publicar(id) {
   const previo = a.estado;
   a.estado = "Publicado"; a.publicado = "23 sep, 10:4" + Math.floor(Math.random() * 9);
   const pub = { fecha: a.publicado, plat: FORMATOS[a.formato].plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
-  E.pubs.unshift(pub); save(); pintar();
+  E.pubs.unshift(pub); save(); visualizar();
   toast("Publicado en " + p.nom, p.cuenta, true, () => {
-    a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); pintar();
+    a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar();
     toast("Publicación revertida", "El contenido volvió a " + previo);
   });
 }
@@ -397,10 +415,10 @@ function accion(ac, id) {
   const a = E.activos.find(x => x.id === id);
   if (ac === "publicar") return confirmarPublicacion(id);
   if (ac === "listo") {
-    a.estado = "Listo"; save(); pintar();
+    a.estado = "Listo"; save(); visualizar();
     toast("Guardado en la cola", "Listo para publicar cuando quieras · curaduria.json", true); return;
   }
-  if (ac === "descartar") { a.estado = "Descartado"; save(); pintar(); toast("Descartado", "Se puede recuperar desde el filtro Todos"); return; }
+  if (ac === "descartar") { a.estado = "Descartado"; save(); visualizar(); toast("Descartado", "Se puede recuperar desde el filtro Todos"); return; }
   /* variantes de texto: siempre parten del original generado */
   if (!a.base) a.base = a.texto;
   const partes = a.base.split("\n\n");
@@ -420,7 +438,8 @@ function accion(ac, id) {
     toast("Nueva versión", "Gancho " + (a.variante + 1) + " de " + GANCHOS.length + " · 1 llamada al LLM");
   }
   const t = $("#ta_" + id); if (t) { t.value = a.texto; t.dispatchEvent(new Event("input")); }
-  save(); pintarCuraduria();
+  save(); 
+  visualizarCuraduria();
 }
 
 function publicarLote(plat) {
@@ -442,10 +461,12 @@ function publicarLote(plat) {
       const pub = { fecha: a.publicado, plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
       nuevas.push(pub); E.pubs.unshift(pub);
     });
-    save(); pintar();
+
+    save(); 
+    visualizar();
     toast(lista.length + " publicados en " + p.nom, p.cuenta, true, () => {
       previos.forEach(x => { x.a.estado = x.estado; delete x.a.publicado; });
-      E.pubs = E.pubs.filter(x => !nuevas.includes(x)); save(); pintar(); toast("Publicaciones revertidas", "Todo volvió a la cola");
+      E.pubs = E.pubs.filter(x => !nuevas.includes(x)); save(); visualizar(); toast("Publicaciones revertidas", "Todo volvió a la cola");
     });
   };
 }
@@ -460,7 +481,8 @@ function filasTickets() {
     <td><span class="pill ${t.estado === "Resuelto" ? "p-ok" : "p-mute"}">${t.estado}</span></td></tr>`;
   }).join("");
 }
-function pintarTickets() {
+
+function visualizarTickets() {
   b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto").length : "—";
   tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="6" class="empty">Procesa un lote para generar tickets.</td></tr>';
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
@@ -469,7 +491,8 @@ function pintarTickets() {
     `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
     <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
 }
-function pintarTicketsEn(cont) {
+
+function visualizarTicketsEn(cont) {
   const card = el("div", "plat");
   card.innerHTML = `<div class="plat-head"><div class="mk" style="--pc:var(--alert)">!</div>
     <div style="flex:1"><b>Tickets internos</b><div class="mini">No se publican: se avisan en el canal del equipo</div></div>
@@ -480,17 +503,30 @@ function pintarTicketsEn(cont) {
   cont.innerHTML = ""; cont.appendChild(card);
   $("#btn_avisar").onclick = () => avisar("discord");
 }
+
 function avisar(dest) {
-  if (!E.conex[dest]) { ir("conexiones"); return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); }
+ 
+  if (!E.conex[dest]) { 
+    ir("conexiones"); 
+    return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); 
+  }
+  
   const pend = E.tickets.filter(t => !t.aviso);
   if (!pend.length) return toast("Nada que avisar", "Todos los tickets ya se avisaron.");
-  pend.forEach(t => { t.aviso = dest; t.estado = "En curso"; }); save(); pintar();
+
+  pend.forEach(t => { t.aviso = dest; t.estado = "En curso"; }); 
+  
+  save(); 
+  visualizar();
   toast(pend.length + " tickets avisados", "Mensaje enviado a " + PLAT[dest].cuenta, true);
 }
-btn_discord.onclick = () => avisar("discord"); btn_slack.onclick = () => avisar("slack");
+
+// botones de aviso rápido en la sección de Tickets
+btn_discord.onclick = () => avisar("discord"); 
+btn_slack.onclick = () => avisar("slack");
 
 /* ---------- PUBLICACIONES ---------- */
-function pintarPubs() {
+function visualizarPubs() {
   b_pub.textContent = E.pubs.length;
   const n = k => E.pubs.filter(p => p.plat === k).length;
   stats_pub.innerHTML = [["LinkedIn", n("linkedin")], ["X", n("x")], ["FAQ web", n("web")], ["Total semana", E.pubs.length]]
@@ -507,7 +543,7 @@ function pintarPubs() {
 /* ---------- HISTORIAL ---------- */
 let semanaSel = "2026-semana-03";
 
-function pintarHistorial() {
+function visualizarHistorial() {
   
   const semanas = ["2026-semana-04", "2026-semana-03", "2026-semana-02"];
   
@@ -520,7 +556,7 @@ function pintarHistorial() {
       ${s === "2026-semana-04" ? '<span class="pill p-pri">actual</span>' : ""}</button>`;
   }).join("");
  
-  lista_semanas.querySelectorAll(".semana-btn").forEach(b => b.onclick = () => { semanaSel = b.dataset.s; pintarHistorial(); });
+  lista_semanas.querySelectorAll(".semana-btn").forEach(b => b.onclick = () => { semanaSel = b.dataset.s; visualizarHistorial(); });
   const act = semanaSel === "2026-semana-04";
   const d = act ? {
     inter: E.procesado ? 12 : 0, pos: 58, neg: 25, activos: E.activos.length, publicados: E.pubs.length,
@@ -555,7 +591,7 @@ function pintarHistorial() {
 }
 
 /* ---------- CONEXIONES ---------- */
-function pintarConex() {
+function visualizarConex() {
   b_con.textContent = Object.values(E.conex).filter(Boolean).length + "/" + Object.keys(PLAT).length;
   lista_conexiones.innerHTML = Object.entries(PLAT).map(([k, p]) => {
     const on = E.conex[k];
@@ -571,19 +607,23 @@ function pintarConex() {
   lista_vinculadas.querySelectorAll("[data-c]").forEach(b => b.onclick = () => alternar(b.dataset.c));
 }
 function alternar(k) {
-  const p = PLAT[k], on = E.conex[k]; E.conex[k] = !on; save(); pintar();
+  const p = PLAT[k], on = E.conex[k]; E.conex[k] = !on; 
+  save(); 
+  visualizar();
   toast(on ? p.nom + " desvinculado" : p.nom + " conectado", on ? "Lo ya publicado no se borra." : p.cuenta, !on);
 }
 
 /* ---------- AJUSTES ---------- */
 const ESTILOS = ["Cercano", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin hashtags", "Primera persona plural"];
-function pintarChips() {
+function visualizarChips() {
   voz_chips.innerHTML = E.chips.map(c => `<span class="vchip">${c}<button data-q="${c}" title="Quitar">×</button></span>`).join("");
-  voz_chips.querySelectorAll("button").forEach(b => b.onclick = () => { E.chips = E.chips.filter(x => x !== b.dataset.q); save(); pintarChips(); });
+  voz_chips.querySelectorAll("button").forEach(b => b.onclick = () => { E.chips = E.chips.filter(x => x !== b.dataset.q); save(); visualizarChips(); });
   chips_estilo.innerHTML = ESTILOS.map(e => `<button aria-pressed="${E.chips.includes(e)}" data-e="${e}">${E.chips.includes(e) ? ic("check") : ""}${e}</button>`).join("");
   chips_estilo.querySelectorAll("button").forEach(b => b.onclick = () => {
     const e = b.dataset.e;
-    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips, e]; save(); pintarChips();
+    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips, e]; 
+    save(); 
+    visualizarChips();
   });
 }
 
@@ -611,7 +651,7 @@ function recalcular() {
     if (perdidos) toast(`${perdidos} borrador${perdidos === 1 ? "" : "es"} ya no aplica${perdidos === 1 ? "" : "n"}`,
       "Cambiaron de rama con los nuevos umbrales");
   }
-  pintar(); 
+  visualizar(); 
   toast("Umbrales aplicados", `descartar < ${U.descartar} · éxito ≥ ${U.exito_score}`, true);
   irPaso(2);
   ir("flujo");
@@ -642,16 +682,17 @@ btn_umbrales.onclick = () => {
   setTimeout(() => dlg_no.focus(), 50);
 };
 
-function pintar() { 
-  pintarAnalisis(); 
-  pintarCuraduria(); 
-  pintarTickets(); 
-  pintarPubs(); 
-  pintarConex(); 
-  pintarHistorial(); 
+// visualizar datos del flujo de trabajo
+function visualizar() { 
+  visualizarAnalisis(); 
+  visualizarCuraduria(); 
+  visualizarTickets(); 
+  visualizarPubs(); 
+  visualizarConex(); 
+  visualizarHistorial(); 
 }
 
-pintarChips(); 
-pintar(); 
+visualizarChips(); 
+visualizar(); 
 ir("flujo");
 irPaso(1);
