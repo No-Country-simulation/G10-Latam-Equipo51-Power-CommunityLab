@@ -7,9 +7,16 @@ from fastapi.responses import StreamingResponse
 import requests
 import oci
 import io
+from pydantic import BaseModel
+import logging
 
-from analizador_sentimiento import analizar_lote
-
+from backend.curaduria import guardar_curaduria
+from backend.analizador_sentimiento import (
+    COHERE_MODEL, analizar_interaccion, consolidar, mensaje_con_error,
+)
+from backend import cache_analisis
+from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
+from datetime import datetime
 from dotenv import load_dotenv
 import os
 
@@ -134,32 +141,70 @@ def _extraer_interaccion(contenido: dict) -> dict:
     return contenido
 
 
+
+
+
+from datetime import datetime
+
 @app.post("/procesar")
-def procesar_lote():
+def procesar_lote(forzar: bool = False):
     """
     Reemplaza el workflow de n8n "ANALISIS_SENTIMIENTO_01_actualizado":
-      1. Lista los archivos del bucket (igual que GET /files)
-      2. Descarga cada uno (igual que GET /download/{name})
-      3. Extrae la interacción (autor/texto)
-      4. Analiza cada mensaje con Cohere (analizador_sentimiento.py)
-      5. Devuelve el paquete consolidado que espera la grilla del frontend
+      1. Lista los archivos de entrada del bucket (ignora activos/ y analisis/)
+      2. Si ya fue analizado (mismo etag y modelo) reutiliza analisis/<archivo>.json
+      3. Si no, lo descarga, extrae la interacción y la analiza con Cohere
+      4. Guarda el resultado en analisis/ y devuelve el paquete consolidado
+
+    ?forzar=true ignora la caché y vuelve a analizar todo.
     """
-    archivos = client.list_objects(
-        namespace_name=namespace,
-        bucket_name=BUCKET_NAME
-    ).data.objects
+    log = logging.getLogger("uvicorn.error")
 
-    interacciones = []
-    for obj in archivos:
-        raw_obj = client.get_object(
-            namespace_name=namespace,
-            bucket_name=BUCKET_NAME,
-            object_name=obj.name
-        )
-        contenido = json.loads(raw_obj.data.content)
-        interacciones.append(_extraer_interaccion(contenido))
+    entradas = [
+        o for o in listar_objetos()
+        if not o.name.startswith(PREFIJOS_RESERVADOS)
+    ]
+    en_cache = set() if forzar else cache_analisis.nombres_en_cache()
 
-    return analizar_lote(interacciones)
+    mensajes = []
+    reutilizados = nuevos = omitidos = 0
+
+    for obj in entradas:
+        # 1) ¿ya analizado?
+        if obj.name in en_cache:
+            cacheado = cache_analisis.cargar(obj.name, obj.etag, COHERE_MODEL)
+            if cacheado:
+                mensajes.append(cacheado)
+                reutilizados += 1
+                continue
+
+        # 2) analizar con Cohere
+        try:
+            interaccion = _extraer_interaccion(leer_json(obj.name))
+        except ValueError:  # no es JSON
+            log.warning("Se omite %s: no es un JSON válido", obj.name)
+            omitidos += 1
+            continue
+
+        try:
+            mensaje = analizar_interaccion(interaccion)
+        except Exception as e:
+            # un mensaje que falla no tumba el lote y NO se cachea (se reintenta la próxima vez)
+            mensajes.append(mensaje_con_error(interaccion, e))
+            continue
+
+        cache_analisis.guardar(obj.name, obj.etag, COHERE_MODEL, mensaje)
+        mensajes.append(mensaje)
+        nuevos += 1
+
+    resultado = consolidar(mensajes)
+
+    hoy = datetime.now()
+    resultado["slug"] = f"{hoy.year}-semana-{hoy.isocalendar().week:02d}"
+    resultado["cache"] = {"reutilizados": reutilizados, "analizados": nuevos, "omitidos": omitidos}
+
+    return resultado
+
+
 
 @app.post("/tickets/avisar")
 def avisar_mensaje(mensaje: str, destino: str):
@@ -222,6 +267,27 @@ def _enviar_discord(mensaje: str):
     )
 
     response.raise_for_status()
+
+
+class CuraduriaRequest(BaseModel):
+    activos: list
+
+@app.put("/curaduria/{slug}")
+def actualizar_curaduria(
+    slug: str,
+    request: CuraduriaRequest
+):
+    print(f"[CURADURIA] slug={slug}")
+    print(f"[CURADURIA] activos={len(request.activos)}")
+
+    resultado = guardar_curaduria(
+        slug,
+        request.activos
+    )
+
+    print(f"[CURADURIA] resultado={resultado}")
+
+    return resultado
 
 
 # Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde

@@ -169,28 +169,24 @@ def analizar_interaccion(interaccion: dict) -> dict:
     }
 
 
-def analizar_lote(interacciones: list[dict]) -> dict:
-    """Analiza una lista de interacciones y arma el paquete consolidado (equivalente
-    al nodo 'Consolidar sentimiento' de n8n, más el campo 'ruta' por mensaje)."""
-    mensajes = []
-    for interaccion in interacciones:
-        try:
-            mensajes.append(analizar_interaccion(interaccion))
-        except Exception as e:
-            # un mensaje que falla no debe tumbar todo el lote
-            mensajes.append({
-                "autor": interaccion.get("autor", "Anónimo"),
-                "texto": interaccion.get("texto", ""),
-                "canal": interaccion.get("canal", "general"),
-                "idioma": interaccion.get("idioma", "es"),
-                "tipo": "conversacion",
-                "sentimiento": "neutral",
-                "sent": 0.0,
-                "score": 0,
-                "por_que": f"Error al analizar: {e}",
-                "ruta": "descartado",
-            })
+def mensaje_con_error(interaccion: dict, error: Exception) -> dict:
+    """Registro de relleno cuando un mensaje falla (no se cachea)."""
+    return {
+        "autor": interaccion.get("autor", "Anónimo"),
+        "texto": interaccion.get("texto", ""),
+        "canal": interaccion.get("canal", "general"),
+        "idioma": interaccion.get("idioma", "es"),
+        "tipo": "conversacion",
+        "sentimiento": "neutral",
+        "sent": 0.0,
+        "score": 0,
+        "por_que": f"Error al analizar: {error}",
+        "ruta": "descartado",
+    }
 
+
+def consolidar(mensajes: list[dict]) -> dict:
+    """Arma el paquete consolidado (equivalente al nodo 'Consolidar sentimiento' de n8n)."""
     contar = lambda s: sum(1 for m in mensajes if m["sentimiento"] == s)
     return {
         "total": len(mensajes),
@@ -199,3 +195,14 @@ def analizar_lote(interacciones: list[dict]) -> dict:
         "negativo": contar("negativo"),
         "mensajes": mensajes,
     }
+
+
+def analizar_lote(interacciones: list[dict]) -> dict:
+    """Analiza una lista de interacciones (sin caché). /procesar ya no lo usa; se deja por compatibilidad."""
+    mensajes = []
+    for interaccion in interacciones:
+        try:
+            mensajes.append(analizar_interaccion(interaccion))
+        except Exception as e:
+            mensajes.append(mensaje_con_error(interaccion, e))
+    return consolidar(mensajes)
