@@ -1,6 +1,7 @@
 import json
 
 from fastapi import FastAPI, UploadFile, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
@@ -161,67 +162,81 @@ def procesar_lote():
 
     return analizar_lote(interacciones)
 
+class TicketAvisoRequest(BaseModel):
+    mensaje: str
+    destino: str
+
 @app.post("/tickets/avisar")
-def avisar_mensaje(mensaje: str, destino: str):
+def avisar_mensaje(aviso: TicketAvisoRequest):
 
     """
     Envia un mensaje a un destino (slack o discord) 
-    usando los webhooks configurados en el frontend.":
+    usando los webhooks configurados.
     """
  
-    destino = destino.lower().strip()
+    destino = aviso.destino.lower().strip()
 
     if destino == "slack":
-        _enviar_slack(mensaje)
+        _enviar_slack(aviso.mensaje)
     elif destino == "discord":
-        _enviar_discord(mensaje)
+        _enviar_discord(aviso.mensaje)
     else:
-        raise ValueError(
-            f"Destino no soportado: {destino}"
+        raise HTTPException(
+            status_code=400,
+            detail=f"Destino no soportado: {destino}"
         )
 
+    return {"status": "exito", "mensaje": "Aviso enviado correctamente", "destino": destino}
+
+# Función para enviar mensajes a Slack usando webhooks
 def _enviar_slack(mensaje: str):
 
     webhook_url = os.getenv("SLACK_WEBHOOK_URL")
 
     if not webhook_url:
-        raise RuntimeError(
-            "No está configurado SLACK_WEBHOOK_URL"
+        raise HTTPException(
+            status_code=500,
+            detail="No está configurado SLACK_WEBHOOK_URL"
         )
 
     payload = {
         "text": mensaje
     }
 
-    response = requests.post(
-        webhook_url,
-        json=payload,
-        timeout=10
-    )
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            timeout=10
+        )
+        response.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error enviando a Slack: {e}")
 
-    response.raise_for_status()
-
-
+# Función para enviar mensajes a Discord usando webhooks
 def _enviar_discord(mensaje: str):
 
     webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
 
     if not webhook_url:
-        raise RuntimeError(
-            "No está configurado DISCORD_WEBHOOK_URL"
+        raise HTTPException(
+            status_code=500,
+            detail="No está configurado DISCORD_WEBHOOK_URL"
         )
 
     payload = {
         "content": mensaje
     }
 
-    response = requests.post(
-        webhook_url,
-        json=payload,
-        timeout=10
-    )
-
-    response.raise_for_status()
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            timeout=10
+        )
+        response.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error enviando a Discord: {e}")
 
 
 # Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde

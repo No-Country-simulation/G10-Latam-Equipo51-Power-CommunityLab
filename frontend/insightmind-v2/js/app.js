@@ -288,26 +288,36 @@ function cargarTablaMensajes(mensajes = DATOS) {
 let tabFmt = "linkedin", fEstado = {};
 const ESTADOS = ["Todos", "Pendiente", "Listo", "Publicado"];
 const pendientesDe = k => E.activos.filter(a => FORMATOS[a.formato].plat === k && a.estado === "Pendiente").length;
+
 function visualizarCuraduria() {
   if (!E.procesado) {
     tabs_formato.innerHTML = "";
     curaduria.innerHTML = '<div class="block empty">Procesa un lote para ver el contenido generado.</div>'; return;
   }
+  
   tabs_formato.innerHTML = TABS.map(([k, n]) => {
     const total = k === "tickets" ? E.tickets.length : E.activos.filter(a => FORMATOS[a.formato].plat === k).length;
-    const pend = k === "tickets" ? E.tickets.filter(t => !t.aviso).length : pendientesDe(k);
+    const pend = k === "tickets" ? E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto").length : pendientesDe(k);
     const badge = pend ? `<span class="c pend" title="${pend} sin revisar">${pend}</span>` : `<span class="c" title="${total} en total">${total}</span>`;
     return `<button class="tab" data-t="${k}" aria-selected="${tabFmt === k}">${n}${badge}</button>`;
   }).join("");
+  
   tabs_formato.querySelectorAll(".tab").forEach(b => b.onclick = () => { tabFmt = b.dataset.t; visualizarCuraduria(); });
-  if (tabFmt === "tickets") { conexion_aviso.innerHTML = ""; return visualizarTicketsEn(curaduria); }
+  if (tabFmt === "tickets") { 
+    conexion_aviso.innerHTML = ""; 
+    return visualizarTicketsEn(curaduria); 
+  }
+  
   const p = PLAT[tabFmt], conn = E.conex[tabFmt], fE = fEstado[tabFmt] || "Todos";
+  
   conexion_aviso.innerHTML = conn ? "" : `<div class="note">${ic("enchufe")}<div><b>${p.nom}</b> no está vinculado. Puedes aprobar, pero no publicar hasta conectarlo en Conexiones.</div></div>`;
+  
   const todos = E.activos.filter(a => FORMATOS[a.formato].plat === tabFmt);
   const lista = todos.filter(a => fE === "Todos" || a.estado === fE);
   const pend = pendientesDe(tabFmt);
   const listos = todos.filter(a => a.estado === "Listo").length;
   const card = el("div", "plat");
+  
   card.innerHTML = `<div class="plat-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
     <div style="flex:1;min-width:160px"><b>${p.nom}</b><div class="mini">${conn ? p.cuenta + " · " + p.modo : "sin vincular"}</div></div>
     <div class="plat-filtros">
@@ -321,39 +331,48 @@ function visualizarCuraduria() {
   if (!lista.length) card.appendChild(el("div", "empty", fE === "Todos"
     ? "Este lote no generó contenido para " + p.nom + "."
     : `Nada en estado “${fE}” en ${p.nom}.`));
-  lista.forEach(a => {
-    const m = msg(a.fuente), cfg = FORMATOS[a.formato];
-    const pillC = a.estado === "Publicado" ? "p-pri" : a.estado === "Listo" ? "p-ok" : a.estado === "Descartado" ? "p-mute" : "p-warn";
-    const it = el("div", "item " + a.estado.toLowerCase());
-    it.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:9px">
-        <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
-        <span class="pill ${pillC}">${a.estado}</span></div>
-      <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${m.autor}</summary>
-        <div class="body"><div class="meta">${m.canal} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${m.texto}
-        <div class="meta" style="margin-top:7px">POR QUÉ ESTE SCORE: ${m.por_que}</div></div></details>
-      <textarea rows="${cfg.porPost ? 8 : 6}" id="ta_${a.id}" ${a.estado === "Publicado" ? "readonly" : ""}>${a.texto}</textarea>
-      <div class="row" style="justify-content:space-between;margin-top:9px">
-        <span class="mini mono" id="c_${a.id}"></span>
-        <div class="acciones-activo">${a.estado === "Publicado"
-        ? `<span class="mini">Publicado el ${a.publicado}</span>`
-        : `<button class="btn primary sm" data-ac="publicar" data-id="${a.id}" ${conn ? "" : "disabled"}>Publicar en ${p.nom}</button>
-             <button class="btn sm" data-ac="listo" data-id="${a.id}" ${a.estado === "Listo" ? "disabled" : ""}>${a.estado === "Listo" ? ic("check") + "En cola" : "Guardar para después"}</button>
-             <span class="sep2"></span>
-             <button class="btn sm" data-ac="corto" data-id="${a.id}" title="Acorta el texto">${ic("corto")}Más corto</button>
-             <button class="btn sm" data-ac="largo" data-id="${a.id}" title="Alarga el texto o revierte el recorte">${ic("largo")}Más largo</button>
-             <button class="btn sm" data-ac="nuevo" data-id="${a.id}" title="Otra versión desde el mismo mensaje">${ic("regenerar")}Volver a generar</button>
-             <button class="btn sm" data-ac="descartar" data-id="${a.id}">Descartar</button>`}</div></div>`;
-    card.appendChild(it);
-    const ta = it.querySelector("textarea"), c = it.querySelector("#c_" + a.id);
-    const cuenta = () => {
-      if (cfg.porPost) {
-        const ps = ta.value.split("———"), mx = Math.max(...ps.map(x => x.trim().length));
-        c.textContent = `${ps.length} posts · máx ${mx}/280`; c.style.color = mx > 280 ? "var(--alert)" : "";
-      }
-      else { c.textContent = `${ta.value.length}/${cfg.limite} caracteres`; c.style.color = ta.value.length > cfg.limite ? "var(--alert)" : ""; }
-    };
-    cuenta(); ta.oninput = () => { cuenta(); if (ta.value !== a.texto) { a.editado = true; a.texto = ta.value; save(); } };
+  
+    lista.forEach(a => {
+      const m = msg(a.fuente), cfg = FORMATOS[a.formato];
+      const pillC = a.estado === "Publicado" ? "p-pri" : a.estado === "Listo" ? "p-ok" : a.estado === "Descartado" ? "p-mute" : "p-warn";
+      const it = el("div", "item " + a.estado.toLowerCase());
+      it.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:9px">
+          <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
+          <span class="pill ${pillC}">${a.estado}</span></div>
+        <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${m.autor}</summary>
+          <div class="body"><div class="meta">${m.canal} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${m.texto}
+          <div class="meta" style="margin-top:7px">POR QUÉ ESTE SCORE: ${m.por_que}</div></div></details>
+        <textarea rows="${cfg.porPost ? 8 : 6}" id="ta_${a.id}" ${a.estado === "Publicado" ? "readonly" : ""}>${a.texto}</textarea>
+        <div class="row" style="justify-content:space-between;margin-top:9px">
+          <span class="mini mono" id="c_${a.id}"></span>
+          <div class="acciones-activo">${a.estado === "Publicado"
+          ? `<span class="mini">Publicado el ${a.publicado}</span>`
+          : `<button class="btn primary sm" data-ac="publicar" data-id="${a.id}" ${conn ? "" : "disabled"}>Publicar en ${p.nom}</button>
+              <button class="btn sm" data-ac="listo" data-id="${a.id}" ${a.estado === "Listo" ? "disabled" : ""}>${a.estado === "Listo" ? ic("check") + "En cola" : "Guardar para después"}</button>
+              <span class="sep2"></span>
+              <button class="btn sm" data-ac="corto" data-id="${a.id}" title="Acorta el texto">${ic("corto")}Más corto</button>
+              <button class="btn sm" data-ac="largo" data-id="${a.id}" title="Alarga el texto o revierte el recorte">${ic("largo")}Más largo</button>
+              <button class="btn sm" data-ac="nuevo" data-id="${a.id}" title="Otra versión desde el mismo mensaje">${ic("regenerar")}Volver a generar</button>
+              <button class="btn sm" data-ac="descartar" data-id="${a.id}">Descartar</button>`}</div></div>`;
+      
+      card.appendChild(it);
+      const ta = it.querySelector("textarea"), c = it.querySelector("#c_" + a.id);
+      const cuenta = () => {
+        if (cfg.porPost) {
+          const ps = ta.value.split("———"), mx = Math.max(...ps.map(x => x.trim().length));
+          c.textContent = `${ps.length} posts · máx ${mx}/280`; c.style.color = mx > 280 ? "var(--alert)" : "";
+        }
+        else { c.textContent = `${ta.value.length}/${cfg.limite} caracteres`; c.style.color = ta.value.length > cfg.limite ? "var(--alert)" : ""; }
+      };
+
+      cuenta(); ta.oninput = () => { 
+        cuenta(); 
+        if (ta.value !== a.texto) { 
+          a.editado = true; a.texto = ta.value; save(); 
+        } 
+      };
   });
+
   curaduria.innerHTML = ""; curaduria.appendChild(card);
   card.querySelectorAll(".plat-filtros [data-e]").forEach(b => b.onclick = () => { fEstado[tabFmt] = b.dataset.e; visualizarCuraduria(); });
   const ba = card.querySelector("#btn_aprobar_todo");
@@ -362,6 +381,7 @@ function visualizarCuraduria() {
   if (bp) bp.onclick = () => publicarLote(tabFmt);
   curaduria.querySelectorAll('[data-ac]').forEach(b => b.onclick = () => accion(b.dataset.ac, b.dataset.id));
 }
+
 function aprobarPendientes(plat) {
   const n = E.activos.filter(a => FORMATOS[a.formato].plat === plat && a.estado === "Pendiente");
   n.forEach(a => a.estado = "Listo"); 
@@ -475,24 +495,43 @@ function publicarLote(plat) {
 }
 
 /* ---------- TICKETS ---------- */
+
+// procesa la lista de tickets pendientes
 function filasTickets() {
   return E.tickets.map(t => {
-    const m = msg(t.fuente); return `<tr>
-    <td><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
-    <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
-    <td>${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
-    <td><span class="pill ${t.estado === "Resuelto" ? "p-ok" : "p-mute"}">${t.estado}</span></td></tr>`;
+    const m = msg(t.fuente); 
+    const pillEstado = (t.estado === "Enviado" || t.estado === "Resuelto")
+      ? "p-ok"
+      : t.estado === "Error"
+        ? "p-warn"
+        : "p-mute";
+
+    return `<tr>
+      <td><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
+      <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
+      <td>${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
+      <td><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
 }
 
+// despliega los tickets en el formulario
 function visualizarTickets() {
-  b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto").length : "—";
+  
+  b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
+  
   tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="6" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  
+  // ToDo actualización de históricos
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
-  ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
-  ["2026-semana-02", "Certificado no se descarga", "discord", "09 sep", "—", "En curso"]].map(f =>
+    ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
+    ["2026-semana-02", "Certificado no se descarga", "discord", "09 sep", "—", "En curso"]].map(f =>
     `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
     <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
+  
+    if (tabFmt === "tickets" && E.procesado) {
+    visualizarTicketsEn(curaduria);
+    }
+
 }
 
 function visualizarTicketsEn(cont) {
@@ -515,25 +554,43 @@ async function avisar(dest) {
     return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); 
   }
   
-  const pend = E.tickets.filter(t => !t.aviso);
+  const pend = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
   if (!pend.length) return toast("Nada que avisar", "Todos los tickets ya se avisaron.");
 
-  console.log("Avisando tickets a " + dest, pend);
-
+  // Pasamos a "En curso" mientras se envía la petición
   pend.forEach(t => { 
-    t.aviso = dest; 
     t.estado = "En curso"; 
   }); 
+  visualizarTickets();
 
-  const mensaje = "🎫 **Tickets para atención**\n\n" + 
-     pend.map(t => `• \`${t.id}\``).join("\n");
+  const mensaje = "**Tickets para atención**\n\n" + 
+     pend.map(t => {
+       const m = msg(t.fuente);
+       const detalle = m ? `[${t.sev}] ${m.autor} (${m.canal}): ${m.texto}` : `[${t.sev}] Ticket ${t.id}`;
+       return `- \`${t.id}\` - ${detalle}`;
+     }).join("\n");
 
-  await conError(API.avisarTickets(
-    { mensaje, destino: dest }
-  ), "No se pudo enviar avisar tickets pendientes.");
-  
-  save(); 
-  visualizar();
+  const r = await conError(API.avisarTickets(mensaje, dest),
+     "No se pudo enviar mensaje de tickets pendientes.");
+ 
+  if (!r) {
+    // Si hubo error, cambiar estado a "Error" con pill p-warn y permitir reintento
+    pend.forEach(t => { 
+      t.estado = "Error"; 
+      t.aviso = null; 
+    }); 
+    visualizarTickets();
+    return;
+  }
+
+  // Éxito: cambiar de "En curso" a "Enviado" con pill p-ok
+  pend.forEach(t => { 
+    t.aviso = dest; 
+    t.estado = "Enviado"; 
+  }); 
+
+  save();
+  visualizarTickets(); 
   toast(pend.length + " tickets avisados", "Mensaje enviado a " + PLAT[dest].cuenta, true);
 }
 

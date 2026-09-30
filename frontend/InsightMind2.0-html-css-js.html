@@ -1004,13 +1004,13 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outl
                           <table>
                             <thead>
                               <tr>
-                                <th>Autor</th>
-                                <th>Mensaje</th>
+                                <th style="max-width:170px">Autor</th>
+                                <th style="max-width:250px">Mensaje</th>
                                 <th>Tipo</th>
                                 <th>Sent.</th>
                                 <th>Score</th>
-                                <th>Por qué</th>
-                                <th>Ruta</th>
+                                <th style="max-width:250px">Por qué</th>
+                                <th style="max-width:250px">Ruta</th>
                               </tr>
                             </thead>
                             <tbody id="tabla"></tbody>
@@ -1018,11 +1018,11 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outl
                           <template id="tpl_fila_mensaje">
                             <tr>
                               <td><b data-campo="autor"></b></td>
-                              <td class="muted" style="max-width:240px" data-campo="texto"></td>
+                              <td class="muted" data-campo="texto"></td>
                               <td class="muted" data-campo="tipo"></td>
                               <td class="mono" data-campo="sent"></td>
                               <td class="mono"><b data-campo="score"></b></td>
-                              <td class="muted" style="max-width:170px" data-campo="porque"></td>
+                              <td class="muted" data-campo="porque"></td>
                               <td><span class="pill" data-campo="ruta"></span></td>
                             </tr>
                           </template>
@@ -1282,31 +1282,19 @@ const API = {
   },
 
   /* POST /tickets/avisar — manda los tickets al webhook de Discord o Slack */
-  async avisarTickets(ticketIds, destino) {
+  async avisarTickets(mensaje, destino) {
+    if (this.modoDemo) return { status: "exito" };
 
-    // validamos destino de plataformas
-    const destinosValidos = ["slack", "discord"];
-
-    if (!destinosValidos.includes(destino)) {
-        throw new Error(
-            `Destino no válido: ${destino}. ` +
-            `Debe ser slack o discord.`
-        );
+    let msg = mensaje;
+    let dest = destino;
+    if (typeof mensaje === "object" && mensaje !== null) {
+      msg = mensaje.mensaje;
+      dest = mensaje.destino || destino;
     }
-
-    if (this.modoDemo) 
-      return { 
-        status: "exito", enviados: ticketIds.length
-      };
 
     return this._fetch("/tickets/avisar", {
       method: "POST",
-      body: JSON.stringify(
-        { 
-          tickets: ticketIds,
-          destino
-        }
-      ),
+      body: JSON.stringify({ mensaje: msg, destino: dest }),
     });
   },
 
@@ -1450,7 +1438,11 @@ const HIST={
    Las llamadas al backend viven en api.js */
 
 const MODOS_TEMA = ["sistema", "claro", "oscuro"]; let tIdx = 0;
-try { tIdx = Math.max(0, MODOS_TEMA.indexOf(localStorage.getItem("clg-tema") || "sistema")); } catch (e) { }
+
+try { 
+  tIdx = Math.max(0, MODOS_TEMA.indexOf(localStorage.getItem("clg-tema") || "sistema")); 
+} catch (e) { }
+
 function aplicarTema() {
   const t = MODOS_TEMA[tIdx];
   if (t === "sistema") document.documentElement.removeAttribute("data-theme");
@@ -1459,9 +1451,13 @@ function aplicarTema() {
   tema_ico.innerHTML = `<use href="#i-${t === "claro" ? "sol" : t === "oscuro" ? "luna" : "sistema"}"/>`;
   try { localStorage.setItem("clg-tema", t); } catch (e) { }
 }
+
 tema.onclick = () => { tIdx = (tIdx + 1) % MODOS_TEMA.length; aplicarTema(); }; aplicarTema();
 
-let E = { activos: [], tickets: [], pubs: [], procesado: false, paso: 1, conex: {}, chips: [] };
+let E = { 
+  activos: [], tickets: [], pubs: [], procesado: false, paso: 1, conex: {}, chips: [] 
+};
+
 Object.keys(PLAT).forEach(k => E.conex[k] = PLAT[k].on);
 /* El prototipo arranca siempre limpio: el usuario ejecuta el flujo desde "Usar lote de ejemplo".
    Solo el historial trae semanas anteriores con datos. */
@@ -1469,6 +1465,7 @@ const save = () => { };   /* el estado vive en memoria durante la sesión; en pr
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
+
 function toast(titulo, texto, ok, undo) {
   const t = el("div", "toast" + (ok ? " ok" : ""), `<div><b>${titulo}</b>${texto || ""}</div>`);
   if (undo) { const u = el("button", "btn sm undo", "Deshacer"); u.onclick = () => { undo(); t.remove(); }; t.appendChild(u); }
@@ -1476,15 +1473,19 @@ function toast(titulo, texto, ok, undo) {
 }
 
 function construir() {
+  
   const a = []; let n = 1; const add = o => a.push(Object.assign({ id: "A" + (n++), estado: "Pendiente" }, o));
   const exitos = DATOS.filter(m => ruta(m) === "exito").sort((x, y) => y.score - x.score);
+  
   exitos.forEach((m, i) => {
     add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) });
     if (i === 0) add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) });
   });
+
   DATOS.filter(m => ruta(m) === "faq").sort((x, y) => y.score - x.score).slice(0, 2)
     .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
-  if (DATOS.length) {
+  
+    if (DATOS.length) {
     const pos = DATOS.filter(m => m.sent > .2).length;
     add({
       formato: "Destaque de newsletter", fuente: (exitos[0] || DATOS[0]).id, score: 90,
@@ -1503,7 +1504,9 @@ const META = {
   conexiones: ["Conexiones", "Vincula los destinos donde se publica."],
   ajustes: ["Ajustes", "Voz de marca, umbrales y cuentas."]
 };
+
 const PAGS = Object.keys(META);
+
 function ir(p) {
   document.querySelectorAll(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.p === p ? "page" : "false"));
   PAGS.forEach(x => $("#p_" + x).hidden = (x !== p));
@@ -1513,6 +1516,7 @@ function ir(p) {
   if (p === "flujo" && E.procesado) acciones.appendChild(el("span", "mini", `Lote 2026-semana-04 · ${DATOS.length} mensajes`));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
 document.querySelectorAll(".nav").forEach(b => b.onclick = () => ir(b.dataset.p));
 
 /* ---------- MENÚ MÓVIL ---------- */
@@ -1520,6 +1524,7 @@ function abrirMenu() {
   document.body.classList.add("menu-abierto"); scrim.hidden = false;
   hamb.setAttribute("aria-expanded", "true"); hamb.setAttribute("aria-label", "Cerrar menú");
 }
+
 function cerrarMenu() {
   if (!document.body.classList.contains("menu-abierto")) return;
   document.body.classList.remove("menu-abierto"); hamb.setAttribute("aria-expanded", "false");
@@ -1550,7 +1555,9 @@ drop.addEventListener("drop", e => {
   e.preventDefault(); drop.style.borderColor = "";
   if (e.dataTransfer.files[0]) { file.files = e.dataTransfer.files; subirYValidar(); }
 });
+
 function validar() { validacion.hidden = false; toast("Archivo cargado", "12 interacciones válidas · 1 duplicada eliminada"); }
+
 async function subirYValidar() {
   const archivo = file.files[0]; if (!archivo) return;
   const r = await conError(API.subirArchivo(archivo), "No se pudo subir el archivo a OCI");
@@ -1651,29 +1658,38 @@ function visualizarAnalisis() {
     apoyo.innerHTML = DATOS.filter(m => m.apoyo).map(m =>
       `<div class="mini" style="border-left:2px solid var(--alert);padding-left:9px"><b>${m.autor}</b> · ${m.canal}<br>${m.texto.slice(0, 72)}…</div>`).join("");
   
-    visualizarTablaMensajes();
+    cargarTablaMensajes();
 }
 
-function visualizarTablaMensajes(mensajes = DATOS) {
+// carga la tabla con el detalle de los mensajes procesados
+function cargarTablaMensajes(mensajes = DATOS) {
+  
   const tpl = document.getElementById("tpl_fila_mensaje");
   const targetTabla = document.getElementById("tabla");
+  
   if (!tpl || !targetTabla) return;
 
   const fragment = document.createDocumentFragment();
   const procesados = mensajes.slice().sort((a, b) => b.score - a.score);
 
   if (procesados.length === 0) {
+   
     const trVacio = document.createElement("tr");
     const tdVacio = document.createElement("td");
+
     tdVacio.colSpan = 7;
     tdVacio.className = "muted";
     tdVacio.style.textAlign = "center";
     tdVacio.style.padding = "16px";
     tdVacio.textContent = "No hay mensajes analizados en este lote.";
+
     trVacio.appendChild(tdVacio);
     fragment.appendChild(trVacio);
+  
   } else {
+    
     for (const m of procesados) {
+     
       const r = ruta(m);
       const clon = tpl.content.cloneNode(true);
 
@@ -1684,6 +1700,7 @@ function visualizarTablaMensajes(mensajes = DATOS) {
 
       const tdSent = clon.querySelector('[data-campo="sent"]');
       tdSent.textContent = m.sent.toFixed(2);
+     
       if (m.sent > 0.2) tdSent.classList.add("up");
       else if (m.sent < -0.2) tdSent.classList.add("down");
 
@@ -1691,10 +1708,12 @@ function visualizarTablaMensajes(mensajes = DATOS) {
       clon.querySelector('[data-campo="porque"]').textContent = m.por_que;
 
       const pill = clon.querySelector('[data-campo="ruta"]');
+
       pill.className = `pill ${PILL[r]}`;
       pill.textContent = NOM[r];
 
       fragment.appendChild(clon);
+      
     }
   }
 
@@ -1705,7 +1724,6 @@ function visualizarTablaMensajes(mensajes = DATOS) {
 let tabFmt = "linkedin", fEstado = {};
 const ESTADOS = ["Todos", "Pendiente", "Listo", "Publicado"];
 const pendientesDe = k => E.activos.filter(a => FORMATOS[a.formato].plat === k && a.estado === "Pendiente").length;
-
 function visualizarCuraduria() {
   if (!E.procesado) {
     tabs_formato.innerHTML = "";
@@ -1713,13 +1731,12 @@ function visualizarCuraduria() {
   }
   tabs_formato.innerHTML = TABS.map(([k, n]) => {
     const total = k === "tickets" ? E.tickets.length : E.activos.filter(a => FORMATOS[a.formato].plat === k).length;
-    const pend = k === "tickets" ? E.tickets.filter(t => !t.aviso).length : pendientesDe(k);
+    const pend = k === "tickets" ? E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto").length : pendientesDe(k);
     const badge = pend ? `<span class="c pend" title="${pend} sin revisar">${pend}</span>` : `<span class="c" title="${total} en total">${total}</span>`;
     return `<button class="tab" data-t="${k}" aria-selected="${tabFmt === k}">${n}${badge}</button>`;
   }).join("");
   tabs_formato.querySelectorAll(".tab").forEach(b => b.onclick = () => { tabFmt = b.dataset.t; visualizarCuraduria(); });
-  if (tabFmt === "tickets") { conexion_aviso.innerHTML = ""; 
-  return visualizarTicketsEn(curaduria); }
+  if (tabFmt === "tickets") { conexion_aviso.innerHTML = ""; return visualizarTicketsEn(curaduria); }
   const p = PLAT[tabFmt], conn = E.conex[tabFmt], fE = fEstado[tabFmt] || "Todos";
   conexion_aviso.innerHTML = conn ? "" : `<div class="note">${ic("enchufe")}<div><b>${p.nom}</b> no está vinculado. Puedes aprobar, pero no publicar hasta conectarlo en Conexiones.</div></div>`;
   const todos = E.activos.filter(a => FORMATOS[a.formato].plat === tabFmt);
@@ -1883,7 +1900,9 @@ function publicarLote(plat) {
       const pub = { fecha: a.publicado, plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
       nuevas.push(pub); E.pubs.unshift(pub);
     });
-    save(); visualizar();
+
+    save(); 
+    visualizar();
     toast(lista.length + " publicados en " + p.nom, p.cuenta, true, () => {
       previos.forEach(x => { x.a.estado = x.estado; delete x.a.publicado; });
       E.pubs = E.pubs.filter(x => !nuevas.includes(x)); save(); visualizar(); toast("Publicaciones revertidas", "Todo volvió a la cola");
@@ -1894,22 +1913,34 @@ function publicarLote(plat) {
 /* ---------- TICKETS ---------- */
 function filasTickets() {
   return E.tickets.map(t => {
-    const m = msg(t.fuente); return `<tr>
-    <td><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
-    <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
-    <td>${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
-    <td><span class="pill ${t.estado === "Resuelto" ? "p-ok" : "p-mute"}">${t.estado}</span></td></tr>`;
+    const m = msg(t.fuente); 
+    const pillEstado = (t.estado === "Enviado" || t.estado === "Resuelto")
+      ? "p-ok"
+      : t.estado === "Error"
+        ? "p-warn"
+        : "p-mute";
+
+    return `<tr>
+      <td><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
+      <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
+      <td>${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
+      <td><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
 }
+
 function visualizarTickets() {
-  b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto").length : "—";
+  b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
   tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="6" class="empty">Procesa un lote para generar tickets.</td></tr>';
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
-  ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
+    ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
   ["2026-semana-02", "Certificado no se descarga", "discord", "09 sep", "—", "En curso"]].map(f =>
     `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
     <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
+  if (tabFmt === "tickets" && E.procesado) {
+    visualizarTicketsEn(curaduria);
+  }
 }
+
 function visualizarTicketsEn(cont) {
   const card = el("div", "plat");
   card.innerHTML = `<div class="plat-head"><div class="mk" style="--pc:var(--alert)">!</div>
@@ -1921,14 +1952,58 @@ function visualizarTicketsEn(cont) {
   cont.innerHTML = ""; cont.appendChild(card);
   $("#btn_avisar").onclick = () => avisar("discord");
 }
-function avisar(dest) {
-  if (!E.conex[dest]) { ir("conexiones"); return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); }
-  const pend = E.tickets.filter(t => !t.aviso);
+
+// función para enviar mensajes de los tickets pendientes mediante slack/discord
+async function avisar(dest) {
+ 
+  if (!E.conex[dest]) { 
+    ir("conexiones"); 
+    return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); 
+  }
+  
+  const pend = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
   if (!pend.length) return toast("Nada que avisar", "Todos los tickets ya se avisaron.");
-  pend.forEach(t => { t.aviso = dest; t.estado = "En curso"; }); save(); visualizar();
+
+  // Pasamos a "En curso" mientras se envía la petición
+  pend.forEach(t => { 
+    t.estado = "En curso"; 
+  }); 
+  visualizarTickets();
+
+  const mensaje = "**Tickets para atención**\n\n" + 
+     pend.map(t => {
+       const m = msg(t.fuente);
+       const detalle = m ? `[${t.sev}] ${m.autor} (${m.canal}): ${m.texto}` : `[${t.sev}] Ticket ${t.id}`;
+       return `- \`${t.id}\` - ${detalle}`;
+     }).join("\n");
+
+  const r = await conError(API.avisarTickets(mensaje, dest),
+     "No se pudo enviar mensaje de tickets pendientes.");
+ 
+  if (!r) {
+    // Si hubo error, cambiar estado a "Error" con pill p-warn y permitir reintento
+    pend.forEach(t => { 
+      t.estado = "Error"; 
+      t.aviso = null; 
+    }); 
+    visualizarTickets();
+    return;
+  }
+
+  // Éxito: cambiar de "En curso" a "Enviado" con pill p-ok
+  pend.forEach(t => { 
+    t.aviso = dest; 
+    t.estado = "Enviado"; 
+  }); 
+
+  save();
+  visualizarTickets(); 
   toast(pend.length + " tickets avisados", "Mensaje enviado a " + PLAT[dest].cuenta, true);
 }
-btn_discord.onclick = () => avisar("discord"); btn_slack.onclick = () => avisar("slack");
+
+// botones de aviso rápido en la sección de Tickets
+btn_discord.onclick = () => avisar("discord"); 
+btn_slack.onclick = () => avisar("slack");
 
 /* ---------- PUBLICACIONES ---------- */
 function visualizarPubs() {
@@ -1947,19 +2022,21 @@ function visualizarPubs() {
 
 /* ---------- HISTORIAL ---------- */
 let semanaSel = "2026-semana-03";
+
 function visualizarHistorial() {
+  
   const semanas = ["2026-semana-04", "2026-semana-03", "2026-semana-02"];
+  
   lista_semanas.innerHTML = semanas.map(s => {
-    const d = s === "2026-semana-04" ? { inter: E.procesado ? 12 : 0, publicados: E.pubs.length } : HIST[s];
+    const d = s === "2026-semana-04" ? { 
+      inter: E.procesado ? 12 : 0, publicados: E.pubs.length } : HIST[s];
     return `<button class="semana-btn" data-s="${s}" aria-current="${semanaSel === s}">
       <div style="flex:1"><b>${s.replace("2026-semana-", "Semana ")}</b>
         <div class="mini">${d.inter} interacciones · ${d.publicados} publicados</div></div>
       ${s === "2026-semana-04" ? '<span class="pill p-pri">actual</span>' : ""}</button>`;
   }).join("");
-  lista_semanas.querySelectorAll(".semana-btn").forEach(b => b.onclick = () => { 
-    semanaSel = b.dataset.s; visualizarHistorial(); 
-  });
-
+ 
+  lista_semanas.querySelectorAll(".semana-btn").forEach(b => b.onclick = () => { semanaSel = b.dataset.s; visualizarHistorial(); });
   const act = semanaSel === "2026-semana-04";
   const d = act ? {
     inter: E.procesado ? 12 : 0, pos: 58, neg: 25, activos: E.activos.length, publicados: E.pubs.length,
@@ -2010,7 +2087,9 @@ function visualizarConex() {
   lista_vinculadas.querySelectorAll("[data-c]").forEach(b => b.onclick = () => alternar(b.dataset.c));
 }
 function alternar(k) {
-  const p = PLAT[k], on = E.conex[k]; E.conex[k] = !on; save(); visualizar();
+  const p = PLAT[k], on = E.conex[k]; E.conex[k] = !on; 
+  save(); 
+  visualizar();
   toast(on ? p.nom + " desvinculado" : p.nom + " conectado", on ? "Lo ya publicado no se borra." : p.cuenta, !on);
 }
 

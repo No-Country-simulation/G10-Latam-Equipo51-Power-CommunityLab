@@ -69,13 +69,23 @@ const API = {
   },
 
   /* POST /tickets/avisar — manda los tickets al webhook de Discord o Slack */
-  async avisarTickets(ticketIds, destino) {
-    if (this.modoDemo) return { status: "exito", enviados: ticketIds.length };
+  async avisarTickets(mensaje, destino) {
     
+    if (this.modoDemo) return { status: "exito" };
+
+    let msg = mensaje;
+    let dest = destino;
+
+    if (typeof mensaje === "object" && mensaje !== null) {
+      msg = mensaje.mensaje;
+      dest = mensaje.destino || destino;
+    }
+
     return this._fetch("/tickets/avisar", {
       method: "POST",
-      body: JSON.stringify({ tickets: ticketIds, destino }),
+      body: JSON.stringify({ mensaje: msg, destino: dest }),
     });
+    
   },
 
   /* PUT /config/voz — guarda la guía de voz y los chips de estilo */
