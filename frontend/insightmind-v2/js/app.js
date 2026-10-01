@@ -19,13 +19,21 @@ function aplicarTema() {
 tema.onclick = () => { tIdx = (tIdx + 1) % MODOS_TEMA.length; aplicarTema(); }; aplicarTema();
 
 let E = { 
-  activos: [], tickets: [], pubs: [], procesado: false, paso: 1, conex: {}, chips: [] 
+  activos: [], tickets: [], pubs: [], procesado: false, paso: 1, conex: {}, chips: [], slug: null 
 };
 
 Object.keys(PLAT).forEach(k => E.conex[k] = PLAT[k].on);
 /* El prototipo arranca siempre limpio: el usuario ejecuta el flujo desde "Usar lote de ejemplo".
    Solo el historial trae semanas anteriores con datos. */
 const save = () => { };   /* el estado vive en memoria durante la sesión; en producción lo persiste OCI */
+/* Guarda el estado de la curaduría en OCI: activos/<slug>/curaduria.json (PUT /curaduria/{slug}).
+   Devuelve true si se guardó, false si falló (conError ya muestra el toast) y
+   "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
+async function guardarCuraduriaEnOCI() {
+  if (!E.slug) return "local";
+  const r = await conError(API.guardarCuraduria(E.slug, E.activos), "No se pudo guardar la curaduría en OCI");
+  return !!r;
+}
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
@@ -77,7 +85,7 @@ function ir(p) {
   titulo.textContent = META[p][0]; subtitulo.textContent = META[p][1];
   mtop_pag.textContent = META[p][0]; cerrarMenu();
   acciones.innerHTML = "";
-  if (p === "flujo" && E.procesado) acciones.appendChild(el("span", "mini", `Lote 2026-semana-04 · ${DATOS.length} mensajes`));
+  if (p === "flujo" && E.procesado) acciones.appendChild(el("span", "mini", `Lote ${E.slug} · ${DATOS.length} mensajes`));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -164,7 +172,8 @@ btn_procesar.onclick = () => {
 
 function fin(resultado) {
   if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
-  oci_ruta.textContent = "activos/2026-semana-04/paquete-distribucion.json"; oci_linea.hidden = false;
+  E.slug = resultado.slug;
+  oci_ruta.textContent = `activos/${E.slug}/paquete-distribucion.json`; oci_linea.hidden = false;
 
   /* Reemplaza el lote de ejemplo por los mensajes reales que analizó Cohere.
      DATOS es const: se muta el arreglo en vez de reasignarlo. */
@@ -387,7 +396,10 @@ function aprobarPendientes(plat) {
   n.forEach(a => a.estado = "Listo"); 
   save(); 
   visualizar();
-  toast(n.length + " en cola de " + PLAT[plat].nom, "Listos para publicar cuando quieras", true);
+  guardarCuraduriaEnOCI().then(ok => {
+    if (!ok) { n.forEach(a => a.estado = "Pendiente"); visualizar(); return; }
+    toast(n.length + " en cola de " + PLAT[plat].nom, ok === "local" ? "Listos para publicar cuando quieras" : `Guardados en OCI · activos/${E.slug}/curaduria.json`, true);
+  });
 }
 
 /* modal de confirmación antes de publicar */
@@ -438,8 +450,13 @@ function accion(ac, id) {
   const a = E.activos.find(x => x.id === id);
   if (ac === "publicar") return confirmarPublicacion(id);
   if (ac === "listo") {
-    a.estado = "Listo"; save(); visualizar();
-    toast("Guardado en la cola", "Listo para publicar cuando quieras · curaduria.json", true); return;
+    const previo = a.estado;
+    a.estado = "Listo";
+    guardarCuraduriaEnOCI().then(ok => {
+      if (!ok) { a.estado = previo; visualizar(); return; }   /* no quedó en el bucket: se revierte */
+      toast("Guardado en la cola", ok === "local" ? "Listo para publicar cuando quieras" : `Guardado en OCI · activos/${E.slug}/curaduria.json`, true);
+    });
+    save(); visualizar(); return;
   }
   if (ac === "descartar") { a.estado = "Descartado"; save(); visualizar(); toast("Descartado", "Se puede recuperar desde el filtro Todos"); return; }
   /* variantes de texto: siempre parten del original generado */
