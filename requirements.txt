@@ -5,3 +5,4 @@ oci
 requests
 python-dotenv
 pydantic
+pymongo

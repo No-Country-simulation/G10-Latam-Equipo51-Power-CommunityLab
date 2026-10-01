@@ -14,7 +14,8 @@ from backend.curaduria import guardar_curaduria
 from backend.analizador_sentimiento import (
     COHERE_MODEL, analizar_interaccion, consolidar, mensaje_con_error,
 )
-from backend import cache_analisis
+from backend import cache_analisis, contexto, db
+from backend.rutas_contenido import router as router_contenido
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from datetime import datetime
 from dotenv import load_dotenv
@@ -146,15 +147,23 @@ def _extraer_interaccion(contenido: dict) -> dict:
 
 from datetime import datetime
 
+def _contexto_mensaje(archivo: str, contenido: dict) -> dict:
+    ctx = contexto.extraer(contenido)
+    return {"archivo": archivo, "origen_comunidad": ctx["origen_comunidad"],
+            "periodo_referencia": ctx["periodo_referencia"]}
+
+
 @app.post("/procesar")
 def procesar_lote(forzar: bool = False):
     """
     Reemplaza el workflow de n8n "ANALISIS_SENTIMIENTO_01_actualizado":
-      1. Lista los archivos de entrada del bucket (ignora activos/ y analisis/)
+      1. Lista los archivos de entrada del bucket (ignora activos/, analisis/ y config/)
       2. Si ya fue analizado (mismo etag y modelo) reutiliza analisis/<archivo>.json
       3. Si no, lo descarga, extrae la interacción y la analiza con Cohere
-      4. Guarda el resultado en analisis/ y devuelve el paquete consolidado
+      4. Guarda el resultado en analisis/ (y lo replica en MongoDB) y devuelve el paquete consolidado
 
+    Cada mensaje conserva origen_comunidad y periodo_referencia del archivo de entrada;
+    el slug del lote sale del periodo_referencia (Semana_01 -> 2026-semana-01).
     ?forzar=true ignora la caché y vuelve a analizar todo.
     """
     log = logging.getLogger("uvicorn.error")
@@ -165,7 +174,7 @@ def procesar_lote(forzar: bool = False):
     ]
     en_cache = set() if forzar else cache_analisis.nombres_en_cache()
 
-    mensajes = []
+    mensajes, procesados = [], []     # procesados: (objeto, mensaje) para replicar en MongoDB
     reutilizados = nuevos = omitidos = 0
 
     for obj in entradas:
@@ -173,34 +182,61 @@ def procesar_lote(forzar: bool = False):
         if obj.name in en_cache:
             cacheado = cache_analisis.cargar(obj.name, obj.etag, COHERE_MODEL)
             if cacheado:
+                if "archivo" not in cacheado:
+                    # caché anterior a origen/periodo: se completa leyendo el archivo, sin llamar a Cohere
+                    try:
+                        contenido = leer_json(obj.name)
+                        cacheado.update(_contexto_mensaje(obj.name, contenido))
+                        cache_analisis.guardar(obj.name, obj.etag, COHERE_MODEL, cacheado)
+                        db.guardar_entrada(obj.name, obj.etag, contenido, contexto.extraer(contenido))
+                    except ValueError:
+                        cacheado["archivo"] = obj.name
                 mensajes.append(cacheado)
+                procesados.append((obj, cacheado))
                 reutilizados += 1
                 continue
 
         # 2) analizar con Cohere
         try:
-            interaccion = _extraer_interaccion(leer_json(obj.name))
+            contenido = leer_json(obj.name)
         except ValueError:  # no es JSON
             log.warning("Se omite %s: no es un JSON válido", obj.name)
             omitidos += 1
             continue
 
+        ctx = contexto.extraer(contenido)
+        interaccion = ctx["interaccion"]
+        extra = _contexto_mensaje(obj.name, contenido)
+        db.guardar_entrada(obj.name, obj.etag, contenido, ctx)
+
         try:
-            mensaje = analizar_interaccion(interaccion)
+            mensaje = {**analizar_interaccion(interaccion), **extra}
         except Exception as e:
             # un mensaje que falla no tumba el lote y NO se cachea (se reintenta la próxima vez)
-            mensajes.append(mensaje_con_error(interaccion, e))
+            mensajes.append({**mensaje_con_error(interaccion, e), **extra})
             continue
 
         cache_analisis.guardar(obj.name, obj.etag, COHERE_MODEL, mensaje)
         mensajes.append(mensaje)
+        procesados.append((obj, mensaje))
         nuevos += 1
 
     resultado = consolidar(mensajes)
-
-    hoy = datetime.now()
-    resultado["slug"] = f"{hoy.year}-semana-{hoy.isocalendar().week:02d}"
+    resultado["slug"] = contexto.slug_del_lote(mensajes)
+    resultado.update(contexto.resumen_contexto(mensajes))
     resultado["cache"] = {"reutilizados": reutilizados, "analizados": nuevos, "omitidos": omitidos}
+
+    # 3) replica en MongoDB (si está configurado; nunca rompe el flujo)
+    for obj, m in procesados:
+        db.guardar_analisis(obj.name, obj.etag, COHERE_MODEL, resultado["slug"], m)
+        if m.get("ruta") == "ticket":
+            db.guardar_ticket(resultado["slug"], m)
+    db.guardar_lote(resultado["slug"], {
+        "total": resultado["total"], "positivo": resultado["positivo"],
+        "neutral": resultado["neutral"], "negativo": resultado["negativo"],
+        "periodos": resultado["periodos"], "origenes_comunidad": resultado["origenes_comunidad"],
+        "cache": resultado["cache"],
+    })
 
     return resultado
 
@@ -271,23 +307,27 @@ def _enviar_discord(mensaje: str):
 
 class CuraduriaRequest(BaseModel):
     activos: list
+    periodo_referencia: str | None = None
+    origen_comunidad: str | None = None
+    tickets: list = []
 
 @app.put("/curaduria/{slug}")
 def actualizar_curaduria(
     slug: str,
     request: CuraduriaRequest
 ):
-    print(f"[CURADURIA] slug={slug}")
-    print(f"[CURADURIA] activos={len(request.activos)}")
 
-    resultado = guardar_curaduria(
+    return guardar_curaduria(
         slug,
-        request.activos
+        request.activos,
+        periodo_referencia=request.periodo_referencia,
+        origen_comunidad=request.origen_comunidad,
+        tickets=request.tickets,
     )
 
-    print(f"[CURADURIA] resultado={resultado}")
 
-    return resultado
+
+app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 
 
 # Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde

@@ -66,7 +66,7 @@ def _construir_prompt(autor: str, texto: str, tipo: str | None = None) -> str:
     return PROMPT_SIN_TIPO.format(autor=autor, texto=texto)
 
 
-def _llamar_cohere(prompt: str) -> str:
+def _llamar_cohere(prompt: str, system: str | None = None, temperature: float | None = None) -> str:
     if not COHERE_API_KEY:
         raise RuntimeError("Falta la variable de entorno COHERE_API_KEY")
 
@@ -78,9 +78,13 @@ def _llamar_cohere(prompt: str) -> str:
         },
         json={
             "model": COHERE_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": (
+                ([{"role": "system", "content": system}] if system else [])
+                + [{"role": "user", "content": prompt}]
+            ),
+            **({"temperature": temperature} if temperature is not None else {}),
         },
-        timeout=30,
+        timeout=60,
     )
     resp.raise_for_status()
     data = resp.json()

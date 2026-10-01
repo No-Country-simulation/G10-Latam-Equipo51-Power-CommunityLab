@@ -31,8 +31,45 @@ const save = () => { };   /* el estado vive en memoria durante la sesión; en pr
    "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
 async function guardarCuraduriaEnOCI() {
   if (!E.slug) return "local";
-  const r = await conError(API.guardarCuraduria(E.slug, E.activos), "No se pudo guardar la curaduría en OCI");
+  /* Cada activo viaja con su origen, en la misma forma que el archivo de entrada */
+  const activos = E.activos.map(a => ({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
+  const tickets = E.tickets.map(t => ({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
+  const r = await conError(
+    API.guardarCuraduria(E.slug, activos, { periodo_referencia: E.periodo, origen_comunidad: E.origen, tickets }),
+    "No se pudo guardar la curaduría en OCI");
   return !!r;
+}
+
+function fuenteDetalle(m) {
+  if (!m) return null;
+  return {
+    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
+    interaccion: { autor: m.autor, canal: m.canal, tipo: m.tipo, texto: m.texto }
+  };
+}
+
+/* Mensaje que se manda a /generar (sin campos de UI) */
+const paraGenerar = m => ({
+  autor: m.autor, canal: m.canal, tipo: m.tipo, texto: m.texto, idioma: m.idioma, por_que: m.por_que,
+  sent: m.sent, score: m.score, archivo: m.archivo,
+  origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
+});
+
+/* Pide al backend el texto de cada activo (Cohere + guía de voz guardada).
+   Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
+async function redactarConVoz(activos, textoPrevio = {}) {
+  if (!E.slug) return false;   /* lote de ejemplo: sin backend */
+  const items = activos.map(a => ({
+    id: a.id, formato: a.formato, mensaje: paraGenerar(msg(a.fuente) || {}),
+    mensajes: a.formato === "Destaque de newsletter" ? DATOS.map(paraGenerar) : null,
+    texto_previo: textoPrevio[a.id] || null
+  }));
+  const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
+  if (!r) return false;
+  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; } });
+  const fallos = Object.keys(r.errores || {}).length;
+  if (fallos) toast(`${fallos} activo${fallos === 1 ? "" : "s"} sin generar`, "Se dejó la plantilla local", false);
+  return Object.keys(r.resultados).length > 0;
 }
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
@@ -170,7 +207,7 @@ btn_procesar.onclick = () => {
   })();
 };
 
-function fin(resultado) {
+async function fin(resultado) {
   if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
   E.slug = resultado.slug;
   oci_ruta.textContent = `activos/${E.slug}/paquete-distribucion.json`; oci_linea.hidden = false;
@@ -182,13 +219,18 @@ function fin(resultado) {
     id: "m" + (i + 1), autor: m.autor, canal: m.canal || "general", tipo: m.tipo,
     sent: m.sent, score: m.score, idioma: m.idioma || "es", texto: m.texto,
     por_que: m.por_que, temas: [m.tipo],
-    apoyo: m.tipo === "queja" || m.tipo === "problema_acceso"
+    apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
+    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
+  E.periodo = (resultado.periodos || [])[0] || null;
+  E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
-  const c = construir(); E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
+  const c = construir();
+  const conIA = await redactarConVoz(c.activos);   /* reemplaza las plantillas por texto generado con la guía de voz */
+  E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${c.activos.length} activos y ${c.tickets.length} tickets generados`, true);
+  toast("Lote procesado", `${c.activos.length} activos y ${c.tickets.length} tickets generados` + (conIA ? " · con tu guía de voz" : ""), true);
 }
 btn_a_3.onclick = () => irPaso(3);
 
@@ -451,6 +493,15 @@ function accion(ac, id) {
     a.version = (a.version === "corta" || a.version === "variante") ? "original" : "larga";
     toast(a.version === "original" ? "Texto original restaurado" : "Versión más larga", a.texto.length + " caracteres");
   }
+  if (ac === "nuevo" && E.slug) {
+    toast("Generando otra versión…", "Usa tu guía de voz");
+    redactarConVoz([a], { [a.id]: a.texto }).then(ok => {
+      if (ok) { a.editado = false; a.version = "original"; toast("Nueva versión", "Generada con tu guía de voz", true); }
+      const t = $("#ta_" + id); if (t) { t.value = a.texto; t.dispatchEvent(new Event("input")); }
+      save(); visualizarCuraduria();
+    });
+    return;
+  }
   if (ac === "nuevo") {
     a.variante = ((a.variante || 0) + 1) % GANCHOS.length;
     const resto = a.base.split("\n\n").slice(1).join("\n\n");
@@ -660,10 +711,19 @@ function visualizarChips() {
   });
 }
 
-btn_voz.onclick = () => {
+btn_voz.onclick = async () => {
+  const r = await conError(API.guardarVoz(voz.value, E.chips), "No se pudo guardar la guía de voz");
+  if (!r) return;
   voz_msg.textContent = E.chips.length ? "Guardada con " + E.chips.length + " chips de estilo" : "Guardada";
-  toast("Guía de voz guardada", "Se aplica al siguiente lote", true);
+  toast("Guía de voz guardada", "Se aplica a todo lo que se genere desde ahora", true);
 };
+
+/* Al abrir el panel, carga la guía vigente del servidor (si no hay backend se queda la del HTML) */
+(async () => {
+  const v = await API.voz().catch(() => null);
+  if (!v) return;
+  voz.value = v.texto; E.chips = v.chips || []; visualizarChips();
+})();
 
 function recalcular() {
   U.descartar = +u_desc.value; U.exito_score = +u_ex.value;

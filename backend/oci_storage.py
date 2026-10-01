@@ -20,7 +20,8 @@ namespace = client.get_namespace().data
 # Prefijos donde ESTA app escribe. /procesar no debe tratarlos como mensajes de entrada.
 PREFIJO_CURADURIA = "activos/"   # activos/<slug>/curaduria.json
 PREFIJO_ANALISIS = "analisis/"   # analisis/<archivo>.json  (caché de Cohere)
-PREFIJOS_RESERVADOS = (PREFIJO_CURADURIA, PREFIJO_ANALISIS)
+PREFIJO_CONFIG = "config/"       # config/voz.json
+PREFIJOS_RESERVADOS = (PREFIJO_CURADURIA, PREFIJO_ANALISIS, PREFIJO_CONFIG)
 
 
 def listar_objetos(prefijo: str | None = None) -> list:
