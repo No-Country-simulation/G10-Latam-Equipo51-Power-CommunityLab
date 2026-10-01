@@ -1,0 +1,10 @@
+{
+  "origen_comunidad": "Discord_Grupo_ONE_G10",
+  "periodo_referencia": "Semana_02",
+  "interaccion": {
+    "autor": "María Soto",
+    "canal": "#ayuda",
+    "tipo": "problema_acceso",
+    "texto": "Intento acceder al curso y recibo un error 403 en todas las lecciones."
+  }
+}
