@@ -698,8 +698,12 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outl
 /* Las tablas respiran: antes de apretar una columna, la tabla se desplaza */
 #detalle_semana .df table{min-width:620px}
 #detalle_semana td:nth-child(3){min-width:240px}
+#p_tickets .df table{min-width:760px;width:100%}
+#tabla_tickets td:nth-child(1), #tabla_tickets_curaduria td:nth-child(1){width:40px;text-align:center}
+#tabla_tickets td:nth-child(5), #tabla_tickets_curaduria td:nth-child(5), #tabla_tickets_hist td:nth-child(2){white-space:normal}
 .df td,.df th{white-space:nowrap}
 .df td:nth-child(3),.df td:nth-child(4){white-space:normal}
+input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
 
 .p-pri{color:var(--primary-ink)}
 .nav[aria-current="page"] .badge{color:var(--primary-ink);border-color:var(--primary-line)}

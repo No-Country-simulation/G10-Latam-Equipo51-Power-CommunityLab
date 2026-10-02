@@ -101,7 +101,7 @@ function construir() {
       texto: newsletterGenerico(DATOS, Math.round(pos / DATOS.length * 100))
     });
   }
-  const t = DATOS.filter(m => ruta(m) === "ticket").map((m, i) => ({ id: "T" + (i + 1), fuente: m.id, sev: m.sent <= -.6 ? "Alta" : "Media", aviso: null, estado: "Abierto" }));
+  const t = DATOS.filter(m => ruta(m) === "ticket").map((m, i) => ({ id: "T" + (i + 1), fuente: m.id, sev: m.sent <= -.6 ? "Alta" : "Media", aviso: null, estado: "Abierto", seleccionado: true }));
   return { activos: a, tickets: t };
 }
 
@@ -568,18 +568,93 @@ function publicarLote(plat) {
 function filasTickets() {
   return E.tickets.map(t => {
     const m = msg(t.fuente); 
-    const pillEstado = (t.estado === "Enviado" || t.estado === "Resuelto")
+    const esEnviado = t.estado === "Enviado" || t.estado === "Resuelto";
+    const pillEstado = esEnviado
       ? "p-ok"
       : t.estado === "Error"
         ? "p-warn"
         : "p-mute";
 
+    // Si ya está enviado o resuelto, no se puede seleccionar ni individual ni globalmente
+    const chk = (!esEnviado && t.seleccionado) ? "checked" : "";
+    const disabled = esEnviado ? "disabled title='Este ticket ya fue enviado'" : "";
+
     return `<tr>
-      <td><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
-      <td><b>${m.autor}</b></td><td class="muted">${m.canal}</td><td style="max-width:320px">${m.texto}</td>
-      <td>${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
-      <td><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
+      <td style="width:40px;text-align:center"><input type="checkbox" class="chk-ticket" data-id="${t.id}" ${chk} ${disabled} aria-label="Seleccionar ticket ${t.id}"></td>
+      <td style="width:75px"><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
+      <td style="width:160px"><b>${m.autor}</b></td><td style="width:130px" class="muted">${m.canal}</td>
+      <td style="min-width:260px;max-width:360px;white-space:normal;word-break:break-word">${m.texto}</td>
+      <td style="width:110px">${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
+      <td style="width:110px"><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
+}
+
+function sincronizarChecksTickets() {
+  const master = document.getElementById("chk_todos_tickets");
+  const masterCur = document.getElementById("chk_todos_tickets_curaduria");
+  const checks = document.querySelectorAll(".chk-ticket");
+
+  function actualizarMasters() {
+    const elegibles = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
+    const totalElegibles = elegibles.length;
+
+    if (!totalElegibles) {
+      if (master) { master.checked = false; master.indeterminate = false; master.disabled = true; master.title = "Todos los tickets ya fueron enviados"; }
+      if (masterCur) { masterCur.checked = false; masterCur.indeterminate = false; masterCur.disabled = true; masterCur.title = "Todos los tickets ya fueron enviados"; }
+      return;
+    }
+
+    if (master) { master.disabled = false; master.title = "Seleccionar todos los tickets pendientes"; }
+    if (masterCur) { masterCur.disabled = false; masterCur.title = "Seleccionar todos los tickets pendientes"; }
+
+    const marcados = elegibles.filter(t => t.seleccionado).length;
+    const todos = marcados === totalElegibles;
+    const alguno = marcados > 0 && marcados < totalElegibles;
+
+    if (master) {
+      master.checked = todos;
+      master.indeterminate = alguno;
+    }
+    if (masterCur) {
+      masterCur.checked = todos;
+      masterCur.indeterminate = alguno;
+    }
+  }
+
+  checks.forEach(chk => {
+    chk.onchange = () => {
+      const id = chk.dataset.id;
+      const t = E.tickets.find(x => x.id === id);
+      // Solo permitir cambio si no es un ticket enviado
+      if (t && t.estado !== "Enviado" && t.estado !== "Resuelto") {
+        t.seleccionado = chk.checked;
+      }
+      document.querySelectorAll(`.chk-ticket[data-id="${id}"]`).forEach(c => {
+        if (!c.disabled) c.checked = chk.checked;
+      });
+      actualizarMasters();
+    };
+  });
+
+  const onMasterChange = (e) => {
+    const val = e.target.checked;
+    // Solo seleccionar tickets pendientes o con error, nunca los enviados
+    E.tickets.forEach(t => {
+      if (t.estado !== "Enviado" && t.estado !== "Resuelto") {
+        t.seleccionado = val;
+      } else {
+        t.seleccionado = false;
+      }
+    });
+    document.querySelectorAll(".chk-ticket:not(:disabled)").forEach(chk => { chk.checked = val; });
+    document.querySelectorAll(".chk-ticket:disabled").forEach(chk => { chk.checked = false; });
+    actualizarMasters();
+  };
+
+  if (master) master.onchange = onMasterChange;
+  if (masterCur) masterCur.onchange = onMasterChange;
+
+  actualizarMasters();
 }
 
 // despliega los tickets en el formulario
@@ -587,7 +662,7 @@ function visualizarTickets() {
   
   b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
   
-  tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="6" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
   
   // ToDo actualización de históricos
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
@@ -596,10 +671,11 @@ function visualizarTickets() {
     `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
     <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
   
-    if (tabFmt === "tickets" && E.procesado) {
-    visualizarTicketsEn(curaduria);
-    }
+  sincronizarChecksTickets();
 
+  if (tabFmt === "tickets" && E.procesado) {
+    visualizarTicketsEn(curaduria);
+  }
 }
 
 function visualizarTicketsEn(cont) {
@@ -607,59 +683,96 @@ function visualizarTicketsEn(cont) {
   card.innerHTML = `<div class="plat-head"><div class="mk" style="--pc:var(--alert)">!</div>
     <div style="flex:1"><b>Tickets internos</b><div class="mini">No se publican: se avisan en el canal del equipo</div></div>
     <span class="mini mono">${E.tickets.length}</span></div>
-    <div class="item"><div class="df"><table><thead><tr><th>Sev.</th><th>Reportado por</th><th>Canal</th><th>Resumen</th><th>Aviso</th><th>Estado</th></tr></thead>
+    <div class="item"><div class="df"><table><thead><tr>
+      <th style="width:40px;text-align:center"><input type="checkbox" id="chk_todos_tickets_curaduria" aria-label="Seleccionar todos los tickets" title="Seleccionar todos"></th>
+      <th style="width:75px">Sev.</th>
+      <th style="width:160px">Reportado por</th>
+      <th style="width:130px">Canal</th>
+      <th style="min-width:260px">Resumen</th>
+      <th style="width:110px">Aviso</th>
+      <th style="width:110px">Estado</th>
+    </tr></thead>
       <tbody>${filasTickets()}</tbody></table></div>
       <div class="row" style="margin-top:12px"><button class="btn primary sm" id="btn_avisar">Avisar en Discord · #soporte-interno</button></div></div>`;
   cont.innerHTML = ""; cont.appendChild(card);
   $("#btn_avisar").onclick = () => avisar("discord");
+  sincronizarChecksTickets();
+}
+
+let avisandoTickets = false;
+
+function setBloqueoBotonesAviso(bloquear) {
+  avisandoTickets = bloquear;
+  const botones = [
+    document.getElementById("btn_discord"),
+    document.getElementById("btn_slack"),
+    document.getElementById("btn_avisar")
+  ].filter(Boolean);
+
+  botones.forEach(btn => {
+    btn.disabled = bloquear;
+  });
 }
 
 // función para enviar mensajes de los tickets pendientes mediante slack/discord
 async function avisar(dest) {
- 
+  if (avisandoTickets) return;
+
   if (!E.conex[dest]) { 
     ir("conexiones"); 
     return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); 
   }
   
-  const pend = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
-  if (!pend.length) return toast("Nada que avisar", "Todos los tickets ya se avisaron.");
-
-  // Pasamos a "En curso" mientras se envía la petición
-  pend.forEach(t => { 
-    t.estado = "En curso"; 
-  }); 
-  visualizarTickets();
-
-  const mensaje = "**Tickets para atención**\n\n" + 
-     pend.map(t => {
-       const m = msg(t.fuente);
-       const detalle = m ? `[${t.sev}] ${m.autor} (${m.canal}): ${m.texto}` : `[${t.sev}] Ticket ${t.id}`;
-       return `- \`${t.id}\` - ${detalle}`;
-     }).join("\n");
-
-  const r = await conError(API.avisarTickets(mensaje, dest),
-     "No se pudo enviar mensaje de tickets pendientes.");
- 
-  if (!r) {
-    // Si hubo error, cambiar estado a "Error" con pill p-warn y permitir reintento
-    pend.forEach(t => { 
-      t.estado = "Error"; 
-      t.aviso = null; 
-    }); 
-    visualizarTickets();
-    return;
+  const seleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
+  if (!seleccionados.length) {
+    return toast("Sin selección", "No hay tickets pendientes seleccionados para avisar.");
   }
 
-  // Éxito: cambiar de "En curso" a "Enviado" con pill p-ok
-  pend.forEach(t => { 
-    t.aviso = dest; 
-    t.estado = "Enviado"; 
-  }); 
+  try {
+    setBloqueoBotonesAviso(true);
 
-  save();
-  visualizarTickets(); 
-  toast(pend.length + " tickets avisados", "Mensaje enviado a " + PLAT[dest].cuenta, true);
+    // Pasamos a "En curso" mientras se envía la petición
+    seleccionados.forEach(t => { 
+      t.estado = "En curso"; 
+    }); 
+    visualizarTickets();
+
+    const mensaje = "\n\n**Tickets para atención**\n\n" + 
+       seleccionados.map(t => {
+         const m = msg(t.fuente);
+         const detalle = m ? 
+          `[${t.sev}] ${m.autor} (${m.canal}): ${m.texto}` : 
+          `[${t.sev}] Ticket ${t.id}`;
+         return `- \`${t.id}\` - ${detalle}`;
+       }).join("\n");
+
+    const r = await conError(API.avisarTickets(mensaje, dest),
+       "No se pudo enviar mensaje de tickets pendientes.");
+   
+    if (!r) {
+      // Si hubo error, cambiar estado a "Error" con pill p-warn y permitir reintento
+      seleccionados.forEach(t => { 
+        t.estado = "Error"; 
+        t.aviso = null; 
+      }); 
+      visualizarTickets();
+      return;
+    }
+
+    // Éxito: cambiar de "En curso" a "Enviado" con pill p-ok y desmarcar check
+    seleccionados.forEach(t => { 
+      t.aviso = dest; 
+      t.estado = "Enviado"; 
+      t.seleccionado = false;
+    }); 
+
+    save();
+    visualizarTickets(); 
+    toast(seleccionados.length + " tickets avisados", "Mensaje enviado a " + PLAT[dest].cuenta, true);
+
+  } finally {
+    setBloqueoBotonesAviso(false);
+  }
 }
 
 // botones de aviso rápido en la sección de Tickets
