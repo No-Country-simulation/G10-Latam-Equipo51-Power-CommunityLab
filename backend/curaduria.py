@@ -1,7 +1,18 @@
 from datetime import datetime, timezone
 
 from backend import db
-from backend.oci_storage import PREFIJO_CURADURIA, guardar_json
+from backend.oci_storage import PREFIJO_CURADURIA, guardar_json, leer_json
+
+
+def cargar_curaduria(slug: str) -> dict | None:
+    """Lee activos/<slug>/curaduria.json. None si todavía no existe (404); otros errores se propagan
+    para que nadie regenere "a ciegas" y pise lo ya generado."""
+    try:
+        return leer_json(f"{PREFIJO_CURADURIA}{slug}/curaduria.json")
+    except Exception as e:
+        if getattr(e, "status", None) == 404:
+            return None
+        raise
 
 
 def guardar_curaduria(slug: str, activos: list, periodo_referencia: str | None = None,

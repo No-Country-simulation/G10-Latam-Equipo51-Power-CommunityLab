@@ -6,7 +6,7 @@ Van en un router aparte para no tocar los endpoints de los demás (main.py solo 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from backend import config_voz, contexto, db, generador_contenido
+from backend import config_voz, contexto, curaduria, db, generador_contenido
 from backend.oci_storage import (
     PREFIJO_ANALISIS, PREFIJO_CONFIG, PREFIJO_CURADURIA, leer_json, listar_objetos,
 )
@@ -31,7 +31,8 @@ def actualizar_voz(req: VozRequest):
     if not req.texto.strip() and not req.chips:
         raise HTTPException(400, "La guía de voz no puede estar vacía")
     voz = config_voz.guardar_voz(req.texto, req.chips)
-    return {"status": "exito", "guardado_en": config_voz.CLAVE, "chips": len(voz["chips"])}
+    # `voz` = lo realmente persistido, para que el front sincronice su estado con el servidor
+    return {"status": "exito", "guardado_en": config_voz.CLAVE, "chips": len(voz["chips"]), "voz": voz}
 
 
 # ----------------------------------------------------------------- generación
@@ -41,11 +42,14 @@ class ItemGenerar(BaseModel):
     mensaje: dict = Field(default_factory=dict)
     mensajes: list[dict] | None = None        # solo "Destaque de newsletter"
     texto_previo: str | None = None           # "Volver a generar": pide otra versión
+    slug: str | None = None                   # curaduría/lote al que pertenece este activo (si no, el del request)
+    huella: str | None = None                 # identifica mensaje+formato; si ya hay texto con esa huella, no se regenera
 
 
 class GenerarRequest(BaseModel):
     slug: str | None = None                   # si viene, el texto se replica en MongoDB
     items: list[ItemGenerar]
+    forzar: bool = False                      # ignora lo ya generado y regenera todo
 
 
 @router.post("/generar")
@@ -53,17 +57,29 @@ def generar(req: GenerarRequest):
     """Genera con Cohere (usando la guía de voz vigente) el texto de cada activo."""
     voz = config_voz.cargar_voz()
     items = [i.model_dump() for i in req.items]
-    resultados, errores = generador_contenido.generar_lote(items, voz)
 
-    if req.slug:
-        for it in items:
-            if it["id"] in resultados:
-                m = it["mensaje"]
-                db.guardar_generado(req.slug, {
-                    "id": it["id"], "formato": it["formato"], "texto": resultados[it["id"]],
-                    "fuente_detalle": _fuente_detalle(m),
-                })
-    return {"resultados": resultados, "errores": errores}
+    # Lo que ya está generado en activos/<slug>/curaduria.json (misma huella) se reutiliza: no se
+    # llama a Cohere ni se sobrescribe. "Volver a generar" (texto_previo) y forzar=true lo saltan.
+    previos = {}
+    if not req.forzar:
+        for s in {it.get("slug") or req.slug for it in items} - {None}:
+            doc = curaduria.cargar_curaduria(s) or {}
+            previos.update({a["huella"]: a["texto"] for a in doc.get("activos", []) if a.get("huella") and a.get("texto")})
+    reutilizados = {it["id"]: previos[it["huella"]] for it in items
+                    if it.get("huella") in previos and not it.get("texto_previo")}
+    pendientes = [it for it in items if it["id"] not in reutilizados]
+
+    nuevos, errores = generador_contenido.generar_lote(pendientes, voz)
+    resultados = {**reutilizados, **nuevos}
+
+    for it in pendientes:
+        slug_it = it.get("slug") or req.slug
+        if slug_it and it["id"] in nuevos:
+            db.guardar_generado(slug_it, {
+                "id": it["id"], "formato": it["formato"], "texto": resultados[it["id"]],
+                "fuente_detalle": _fuente_detalle(it["mensaje"]),
+            })
+    return {"resultados": resultados, "errores": errores, "reutilizados": sorted(reutilizados)}
 
 
 def _fuente_detalle(m: dict) -> dict:

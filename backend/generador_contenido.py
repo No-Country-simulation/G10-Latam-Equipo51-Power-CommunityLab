@@ -5,7 +5,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 from backend.analizador_sentimiento import _llamar_cohere
-from backend.config_voz import voz_como_prompt
+from backend.config_voz import aplicar_chips, reglas_de_estilo, voz_como_prompt
 
 LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 280, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
 SEPARADOR_HILO = "\n\n———\n\n"
@@ -14,7 +14,8 @@ INSTRUCCIONES = {
     "Post de LinkedIn": (
         "Escribe UN post de LinkedIn (máx. 1300 caracteres) que celebre a la persona del mensaje. "
         "Estructura: gancho en la primera línea, contexto breve, la cita textual del mensaje entre comillas, "
-        "cierre con felicitación y 2-3 hashtags. Usa emojis con moderación."
+        "cierre con felicitación. Por defecto incluye 2-3 hashtags y emojis con moderación, "
+        "salvo que la guía de voz o las reglas de estilo indiquen lo contrario."
     ),
     "Hilo de X": (
         f"Escribe un hilo de X de 4 posts. CADA post debe tener máximo 280 caracteres. "
@@ -46,8 +47,10 @@ def _contexto_newsletter(mensajes: list[dict]) -> str:
     return f"Mensajes del lote ({len(mensajes)}, {pct}% positivos):\n" + "\n".join(lineas)
 
 
-def _ajustar(formato: str, texto: str) -> str:
+def _ajustar(formato: str, texto: str, voz: dict | None = None) -> str:
     texto = re.sub(r"```\w*", "", texto).strip()
+    if voz:
+        texto = aplicar_chips(texto, voz)   # Sin hashtags / Sin emojis, garantizado
     if formato == "Hilo de X":
         posts = [p.strip() for p in re.split(r"\n\s*[—–-]{3,}\s*\n", texto) if p.strip()]
         posts = [p if len(p) <= 280 else p[:277].rstrip() + "…" for p in posts]
@@ -68,12 +71,15 @@ def generar_texto(formato: str, mensaje: dict, voz: dict, mensajes: list[dict] |
     )
     base = _contexto_newsletter(mensajes) if formato == "Destaque de newsletter" and mensajes else _datos(mensaje)
     prompt = f"{INSTRUCCIONES[formato]}\n\n{base}"
+    reglas = reglas_de_estilo(voz)
+    if reglas:   # al final del prompt de usuario, donde más pesa, para que no las pise la estructura del formato
+        prompt += "\n\nREGLAS DE ESTILO (obligatorias, prevalecen sobre lo anterior):\n" + "\n".join(f"- {r}" for r in reglas)
     if texto_previo:
         prompt += (
             "\n\nYa existe esta versión; escribe una DISTINTA (otro gancho y otro ángulo, mismos hechos):\n"
             f"{texto_previo}"
         )
-    return _ajustar(formato, _llamar_cohere(prompt, system=sistema, temperature=0.9 if texto_previo else 0.6))
+    return _ajustar(formato, _llamar_cohere(prompt, system=sistema, temperature=0.9 if texto_previo else 0.6), voz)
 
 
 def generar_lote(items: list[dict], voz: dict) -> tuple[dict, dict]:

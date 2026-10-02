@@ -31,21 +31,101 @@ const save = () => { };   /* el estado vive en memoria durante la sesión; en pr
    "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
 async function guardarCuraduriaEnOCI() {
   if (!E.slug) return "local";
-  /* Cada activo viaja con su origen, en la misma forma que el archivo de entrada */
-  const activos = E.activos.map(a => ({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
-  const tickets = E.tickets.map(t => ({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
-  const r = await conError(
-    API.guardarCuraduria(E.slug, activos, { periodo_referencia: E.periodo, origen_comunidad: E.origen, tickets }),
-    "No se pudo guardar la curaduría en OCI");
-  return !!r;
+  /* Un lote puede mezclar periodos (Semana_01, Semana_05...): cada activo/ticket se guarda en
+     activos/<slug>/curaduria.json del slug de SU mensaje de origen, no todo bajo un único slug. */
+  const porSlug = new Map();
+  const grupo = s => { if (!porSlug.has(s)) porSlug.set(s, { activos: [], tickets: [] }); return porSlug.get(s); };
+  E.activos.forEach(a => grupo(slugDe(a.fuente)).activos.push({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
+  E.tickets.forEach(t => grupo(slugDe(t.fuente)).tickets.push({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
+  let ok = true;
+  for (const [slug, g] of porSlug) {
+    const m0 = DATOS.find(d => slugDe(d.id) === slug) || {};
+    const r = await conError(
+      API.guardarCuraduria(slug, g.activos, { periodo_referencia: m0.periodo_referencia || E.periodo, origen_comunidad: m0.origen_comunidad || E.origen, tickets: g.tickets }),
+      "No se pudo guardar la curaduría en OCI");
+    ok = ok && !!r;
+  }
+  return ok;
 }
+
+/* Slug (periodo) del mensaje de origen; si no lo trae, el del lote */
+const slugDe = id => (msg(id) || {}).slug || E.slug;
 
 function fuenteDetalle(m) {
   if (!m) return null;
   return {
-    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
+    archivo: m.archivo, etag: m.etag, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
     interaccion: { autor: m.autor, canal: m.canal, tipo: m.tipo, texto: m.texto }
   };
+}
+
+/* ---- Huella y reconciliación: lo ya generado NO se vuelve a generar ----
+   huella = formato + archivo de origen + etag del archivo (la newsletter, todo el lote).
+   Si la huella coincide con la guardada en activos/<slug>/curaduria.json, se reutiliza el texto. */
+const NEWSLETTER = "Destaque de newsletter";
+function hash53(s) {   /* cyrb53: hash corto y estable, suficiente para comparar */
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+function huellaDe(a) {
+  const m = msg(a.fuente) || {};
+  const origen = a.formato === NEWSLETTER
+    ? DATOS.map(d => `${d.archivo}@${d.etag}`).sort().join("|")
+    : `${m.archivo}@${m.etag}`;
+  return hash53(`${a.formato}|${origen}`);
+}
+const claveActivo = (formato, archivo, slug) => formato === NEWSLETTER ? `${NEWSLETTER}|${slug}` : `${formato}|${archivo}`;
+
+/* Cruza los activos recién construidos con los guardados. Devuelve los que SÍ hay que generar.
+   Se conserva id, texto, estado y ediciones de lo ya existente (un texto editado o ya en cola
+   /publicado nunca se pisa). Los nuevos reciben ids que no chocan con ninguno guardado. */
+/* Fusiona las curadurías de varios slugs en un solo objeto, marcando el slug de origen y
+   resolviendo ids repetidos entre slugs (cada archivo guardado tenía su propia numeración A1, A2…). */
+function fusionarGuardados(docs) {
+  const vistos = new Set(), activos = [], tickets = [];
+  let k = 1000;
+  docs.filter(Boolean).forEach(d => {
+    (d.activos || []).forEach(a => {
+      const id = vistos.has(a.id) ? "A" + (k++) : a.id;
+      vistos.add(id); activos.push({ ...a, id, _slug: d.slug });
+    });
+    tickets.push(...(d.tickets || []));
+  });
+  return { activos, tickets };
+}
+
+function reconciliar(c, guardado) {
+  const gAct = (guardado && guardado.activos) || [], gTic = (guardado && guardado.tickets) || [];
+  const porClave = new Map(gAct.map(g => [claveActivo(g.formato, (g.fuente_detalle || {}).archivo, g._slug), g]));
+  const ocupados = new Set(gAct.map(g => g.id));
+  const pendientes = []; let reutilizados = 0;
+
+  c.activos.forEach(n => {
+    n.huella = huellaDe(n);
+    const g = porClave.get(claveActivo(n.formato, (msg(n.fuente) || {}).archivo, slugDe(n.fuente)));
+    const protegido = g && (g.editado || (g.estado && g.estado !== "Pendiente"));
+    const igual = g && (g.huella ? g.huella === n.huella : n.formato !== NEWSLETTER);   /* sin huella = guardado antiguo */
+    if (g && g.texto && (igual || protegido)) {
+      Object.assign(n, { id: g.id, texto: g.texto, estado: g.estado || "Pendiente", editado: g.editado,
+        publicado: g.publicado, base: g.base, version: g.version, variante: g.variante,
+        huella: igual ? n.huella : g.huella });
+      reutilizados++;
+    } else pendientes.push(n);
+  });
+  /* ids propios de los pendientes: ninguno puede repetir uno guardado o ya reutilizado */
+  const usados = new Set([...ocupados, ...c.activos.filter(n => !pendientes.includes(n)).map(n => n.id)]);
+  let k = 1;
+  pendientes.forEach(n => { do { n.id = "A" + (k++); } while (usados.has(n.id)); usados.add(n.id); });
+
+  /* los tickets conservan estado/aviso (antes se reiniciaban a "Abierto" en cada procesamiento) */
+  c.tickets.forEach(t => {
+    const g = gTic.find(x => x.archivo && x.archivo === (msg(t.fuente) || {}).archivo);
+    if (g) Object.assign(t, { estado: g.estado, aviso: g.aviso, seleccionado: g.seleccionado ?? t.seleccionado });
+  });
+  return { pendientes, reutilizados };
 }
 
 /* Mensaje que se manda a /generar (sin campos de UI) */
@@ -58,15 +138,15 @@ const paraGenerar = m => ({
 /* Pide al backend el texto de cada activo (Cohere + guía de voz guardada).
    Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
 async function redactarConVoz(activos, textoPrevio = {}) {
-  if (!E.slug) return false;   /* lote de ejemplo: sin backend */
+  if (!E.slug || !activos.length) return false;   /* lote de ejemplo (sin backend) o nada pendiente */
   const items = activos.map(a => ({
-    id: a.id, formato: a.formato, mensaje: paraGenerar(msg(a.fuente) || {}),
+    id: a.id, formato: a.formato, slug: slugDe(a.fuente), huella: huellaDe(a), mensaje: paraGenerar(msg(a.fuente) || {}),
     mensajes: a.formato === "Destaque de newsletter" ? DATOS.map(paraGenerar) : null,
     texto_previo: textoPrevio[a.id] || null
   }));
   const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
   if (!r) return false;
-  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; } });
+  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; a.huella = huellaDe(a); } });
   const fallos = Object.keys(r.errores || {}).length;
   if (fallos) toast(`${fallos} activo${fallos === 1 ? "" : "s"} sin generar`, "Se dejó la plantilla local", false);
   return Object.keys(r.resultados).length > 0;
@@ -220,17 +300,29 @@ async function fin(resultado) {
     sent: m.sent, score: m.score, idioma: m.idioma || "es", texto: m.texto,
     por_que: m.por_que, temas: [m.tipo],
     apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
-    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
+    archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
   E.periodo = (resultado.periodos || [])[0] || null;
   E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
   const c = construir();
-  const conIA = await redactarConVoz(c.activos);   /* reemplaza las plantillas por texto generado con la guía de voz */
+  /* Lo ya generado vive en activos/<slug>/curaduria.json: solo se redacta lo nuevo o lo que cambió. */
+  let guardado = null;
+  if (E.slug) {
+    try {
+      const slugs = [...new Set(DATOS.map(d => d.slug || E.slug))];
+      guardado = fusionarGuardados(await Promise.all(slugs.map(s => API.curaduria(s))));
+    }
+    catch (e) {   /* sin poder leerlo, NO se regenera: se pisaría lo ya generado */
+      console.error(e); toast("No se pudo leer la curaduría guardada", e.message); irPaso(1); return;
+    }
+  }
+  const { pendientes, reutilizados } = reconciliar(c, guardado);
+  const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${c.activos.length} activos y ${c.tickets.length} tickets generados` + (conIA ? " · con tu guía de voz" : ""), true);
+  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (conIA ? " · con tu guía de voz" : ""), true);
 }
 btn_a_3.onclick = () => irPaso(3);
 
@@ -868,14 +960,15 @@ function alternar(k) {
 }
 
 /* ---------- AJUSTES ---------- */
-const ESTILOS = ["Cercano", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin hashtags", "Primera persona plural"];
+const ESTILOS = ["Cercano", "Amistoso", "Profesional", "Formal", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin emojis", "Sin hashtags", "Primera persona plural"];
+const EXCLUYENTES = { "Con emojis": "Sin emojis", "Sin emojis": "Con emojis" };
 function visualizarChips() {
   voz_chips.innerHTML = E.chips.map(c => `<span class="vchip">${c}<button data-q="${c}" title="Quitar">×</button></span>`).join("");
   voz_chips.querySelectorAll("button").forEach(b => b.onclick = () => { E.chips = E.chips.filter(x => x !== b.dataset.q); save(); visualizarChips(); });
   chips_estilo.innerHTML = ESTILOS.map(e => `<button aria-pressed="${E.chips.includes(e)}" data-e="${e}">${E.chips.includes(e) ? ic("check") : ""}${e}</button>`).join("");
   chips_estilo.querySelectorAll("button").forEach(b => b.onclick = () => {
     const e = b.dataset.e;
-    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips, e]; 
+    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips.filter(x => x !== EXCLUYENTES[e]), e]; 
     save(); 
     visualizarChips();
   });
@@ -884,6 +977,7 @@ function visualizarChips() {
 btn_voz.onclick = async () => {
   const r = await conError(API.guardarVoz(voz.value, E.chips), "No se pudo guardar la guía de voz");
   if (!r) return;
+  if (r.voz) { voz.value = r.voz.texto; E.chips = r.voz.chips; visualizarChips(); }   /* estado = lo realmente persistido */
   voz_msg.textContent = E.chips.length ? "Guardada con " + E.chips.length + " chips de estilo" : "Guardada";
   toast("Guía de voz guardada", "Se aplica a todo lo que se genere desde ahora", true);
 };
@@ -905,7 +999,7 @@ function recalcular() {
       const v = previos.find(x => x.formato === n.formato && x.fuente === n.fuente);
       if (v) Object.assign(n, {
         estado: v.estado, texto: v.texto, editado: v.editado,
-        publicado: v.publicado, base: v.base, version: v.version, variante: v.variante
+        publicado: v.publicado, base: v.base, version: v.version, variante: v.variante, huella: v.huella
       });
     });
     const perdidos = previos.filter(v => !c.activos.some(n => n.formato === v.formato && n.fuente === v.fuente)

@@ -53,6 +53,18 @@ const API = {
     return this._fetch(`/semanas/${slug}`);
   },
 
+  /* GET /curaduria/{slug} — lo ya generado/curado de ese lote. null si aún no existe (404);
+     cualquier otro error se propaga para NO regenerar a ciegas. */
+  async curaduria(slug) {
+    if (this.modoDemo) return null;
+    try {
+      return await this._fetch(`/curaduria/${slug}`);
+    } catch (e) {
+      if (/^404\b/.test(e.message)) return null;
+      throw e;
+    }
+  },
+
   /* PUT /curaduria/{slug} — guarda el estado de todos los activos.
      meta = { periodo_referencia, origen_comunidad, tickets } (opcional) */
   async guardarCuraduria(slug, activos, meta = {}) {

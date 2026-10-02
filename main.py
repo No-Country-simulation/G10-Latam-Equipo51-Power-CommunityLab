@@ -11,7 +11,7 @@ import io
 from pydantic import BaseModel
 import logging
 
-from backend.curaduria import guardar_curaduria
+from backend.curaduria import cargar_curaduria, guardar_curaduria
 from backend.analizador_sentimiento import (
     COHERE_MODEL, analizar_interaccion, consolidar, mensaje_con_error,
 )
@@ -166,6 +166,10 @@ def procesar_lote(forzar: bool = False):
     Cada mensaje conserva origen_comunidad y periodo_referencia del archivo de entrada;
     el slug del lote sale del periodo_referencia (Semana_01 -> 2026-semana-01).
     ?forzar=true ignora la caché y vuelve a analizar todo.
+
+    Cada mensaje de la respuesta trae `etag` (versión del archivo de entrada) y `nuevo`
+    (True solo si se analizó en esta llamada). El front usa el etag para decidir qué contenido
+    generado ya existe y no hay que regenerar.
     """
     log = logging.getLogger("uvicorn.error")
 
@@ -175,7 +179,7 @@ def procesar_lote(forzar: bool = False):
     ]
     en_cache = set() if forzar else cache_analisis.nombres_en_cache()
 
-    mensajes, procesados = [], []     # procesados: (objeto, mensaje) para replicar en MongoDB
+    mensajes, procesados = [], []     # procesados: (objeto, mensaje) NUEVOS, para replicar en MongoDB
     reutilizados = nuevos = omitidos = 0
 
     for obj in entradas:
@@ -192,8 +196,9 @@ def procesar_lote(forzar: bool = False):
                         db.guardar_entrada(obj.name, obj.etag, contenido, contexto.extraer(contenido))
                     except ValueError:
                         cacheado["archivo"] = obj.name
-                mensajes.append(cacheado)
-                procesados.append((obj, cacheado))
+                    procesados.append((obj, dict(cacheado)))   # solo los completados se re-sincronizan
+                # nuevo=False / etag viajan solo en la respuesta (no se escriben en analisis/)
+                mensajes.append({**cacheado, "etag": obj.etag, "nuevo": False})
                 reutilizados += 1
                 continue
 
@@ -214,16 +219,18 @@ def procesar_lote(forzar: bool = False):
             mensaje = {**analizar_interaccion(interaccion), **extra}
         except Exception as e:
             # un mensaje que falla no tumba el lote y NO se cachea (se reintenta la próxima vez)
-            mensajes.append({**mensaje_con_error(interaccion, e), **extra})
+            mensajes.append({**mensaje_con_error(interaccion, e), **extra, "etag": obj.etag, "nuevo": True})
             continue
 
         cache_analisis.guardar(obj.name, obj.etag, COHERE_MODEL, mensaje)
-        mensajes.append(mensaje)
+        mensajes.append({**mensaje, "etag": obj.etag, "nuevo": True})
         procesados.append((obj, mensaje))
         nuevos += 1
 
     resultado = consolidar(mensajes)
     resultado["slug"] = contexto.slug_del_lote(mensajes)
+    for m in mensajes:   # slug propio (el del lote solo como respaldo si el periodo no se reconoce)
+        m["slug"] = contexto.slug_de_mensaje(m) or resultado["slug"]
     resultado.update(contexto.resumen_contexto(mensajes))
     resultado["cache"] = {"reutilizados": reutilizados, "analizados": nuevos, "omitidos": omitidos}
 
@@ -325,6 +332,15 @@ class CuraduriaRequest(BaseModel):
     periodo_referencia: str | None = None
     origen_comunidad: str | None = None
     tickets: list = []
+
+@app.get("/curaduria/{slug}")
+def obtener_curaduria(slug: str):
+    """Devuelve activos/<slug>/curaduria.json (lo ya generado/curado) o 404 si aún no existe."""
+    doc = cargar_curaduria(slug)
+    if doc is None:
+        raise HTTPException(status_code=404, detail=f"No hay curaduría para {slug}")
+    return doc
+
 
 @app.put("/curaduria/{slug}")
 def actualizar_curaduria(

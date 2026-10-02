@@ -30,6 +30,12 @@ def extraer(contenido: dict) -> dict:
     }
 
 
+def slug_de_mensaje(m: dict, hoy: datetime | None = None) -> str | None:
+    """Slug del PROPIO mensaje ('Semana_05' -> '2026-semana-05'); None si su periodo no es reconocible."""
+    hit = re.search(r"semana\D*(\d{1,2})", str(m.get("periodo_referencia") or ""), re.I)
+    return f"{(hoy or datetime.now()).year}-semana-{int(hit.group(1)):02d}" if hit else None
+
+
 def slug_del_lote(mensajes: list[dict], hoy: datetime | None = None) -> str:
     """'Semana_01' -> '2026-semana-01'. Usa el periodo más frecuente del lote;
     si ninguno es reconocible, cae a la semana ISO actual (comportamiento anterior)."""
