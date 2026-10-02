@@ -737,12 +737,12 @@ async function avisar(dest) {
     }); 
     visualizarTickets();
 
-    const mensaje = "\n\n**Tickets para atención**\n\n" + 
+    const mensaje = "**Tickets para atención**\n\n" + 
        seleccionados.map(t => {
          const m = msg(t.fuente);
          const detalle = m ? 
-          `[${t.sev}] ${m.autor} (${m.canal}): ${m.texto}` : 
-          `[${t.sev}] Ticket ${t.id}`;
+          `[**${t.sev}**] ${m.autor} (*${m.canal}*): ${m.texto}` : 
+          `[**${t.sev}**] Ticket ${t.id}`;
          return `- \`${t.id}\` - ${detalle}`;
        }).join("\n");
 
