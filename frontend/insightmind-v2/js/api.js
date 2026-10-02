@@ -64,7 +64,12 @@ const API = {
      items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
   async generar(slug, items) {
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    return this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
+    mostrarIndicadorProcesando(true);
+    try {
+      return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
+    } finally {
+      mostrarIndicadorProcesando(false);
+    }
   },
 
   /* GET /config/voz — guía de voz vigente */
@@ -132,4 +137,28 @@ async function conError(promesa, mensaje) {
     if (typeof toast === "function") toast(mensaje, e.message);
     return null;
   }
+}
+
+/* Indicador de procesamiento para operaciones asíncronas con IA */
+let peticionesGenerarEnCurso = 0;
+function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+  const el = document.getElementById("indicador_procesando");
+  if (mostrar) {
+    peticionesGenerarEnCurso++;
+    if (el) {
+      const titEl = el.querySelector(".indicador-titulo");
+      const subEl = el.querySelector(".indicador-sub");
+      if (titEl && titulo) titEl.textContent = titulo;
+      if (subEl && sub) subEl.textContent = sub;
+      el.hidden = false;
+    }
+  } else {
+    peticionesGenerarEnCurso = Math.max(0, peticionesGenerarEnCurso - 1);
+    if (el && peticionesGenerarEnCurso === 0) {
+      el.hidden = true;
+    }
+  }
+}
+if (typeof window !== "undefined") {
+  window.mostrarIndicadorProcesando = mostrarIndicadorProcesando;
 }

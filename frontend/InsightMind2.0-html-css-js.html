@@ -770,6 +770,15 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
 /* El sello de plataforma respira al abrir su pestaña */
 .plat-head .mk{animation:pop .3s cubic-bezier(.2,.9,.3,1) both}
 
+/* Indicador flotante de procesamiento IA */
+.indicador-procesando{position:fixed;top:18px;right:20px;z-index:9999;display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--primary);border-radius:var(--radius-lg);padding:10px 16px;box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 1px var(--primary-soft);color:var(--ink);pointer-events:none;animation:entrar .24s cubic-bezier(.2,.9,.3,1) both}
+.indicador-procesando[hidden]{display:none!important}
+.indicador-procesando .spinner-proc{width:18px;height:18px;border:2.5px solid var(--primary-soft);border-top-color:var(--primary);border-radius:50%;animation:girar .75s linear infinite;flex-shrink:0}
+.indicador-procesando .indicador-info{display:flex;flex-direction:column;line-height:1.25}
+.indicador-procesando .indicador-titulo{font-weight:700;font-size:.88rem;color:var(--ink)}
+.indicador-procesando .indicador-sub{font-size:.75rem;color:var(--muted)}
+@media(max-width:800px){.indicador-procesando{top:56px;right:12px;left:12px;justify-content:center}}
+
 </style>
 </head>
 
@@ -1208,6 +1217,14 @@ Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
       </div>
     </main>
   </div>
+  <div id="indicador_procesando" class="indicador-procesando" hidden aria-live="polite">
+    <div class="spinner-proc"></div>
+    <div class="indicador-info">
+      <span class="indicador-titulo">Procesando con IA...</span>
+      <span class="indicador-sub">Generando contenido</span>
+    </div>
+  </div>
+
   <div class="toasts" id="toasts"></div>
  
   <dialog id="dlg">
@@ -1281,7 +1298,12 @@ const API = {
      items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
   async generar(slug, items) {
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    return this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
+    mostrarIndicadorProcesando(true);
+    try {
+      return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
+    } finally {
+      mostrarIndicadorProcesando(false);
+    }
   },
 
   /* GET /config/voz — guía de voz vigente */
@@ -1349,6 +1371,30 @@ async function conError(promesa, mensaje) {
     if (typeof toast === "function") toast(mensaje, e.message);
     return null;
   }
+}
+
+/* Indicador de procesamiento para operaciones asíncronas con IA */
+let peticionesGenerarEnCurso = 0;
+function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+  const el = document.getElementById("indicador_procesando");
+  if (mostrar) {
+    peticionesGenerarEnCurso++;
+    if (el) {
+      const titEl = el.querySelector(".indicador-titulo");
+      const subEl = el.querySelector(".indicador-sub");
+      if (titEl && titulo) titEl.textContent = titulo;
+      if (subEl && sub) subEl.textContent = sub;
+      el.hidden = false;
+    }
+  } else {
+    peticionesGenerarEnCurso = Math.max(0, peticionesGenerarEnCurso - 1);
+    if (el && peticionesGenerarEnCurso === 0) {
+      el.hidden = true;
+    }
+  }
+}
+if (typeof window !== "undefined") {
+  window.mostrarIndicadorProcesando = mostrarIndicadorProcesando;
 }
 /* Datos simulados para el modo demo.
    Cuando el backend responda, estos se reemplazan por la respuesta de /procesar. */
@@ -2197,7 +2243,9 @@ async function avisar(dest) {
     const mensaje = "**Tickets para atención**\n\n" + 
        seleccionados.map(t => {
          const m = msg(t.fuente);
-         const detalle = m ? `[${t.sev}] ${m.autor} (${m.canal}): ${m.texto}` : `[${t.sev}] Ticket ${t.id}`;
+         const detalle = m ? 
+          `[**${t.sev}**] ${m.autor} (*${m.canal}*): ${m.texto}` : 
+          `[**${t.sev}**] Ticket ${t.id}`;
          return `- \`${t.id}\` - ${detalle}`;
        }).join("\n");
 

@@ -758,3 +758,12 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
 
 /* El sello de plataforma respira al abrir su pestaña */
 .plat-head .mk{animation:pop .3s cubic-bezier(.2,.9,.3,1) both}
+
+/* Indicador flotante de procesamiento IA */
+.indicador-procesando{position:fixed;top:18px;right:20px;z-index:9999;display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--primary);border-radius:var(--radius-lg);padding:10px 16px;box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 1px var(--primary-soft);color:var(--ink);pointer-events:none;animation:entrar .24s cubic-bezier(.2,.9,.3,1) both}
+.indicador-procesando[hidden]{display:none!important}
+.indicador-procesando .spinner-proc{width:18px;height:18px;border:2.5px solid var(--primary-soft);border-top-color:var(--primary);border-radius:50%;animation:girar .75s linear infinite;flex-shrink:0}
+.indicador-procesando .indicador-info{display:flex;flex-direction:column;line-height:1.25}
+.indicador-procesando .indicador-titulo{font-weight:700;font-size:.88rem;color:var(--ink)}
+.indicador-procesando .indicador-sub{font-size:.75rem;color:var(--muted)}
+@media(max-width:800px){.indicador-procesando{top:56px;right:12px;left:12px;justify-content:center}}
