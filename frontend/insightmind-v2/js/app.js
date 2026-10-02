@@ -139,18 +139,23 @@ const paraGenerar = m => ({
    Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
 async function redactarConVoz(activos, textoPrevio = {}) {
   if (!E.slug || !activos.length) return false;   /* lote de ejemplo (sin backend) o nada pendiente */
+ 
   const items = activos.map(a => ({
     id: a.id, formato: a.formato, slug: slugDe(a.fuente), huella: huellaDe(a), mensaje: paraGenerar(msg(a.fuente) || {}),
     mensajes: a.formato === "Destaque de newsletter" ? DATOS.map(paraGenerar) : null,
     texto_previo: textoPrevio[a.id] || null
   }));
+
   const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
+  
   if (!r) return false;
   activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; a.huella = huellaDe(a); } });
+  
   const fallos = Object.keys(r.errores || {}).length;
   if (fallos) toast(`${fallos} activo${fallos === 1 ? "" : "s"} sin generar`, "Se dejó la plantilla local", false);
   return Object.keys(r.resultados).length > 0;
 }
+
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
@@ -259,7 +264,9 @@ async function subirYValidar() {
 
 const PASOS = ["validar · esquema Pydantic", "limpiar · enmascarar datos personales", "analizar · sentimiento y temas", "agrupar_preguntas · dudas similares", "router · 4 reglas condicionales", "generar · LinkedIn, X, FAQ y newsletter", "newsletter_semanal · highlights", "consolidar · paquete oficial", "guardar · OCI Object Storage"];
 btn_procesar.onclick = () => {
+  
   irPaso(2); 
+  
   steps.innerHTML = "";
   oci_linea.hidden = true;
   oci_ruta.textContent = "";
@@ -279,7 +286,8 @@ btn_procesar.onclick = () => {
     barra.style.transform = `scaleX(${i / nodos.length})`;
    
     if (i >= nodos.length) { 
-      barra.style.transform = "scaleX(1)"; return peticion.then(fin); 
+      barra.style.transform = "scaleX(1)"; 
+      return peticion.then(fin); 
     }
 
     nodos[i].className = "step run"; i++; setTimeout(paso, 360);

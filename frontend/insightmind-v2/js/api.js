@@ -24,8 +24,17 @@ const API = {
   /* POST /procesar — manda el lote y recibe el paquete completo.
      Contrato: docs/contratos/ejemplo_respuesta.json */
   async procesarLote(lote) {
+    
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
-    return this._fetch("/procesar", { method: "POST", body: JSON.stringify(lote) });
+
+    mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
+    try {
+      return await this._fetch("/procesar", { 
+      method: "POST", body: JSON.stringify(lote) 
+    });
+    } finally {
+      mostrarIndicadorProcesando(false);
+    }
   },
 
   /* POST /upload — sube un archivo real al bucket de OCI.
@@ -76,7 +85,7 @@ const API = {
      items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
   async generar(slug, items) {
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    mostrarIndicadorProcesando(true);
+    mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
     try {
       return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
     } finally {
@@ -153,7 +162,8 @@ async function conError(promesa, mensaje) {
 
 /* Indicador de procesamiento para operaciones asíncronas con IA */
 let peticionesGenerarEnCurso = 0;
-function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+//function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+function mostrarIndicadorProcesando(mostrar, titulo, sub) {
   const el = document.getElementById("indicador_procesando");
   if (mostrar) {
     peticionesGenerarEnCurso++;
