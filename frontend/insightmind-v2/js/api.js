@@ -53,10 +53,24 @@ const API = {
     return this._fetch(`/semanas/${slug}`);
   },
 
-  /* PUT /curaduria/{slug} — guarda el estado de todos los activos */
-  async guardarCuraduria(slug, activos) {
+  /* PUT /curaduria/{slug} — guarda el estado de todos los activos.
+     meta = { periodo_referencia, origen_comunidad, tickets } (opcional) */
+  async guardarCuraduria(slug, activos, meta = {}) {
     if (this.modoDemo) return { status: "exito", guardado_en: `activos/${slug}/curaduria.json` };
-    return this._fetch(`/curaduria/${slug}`, { method: "PUT", body: JSON.stringify({ activos }) });
+    return this._fetch(`/curaduria/${slug}`, { method: "PUT", body: JSON.stringify({ activos, ...meta }) });
+  },
+
+  /* POST /generar — redacta con Cohere usando la guía de voz guardada.
+     items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
+  async generar(slug, items) {
+    if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
+    return this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
+  },
+
+  /* GET /config/voz — guía de voz vigente */
+  async voz() {
+    if (this.modoDemo) return null;
+    return this._fetch("/config/voz");
   },
 
   /* POST /publicar — publica un activo en su plataforma */
