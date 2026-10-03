@@ -666,6 +666,7 @@ function publicarLote(plat) {
 
 // procesa la lista de tickets pendientes
 function filasTickets() {
+
   return E.tickets.map(t => {
     const m = msg(t.fuente); 
     const esEnviado = t.estado === "Enviado" || t.estado === "Resuelto";
@@ -687,20 +688,61 @@ function filasTickets() {
       <td style="width:110px">${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
       <td style="width:110px"><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
+
+}
+
+function actualizarEstadoBotonesAviso() {
+ 
+  debugger;
+
+  if (avisandoTickets) return;
+  const elegiblesSeleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
+  const haySeleccion = elegiblesSeleccionados.length > 0;
+
+  const btnDiscord = document.getElementById("btn_discord");
+  if (btnDiscord) {
+    btnDiscord.disabled = !haySeleccion;
+    btnDiscord.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  }
+
+  const btnAvisar = document.getElementById("btn_avisar");
+  if (btnAvisar) {
+    btnAvisar.disabled = !haySeleccion;
+    btnAvisar.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  }
 }
 
 function sincronizarChecksTickets() {
+  
   const master = document.getElementById("chk_todos_tickets");
   const masterCur = document.getElementById("chk_todos_tickets_curaduria");
   const checks = document.querySelectorAll(".chk-ticket");
 
   function actualizarMasters() {
+    
+    // tickets que pueden ser seleccionados segun estado
     const elegibles = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
+   
     const totalElegibles = elegibles.length;
 
     if (!totalElegibles) {
-      if (master) { master.checked = false; master.indeterminate = false; master.disabled = true; master.title = "Todos los tickets ya fueron enviados"; }
-      if (masterCur) { masterCur.checked = false; masterCur.indeterminate = false; masterCur.disabled = true; masterCur.title = "Todos los tickets ya fueron enviados"; }
+
+      if (master) { 
+        master.checked = false; 
+        master.indeterminate = false; 
+        master.disabled = true; 
+        master.title = "Todos los tickets ya fueron enviados"; 
+      }
+      
+      if (masterCur) { 
+        masterCur.checked = false; 
+        masterCur.indeterminate = false; 
+        masterCur.disabled = true; 
+        masterCur.title = "Todos los tickets ya fueron enviados"; 
+      }
+      
+      actualizarEstadoBotonesAviso();
+
       return;
     }
 
@@ -715,10 +757,14 @@ function sincronizarChecksTickets() {
       master.checked = todos;
       master.indeterminate = alguno;
     }
+
     if (masterCur) {
       masterCur.checked = todos;
       masterCur.indeterminate = alguno;
     }
+
+    actualizarEstadoBotonesAviso();
+
   }
 
   checks.forEach(chk => {
@@ -746,9 +792,12 @@ function sincronizarChecksTickets() {
         t.seleccionado = false;
       }
     });
+
     document.querySelectorAll(".chk-ticket:not(:disabled)").forEach(chk => { chk.checked = val; });
     document.querySelectorAll(".chk-ticket:disabled").forEach(chk => { chk.checked = false; });
+
     actualizarMasters();
+    
   };
 
   if (master) master.onchange = onMasterChange;
@@ -762,7 +811,8 @@ function visualizarTickets() {
   
   b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
   
-  tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  tabla_tickets.innerHTML = E.procesado ? filasTickets() : 
+    '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
   
   // ToDo actualización de históricos
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
@@ -785,7 +835,7 @@ function visualizarTicketsEn(cont) {
     <span class="mini mono">${E.tickets.length}</span></div>
     <div class="item"><div class="df"><table><thead><tr>
       <th style="width:40px;text-align:center"><input type="checkbox" id="chk_todos_tickets_curaduria" aria-label="Seleccionar todos los tickets" title="Seleccionar todos"></th>
-      <th style="width:75px">Sev.</th>
+      <th style="width:75px">Severidad</th>
       <th style="width:160px">Reportado por</th>
       <th style="width:130px">Canal</th>
       <th style="min-width:260px">Resumen</th>
@@ -803,18 +853,21 @@ let avisandoTickets = false;
 
 function setBloqueoBotonesAviso(bloquear) {
   avisandoTickets = bloquear;
-  const botones = [
-    document.getElementById("btn_discord"),
-    document.getElementById("btn_slack"),
-    document.getElementById("btn_avisar")
-  ].filter(Boolean);
+  if (bloquear) {
+    const botones = [
+      document.getElementById("btn_discord"),
+      document.getElementById("btn_avisar")
+    ].filter(Boolean);
 
-  botones.forEach(btn => {
-    btn.disabled = bloquear;
-  });
+    botones.forEach(btn => {
+      btn.disabled = true;
+    });
+  } else {
+    actualizarEstadoBotonesAviso();
+  }
 }
 
-// función para enviar mensajes de los tickets pendientes mediante slack/discord
+// función para enviar mensajes de los tickets pendientes mediante discord
 async function avisar(dest) {
   if (avisandoTickets) return;
 
@@ -876,8 +929,8 @@ async function avisar(dest) {
 }
 
 // botones de aviso rápido en la sección de Tickets
-btn_discord.onclick = () => avisar("discord"); 
-btn_slack.onclick = () => avisar("slack");
+const btn_discord = document.getElementById("btn_discord");
+if (btn_discord) btn_discord.onclick = () => avisar("discord"); 
 
 /* ---------- PUBLICACIONES ---------- */
 function visualizarPubs() {
