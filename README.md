@@ -42,7 +42,7 @@ El equipo revisa, edita y publica desde una interfaz web. La voz de marca (tono,
 | Generación de contenido con guía de voz (texto + chips) | Listo |
 | Curaduría guardada por periodo (`activos/<slug>/curaduria.json`) | Listo |
 | Réplica consultable en MongoDB (opcional) | Listo |
-| Avisos de tickets a Slack y Discord | Listo |
+| Avisos de tickets  Discord | Listo |
 | Despliegue en una sola máquina (FastAPI sirve API y front) | Listo |
 | **Separar front y backend (front público, backend interno con nginx)** | **Pendiente: ver sección 10** |
 | Autenticación de usuarios | Pendiente |
