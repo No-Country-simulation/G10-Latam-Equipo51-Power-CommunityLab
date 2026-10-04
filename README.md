@@ -66,7 +66,7 @@ flowchart LR
 
     API -->|"SDK de OCI"| BKT[("Object Storage<br/>fuente de verdad")]
     API -->|"HTTPS"| COH["Cohere API<br/>command-r-08-2024"]
-    API -->|"webhooks"| SD["Slack / Discord"]
+    API -->|"webhooks"| SD["Discord"]
 ```
 
 El puerto 8000 está expuesto, el CORS está abierto (`allow_origins=["*"]`) y la API no tiene autenticación.
@@ -89,7 +89,7 @@ flowchart LR
 
     API -->|"SDK de OCI"| BKT[("Object Storage")]
     API -->|"HTTPS"| COH["Cohere API"]
-    API -->|"webhooks"| SD["Slack / Discord"]
+    API -->|"webhooks"| SD["Discord"]
 ```
 
 Reglas de red:
