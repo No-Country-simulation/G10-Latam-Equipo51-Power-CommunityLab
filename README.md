@@ -293,7 +293,7 @@ Credenciales de OCI: el SDK lee `~/.oci/config` (`oci.config.from_file()`) del u
 
 ## 8. Ejecución local
 
-Requisitos: **Python 3.10 o superior** (el código usa tipos como `str | None`), acceso a un bucket de OCI y una clave de Cohere.
+Requisitos: **Python 3.14 o superior** (el código usa tipos como `str | None`), acceso a un bucket de OCI y una clave de Cohere.
 
 ```bash
 git clone https://github.com/gbriones1234/<repo>.git
