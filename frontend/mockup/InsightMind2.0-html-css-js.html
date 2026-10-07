@@ -2730,7 +2730,7 @@ const paraGenerar = m => ({
 
 /* Pide al backend el texto de cada activo (Cohere + guía de voz guardada).
    Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
-async function redactarConVoz(activos, textoPrevio = {}) {
+async function redactarConVoz(activos = [], textoPrevio = {}) {
   
   if (!E.slug || !activos.length) return false;   /* lote de ejemplo (sin backend) o nada pendiente */
  
@@ -2892,6 +2892,11 @@ const PASOS = [
  *   "newsletter_semanal · highlights",
  */
 
+async function procesarLote(lote = {}) {
+  return conError(API.procesarLote(lote),
+    "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
+}
+
 // Botón para ejecutar el procesamiento 
 btn_procesar.onclick = async () => {
 
@@ -2906,12 +2911,9 @@ btn_procesar.onclick = async () => {
 
   PASOS.forEach(p => steps.appendChild(el("div", "step", '<span class="sdot"></span><span>' + p + '</span>')));
   const nodos = [...steps.children]; 
+  const totalPasos = nodos.length;
 
-  // invoca /procesar
-  const peticion = conError(API.procesarLote({}),
-    "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
-
-  for (let i = 0; i < nodos.length; i++) {
+  for (let i = 0; i < totalPasos; i++) {
     if (E.paso !== 2) return;
     nodos[i].className = "step run";
    
@@ -2919,12 +2921,21 @@ btn_procesar.onclick = async () => {
    
     if (E.paso !== 2) return;
     nodos[i].className = "step done";
-    const pct = Math.round(((i + 1) / nodos.length) * 100);
+    const pct = totalPasos > 0 ? Math.round(((i + 1) / totalPasos) * 70) : 70;
     actualizarProgreso(pct);
   }
 
-  const resultado = await peticion;
-  fin(resultado);
+  if (totalPasos === 0) {
+    actualizarProgreso(70);
+  }
+
+  // invoca /procesar en FastAPI: al recibir response sube 15% (a 85%)
+  const resultado = await procesarLote();
+  if (!resultado) { irPaso(1); return; }
+  if (E.paso !== 2) return;
+  actualizarProgreso(85);
+
+  await fin(resultado);
 };
 
 async function fin(resultado) {
@@ -2963,8 +2974,11 @@ async function fin(resultado) {
   
   const { pendientes, reutilizados } = reconciliar(c, guardado);
 
-  // invoca /generar
+  // invoca /generar en FastAPI: al recibir response sube 15% (a 100%)
   const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
+  if (E.paso !== 2) return;
+  actualizarProgreso(100);
+
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
   analisis_resultado.hidden = false;
@@ -3331,8 +3345,6 @@ function filasTickets() {
 }
 
 function actualizarEstadoBotonesAviso() {
- 
-  debugger;
 
   if (avisandoTickets) return;
   const elegiblesSeleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
