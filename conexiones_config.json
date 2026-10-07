@@ -1,0 +1,28 @@
+{
+    "discord": {
+        "nombre": "Discord (Comunidad G10)",
+        "on": true,
+        "tipo": "Chat / Ingestión"
+    },
+    "slack": {
+        "nombre": "Slack Oficial",
+        "on": false,
+        "tipo": "Chat / Soporte"
+    },
+    "linkedin": {
+        "nombre": "LinkedIn Page",
+        "on": true,
+        "tipo": "Publicación Automática"
+    },
+    "twitter": {
+        "nombre": "X (Twitter)",
+        "on": false,
+        "tipo": "Publicación Corta"
+    },
+    "github": {
+        "nombre": "GitHub Repositories",
+        "on": false,
+        "tipo": "Ingestión de Proyectos",
+        "modo": "Desconectado"
+    }
+}

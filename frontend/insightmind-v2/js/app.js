@@ -948,77 +948,240 @@ function visualizarPubs() {
 }
 
 /* ---------- HISTORIAL ---------- */
-let semanaSel = "2026-semana-03";
+let semanaSel = null;
+let listaSemanasCache = [];
+let detalleSemanaCache = {};
 
-function visualizarHistorial() {
-  
-  const semanas = ["2026-semana-04", "2026-semana-03", "2026-semana-02"];
-  
-  lista_semanas.innerHTML = semanas.map(s => {
-    const d = s === "2026-semana-04" ? { 
-      inter: E.procesado ? 12 : 0, publicados: E.pubs.length } : HIST[s];
-    return `<button class="semana-btn" data-s="${s}" aria-current="${semanaSel === s}">
-      <div style="flex:1"><b>${s.replace("2026-semana-", "Semana ")}</b>
-        <div class="mini">${d.inter} interacciones · ${d.publicados} publicados</div></div>
-      ${s === "2026-semana-04" ? '<span class="pill p-pri">actual</span>' : ""}</button>`;
-  }).join("");
- 
-  lista_semanas.querySelectorAll(".semana-btn").forEach(b => b.onclick = () => { semanaSel = b.dataset.s; visualizarHistorial(); });
-  const act = semanaSel === "2026-semana-04";
-  const d = act ? {
-    inter: E.procesado ? 12 : 0, pos: 58, neg: 25, activos: E.activos.length, publicados: E.pubs.length,
-    tickets: E.tickets.length, temas: ["Acceso a laboratorios", "Contratación / Logros", "LangGraph"],
-    contenidos: E.activos.map(a => [FORMATOS[a.formato].plat, a.formato, a.texto.slice(0, 52) + "…", a.estado]),
-    tickets_list: E.tickets.map(t => [msg(t.fuente).texto.slice(0, 46) + "…", t.estado])
-  } : HIST[semanaSel];
-  detalle_semana.innerHTML = `
-    <div class="stats stats-4">
-      <div class="stat"><div class="k">Interacciones</div><div class="v">${d.inter}</div></div>
-      <div class="stat"><div class="k">% positivo</div><div class="v">${d.pos}%</div></div>
-      <div class="stat"><div class="k">Activos</div><div class="v">${d.activos}</div></div>
-      <div class="stat"><div class="k">Publicados</div><div class="v">${d.publicados}</div></div>
-    </div>
-    <div class="block"><p class="blk-title">Temas de la semana</p>
-      <div class="row" style="margin-top:8px">${d.temas.map(t => `<span class="pill p-mute">${t}</span>`).join("")}</div></div>
-    <div class="block"><p class="blk-title">Contenidos</p>
-      <p class="blk-info">Todo lo que se generó esa semana, con su estado final.</p>
-      <div class="df"><table><thead><tr><th>Plataforma</th><th>Formato</th><th>Contenido</th><th>Estado</th></tr></thead><tbody>
-      ${d.contenidos.length ? d.contenidos.map(c => `<tr><td><span class="pill p-mute">${PLAT[c[0]].nom}</span></td><td>${c[1]}</td>
-        <td class="muted" style="max-width:280px">${c[2]}</td>
-        <td><span class="pill ${c[3] === "Publicado" ? "p-ok" : c[3] === "Descartado" ? "p-mute" : "p-warn"}">${c[3]}</span></td></tr>`).join("")
-      : '<tr><td colspan="4" class="empty">Sin contenidos todavía.</td></tr>'}
-      </tbody></table></div></div>
-    <div class="block"><p class="blk-title">Tickets</p>
-      <div class="df"><table><thead><tr><th>Ticket</th><th>Estado</th></tr></thead><tbody>
-      ${d.tickets_list.length ? d.tickets_list.map(t => `<tr><td>${t[0]}</td>
-        <td><span class="pill ${t[1] === "Resuelto" ? "p-ok" : "p-warn"}">${t[1]}</span></td></tr>`).join("")
-      : '<tr><td colspan="2" class="empty">Sin tickets.</td></tr>'}
-      </tbody></table></div></div>
-    <div class="mini">Ruta en OCI: <code>activos/${semanaSel}/</code></div>`;
+function obtenerSemanaActual() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const semana1 = new Date(d.getFullYear(), 0, 4);
+  const semanaNum = Math.round(((((d - semana1) / 86400000) - 1 + (semana1.getDay() + 6) % 7) / 7) + 1);
+  return `${d.getFullYear()}-semana-${String(semanaNum).padStart(2, '0')}`;
 }
+
+async function visualizarHistorial() {
+  listaSemanasCache = [];
+
+  try {
+    const res = await fetch('/semanas', {
+      method: "GET",
+      headers: { "Accept": "application/json" }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const rawList = Array.isArray(data) ? data : (data.semanas || []);
+      
+      // Guardamos la lista de objetos
+      listaSemanasCache = rawList;
+    }
+  } catch (err) {
+    console.error("Error al conectar con el servidor:", err);
+  }
+
+  // Si no hay datos, armamos una estructura base de respaldo
+  if (listaSemanasCache.length === 0) {
+    listaSemanasCache = [
+      { slug: obtenerSemanaActual(), actual: true },
+      { slug: "2026-semana-03", actual: false }
+    ];
+  }
+
+  // Normalizamos para extraer siempre el slug actual seleccionado
+  const slugsDisponibles = listaSemanasCache.map(item => typeof item === 'object' ? item.slug : item);
+
+  if (!semanaSel || !slugsDisponibles.includes(semanaSel)) {
+    semanaSel = slugsDisponibles[0];
+  }
+
+  renderizarMenuSemanas();
+  await cargarYRenderizarDetalle(semanaSel);
+}
+
+function renderizarMenuSemanas() {
+  if (typeof lista_semanas === 'undefined' || !lista_semanas) return;
+
+  lista_semanas.innerHTML = listaSemanasCache.map(item => {
+    const slug = typeof item === 'object' ? item.slug : item;
+    const isCurrent = typeof item === 'object' ? item.actual : (slug === obtenerSemanaActual());
+    
+    return `<button class="semana-btn" data-s="${slug}" aria-current="${semanaSel === slug}">
+      <div style="flex:1"><b>${slug.replace(/20\d\d-semana-/, "Semana ")}</b>
+        <div class="mini">${isCurrent ? 'Semana en curso' : 'Histórico OCI'}</div></div>
+      ${isCurrent ? '<span class="pill p-pri">actual</span>' : ""}</button>`;
+  }).join("");
+
+  lista_semanas.querySelectorAll(".semana-btn").forEach(b => {
+    b.onclick = async () => {
+      semanaSel = b.dataset.s;
+      renderizarMenuSemanas(); 
+      await cargarYRenderizarDetalle(semanaSel);
+    };
+  });
+}
+
+async function cargarYRenderizarDetalle(slug) {
+  let d = detalleSemanaCache[slug];
+
+  // Mostramos un mensaje de carga si no está en caché
+  if (!d && typeof detalle_semana !== 'undefined' && detalle_semana) {
+    detalle_semana.innerHTML = `<div class="mini" style="padding:24px; text-align:center;">Cargando características de ${slug}...</div>`;
+  }
+
+  if (!d) {
+    try {
+      const res = await fetch(`/semanas/${slug}`);
+      if (res.ok) {
+        d = await res.json();
+        detalleSemanaCache[slug] = d;
+      }
+    } catch (err) {
+      console.warn(`No se pudo obtener el detalle remoto para ${slug}`);
+    }
+  }
+
+  // Red de seguridad por si el JSON viene vacío o falla
+  if (!d) {
+    d = { total: 0, positivo: 0, neutral: 0, negativo: 0, mensajes: [] };
+  }
+
+  const total = d.total || (d.mensajes ? d.mensajes.length : 0);
+  const positivo = d.positivo || (d.mensajes ? d.mensajes.filter(m => m.sentimiento === "positivo").length : 0);
+  const porcentajePos = total > 0 ? Math.round((positivo / total) * 100) : 0;
+  const publicadosCount = d.mensajes ? d.mensajes.filter(m => m.ruta === "exito" || m.ruta === "publicado").length : 0;
+
+  // Extraemos temas únicos a partir de los canales de los mensajes
+  const canalesSet = new Set();
+  if (d.mensajes) {
+    d.mensajes.forEach(m => { if (m.canal) canalesSet.add(m.canal); });
+  }
+  const temasList = canalesSet.size > 0 ? Array.from(canalesSet) : ["general", "comunidad"];
+
+  if (typeof detalle_semana !== 'undefined' && detalle_semana) {
+    detalle_semana.innerHTML = `
+      <div class="stats stats-4">
+        <div class="stat"><div class="k">Interacciones</div><div class="v">${total}</div></div>
+        <div class="stat"><div class="k">% Positivo</div><div class="v">${porcentajePos}%</div></div>
+        <div class="stat"><div class="k">Neutrales / Neg.</div><div class="v">${(d.neutral || 0)} / ${(d.negativo || 0)}</div></div>
+        <div class="stat"><div class="k">Éxitos / Publicados</div><div class="v">${publicadosCount}</div></div>
+      </div>
+
+      <div class="block"><p class="blk-title">Canales / Temas de la semana</p>
+        <div class="row" style="margin-top:8px">
+          ${temasList.map(t => `<span class="pill p-mute">${t}</span>`).join("")}
+        </div>
+      </div>
+
+      <div class="block"><p class="blk-title">Mensajes e Interacciones</p>
+        <p class="blk-info">Registro detallado de los mensajes procesados en esta semana.</p>
+        <div class="df"><table>
+          <thead>
+            <tr>
+              <th>Autor / Canal</th>
+              <th>Tipo</th>
+              <th>Contenido</th>
+              <th>Sentimiento / Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+          ${(d.mensajes && d.mensajes.length) ? d.mensajes.map(m => `
+            <tr>
+              <td>
+                <b>${m.autor || "Anónimo"}</b><br>
+                <span class="mini muted">${m.canal || "general"}</span>
+              </td>
+              <td><span class="pill p-mute">${m.tipo || "conversacion"}</span></td>
+              <td class="muted" style="max-width:320px">
+                ${m.texto || ""}
+              </td>
+              <td>
+                <span class="pill ${m.sentimiento === "positivo" ? "p-ok" : m.sentimiento === "negativo" ? "p-warn" : "p-mute"}">
+                  ${m.sentimiento || "neutral"}
+                </span>
+                <div class="mini" style="margin-top:4px">Ruta: ${m.ruta || "revisión"}</div>
+              </td>
+            </tr>`).join("")
+          : '<tr><td colspan="4" class="empty">Sin mensajes registrados todavía.</td></tr>'}
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="mini">Ruta en OCI: <code>activos/${slug}/</code></div>`;
+  }
+}
+
 
 /* ---------- CONEXIONES ---------- */
-function visualizarConex() {
+async function visualizarConex() {
+  try {
+    const res = await fetch('/conexiones');
+    if (res.ok) {
+      const data = await res.json();
+      // Mapeo de la respuesta
+      Object.keys(data).forEach(k => {
+        if (!PLAT[k]) PLAT[k] = {};
+        PLAT[k].nom = data[k].nombre;
+        PLAT[k].cuenta = data[k].cuenta;
+        PLAT[k].color = data[k].color;
+        PLAT[k].ini = data[k].ini;
+        PLAT[k].modo = data[k].tipo || data[k].modo;
+        E.conex[k] = data[k].on;
+      });
+    }
+  } catch (err) {
+    console.error("Error al obtener conexiones del servidor:", err);
+  }
+
   b_con.textContent = Object.values(E.conex).filter(Boolean).length + "/" + Object.keys(PLAT).length;
+  
   lista_conexiones.innerHTML = Object.entries(PLAT).map(([k, p]) => {
     const on = E.conex[k];
-    return `<div class="conn"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
-      <div class="b"><b>${p.nom}</b><div class="dot ${on ? "on" : ""}"><i></i>${on ? "Conectado · " + p.cuenta : "Sin conectar"}</div>
-        <div class="mini">${p.modo}</div></div>
+    return `<div class="conn"><div class="mk" style="--pc:${p.color || '#666'}">${p.ini || k.substring(0,2).toUpperCase()}</div>
+      <div class="b"><b>${p.nom}</b><div class="dot ${on ? "on" : ""}"><i></i>${on ? "Conectado · " + (p.cuenta || '') : "Sin conectar"}</div>
+        <div class="mini">${p.modo || ''}</div></div>
       <button class="btn sm ${on ? "" : "primary"}" data-c="${k}">${on ? "Desvincular" : "Conectar"}</button></div>`;
   }).join("");
+  
   lista_conexiones.querySelectorAll("[data-c]").forEach(b => b.onclick = () => alternar(b.dataset.c));
+  
   lista_vinculadas.innerHTML = Object.entries(PLAT).filter(([k]) => E.conex[k]).map(([k, p]) =>
-    `<div class="row" style="justify-content:space-between"><span class="dot on"><i></i>${p.nom} · ${p.cuenta}</span>
+    `<div class="row" style="justify-content:space-between"><span class="dot on"><i></i>${p.nom} · ${p.cuenta || ''}</span>
       <button class="btn sm" data-c="${k}">Desvincular</button></div>`).join("") || '<p class="mini">No hay cuentas vinculadas.</p>';
+  
   lista_vinculadas.querySelectorAll("[data-c]").forEach(b => b.onclick = () => alternar(b.dataset.c));
 }
-function alternar(k) {
-  const p = PLAT[k], on = E.conex[k]; E.conex[k] = !on; 
-  save(); 
-  visualizar();
-  toast(on ? p.nom + " desvinculado" : p.nom + " conectado", on ? "Lo ya publicado no se borra." : p.cuenta, !on);
+
+async function alternar(k) {
+  const p = PLAT[k], on = E.conex[k];
+  const nuevoEstado = !on;
+
+  try {
+    // Petición PUT al backend para guardar el cambio de estado de la plataforma
+    const res = await fetch(`/conexiones/${k}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conectar: nuevoEstado })
+    });
+
+    const resultado = await res.json();
+
+    if (res.ok && resultado.status === "exito") {
+      E.conex[k] = nuevoEstado;
+      save(); 
+      visualizarConex(); // Refrescamos la vista
+      toast(on ? p.nom + " desvinculado" : p.nom + " conectado", on ? "Lo ya publicado no se borra." : (p.cuenta || 'Vinculado con éxito'), !on);
+    } else {
+      // Alerta en caso de que el backend rechace la conexión (ej: falta GITHUB_TOKEN)
+      alert(resultado.mensaje || "No se pudo completar la conexión.");
+    }
+  } catch (err) {
+    console.error("Error al conectar con el servidor:", err);
+    alert("Error de red al intentar actualizar la conexión.");
+  }
 }
+
 
 /* ---------- AJUSTES ---------- */
 const ESTILOS = ["Cercano", "Amistoso", "Profesional", "Formal", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin emojis", "Sin hashtags", "Primera persona plural"];
