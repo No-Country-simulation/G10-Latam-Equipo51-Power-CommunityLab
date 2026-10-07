@@ -61,6 +61,10 @@
   --neutral: #78818D;
   --link: #4F63D8;
   --shadow: 0 1px 2px rgba(16,24,40,.05);
+  /* Gráficos: temperatura apagada, el azul sigue siendo el único acento */
+  --graf-pos: #5E9E7F;
+  --graf-neu: #CDD2D9;
+  --graf-neg: #C27F87;
 }
 
 /* ---- Oscuro cuando lo pide el sistema y el usuario no eligió claro ---- */
@@ -98,6 +102,10 @@
   --neutral: #5C6470;
   --link: #A3B2FF;
   --shadow: 0 1px 2px rgba(0,0,0,.45);
+  /* Gráficos: temperatura apagada, el azul sigue siendo el único acento */
+  --graf-pos: #6FAF8D;
+  --graf-neu: #3F444E;
+  --graf-neg: #B8757D;
   }
 }
 
@@ -135,6 +143,10 @@
   --neutral: #5C6470;
   --link: #A3B2FF;
   --shadow: 0 1px 2px rgba(0,0,0,.45);
+  /* Gráficos: temperatura apagada, el azul sigue siendo el único acento */
+  --graf-pos: #6FAF8D;
+  --graf-neu: #3F444E;
+  --graf-neg: #B8757D;
 }
 
 /* ---- Claro elegido a mano: gana sobre un sistema oscuro ---- */
@@ -171,6 +183,10 @@
   --neutral: #78818D;
   --link: #4F63D8;
   --shadow: 0 1px 2px rgba(16,24,40,.05);
+  /* Gráficos: temperatura apagada, el azul sigue siendo el único acento */
+  --graf-pos: #5E9E7F;
+  --graf-neu: #CDD2D9;
+  --graf-neg: #C27F87;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -779,6 +795,132 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
 .indicador-procesando .indicador-sub{font-size:.75rem;color:var(--muted)}
 @media(max-width:800px){.indicador-procesando{top:56px;right:12px;left:12px;justify-content:center}}
 
+/* ============================================================
+   Panorama · dashboard analítico
+   Los gráficos se dibujan con la caja del navegador y con SVG en
+   línea. Ninguna librería: el color sale de los mismos tokens que
+   el resto del panel, así el tema claro y el oscuro se resuelven
+   solos y no hay un segundo sistema de color que mantener.
+   ============================================================ */
+.filtros{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.filtro-canal{display:flex;align-items:center;gap:9px}
+.filtro-canal .label{margin-bottom:0;white-space:nowrap}
+.filtro-canal select{width:auto;min-width:176px}
+.blk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.blk-head .legend{margin-top:2px}
+
+/* ---- Pulso: columnas divergentes desde un eje ---- */
+.pulso-wrap{position:relative;margin-top:6px}
+.pulso{display:flex;justify-content:center;align-items:stretch;gap:3px;height:172px;position:relative}
+.pcol{flex:1 1 0;min-width:0;max-width:54px;display:flex;flex-direction:column;position:relative}
+.pcol::before{content:"";position:absolute;inset:-4px 0;border-radius:5px;background:var(--raised);
+  opacity:0;transition:opacity .15s ease;z-index:0}
+.pcol:hover::before{opacity:1}
+.pup{flex:0 0 64%;display:flex;flex-direction:column;justify-content:flex-end;position:relative;z-index:1}
+.pdn{flex:1 1 auto;position:relative;z-index:1}
+.peje{height:1px;background:var(--border-2);position:relative;z-index:1}
+.pup i,.pdn i{display:block;width:100%}
+.s-pos{background:var(--graf-pos);border-radius:3px 3px 0 0}
+.s-neu{background:var(--graf-neu)}
+.s-neg{background:var(--graf-neg);border-radius:0 0 3px 3px}
+.sw-pos{background:var(--graf-pos)} .sw-neu{background:var(--graf-neu)} .sw-neg{background:var(--graf-neg)}
+.hito{position:absolute;top:0;bottom:0;border-left:1px dashed var(--border-2);pointer-events:none;z-index:2}
+.hito b{position:absolute;top:-4px;left:-3.5px;width:7px;height:7px;border-radius:50%;
+  background:var(--primary);box-shadow:0 0 0 2px var(--block)}
+.lectura{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;min-height:22px;margin:10px 0 2px;
+  font-size:.85rem;color:var(--muted)}
+.lectura b{color:var(--ink);font-family:var(--mono);font-size:.88rem}
+.lectura .sep3{width:1px;height:12px;background:var(--border-2)}
+.lectura em{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+.lectura em i{width:8px;height:8px;border-radius:2px}
+.pulso-eje{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.74rem;
+  color:var(--faint);margin-top:8px}
+.pulso-hitos{display:flex;gap:16px;flex-wrap:wrap;margin-top:11px;padding-top:11px;border-top:1px solid var(--border)}
+.hito-txt{display:inline-flex;align-items:center;gap:7px;font-size:.81rem;color:var(--muted)}
+.hito-txt i{width:7px;height:7px;border-radius:50%;background:var(--primary);flex:none}
+
+/* ---- Chispas: la tendencia en 66 píxeles ---- */
+.chispa{width:66px;height:20px;display:block}
+
+/* ---- Termómetro: barras que salen del centro ---- */
+.termo{margin-top:4px}
+.termo-row{display:grid;grid-template-columns:1fr 154px 56px 42px;gap:12px;align-items:center;
+  padding:7px 0;border-bottom:1px solid var(--border)}
+.termo-row:last-child{border-bottom:none}
+.termo-nom{font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.termo-bar{position:relative;height:8px;background:var(--sunken);border-radius:999px}
+.termo-bar b{position:absolute;left:50%;top:-3px;width:1px;height:14px;background:var(--border-2)}
+.termo-bar i{position:absolute;top:0;height:100%;border-radius:999px}
+.termo-bar i.pos{background:var(--graf-pos)} .termo-bar i.neg{background:var(--graf-neg)}
+.termo-val{text-align:right} .termo-n{text-align:right;color:var(--muted)}
+
+/* ---- Palabras vigiladas ---- */
+.kw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:13px}
+.kw{border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);padding:11px 12px;
+  transition:border-color .18s ease}
+.kw:hover{border-color:var(--border-2)}
+.kw-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
+.kw-top b{font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kw-n{display:flex;align-items:baseline;gap:6px}
+.kw-n .v{font-size:1.32rem;font-weight:700}
+.kw-d{margin-left:auto;font-size:.8rem}
+.kw .chispa{width:100%;height:26px;margin-top:7px}
+
+/* ---- Embudo ---- */
+.embudo-layout{display:grid;grid-template-columns:1fr 262px;gap:20px;align-items:start;margin-top:6px}
+.fase{margin-bottom:14px}
+.fase:last-child{margin-bottom:0}
+.fase-l{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.88rem;margin-bottom:6px}
+.fase-bar{height:10px;background:var(--sunken);border-radius:999px;overflow:hidden}
+.fase-bar i{display:block;height:100%;background:var(--primary);border-radius:999px;
+  transform-origin:left;animation:crecer .5s cubic-bezier(.2,.9,.3,1) both}
+@keyframes crecer{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.fase-conv{font-size:.76rem;color:var(--faint);margin-top:5px}
+.kpi-mins{display:grid;gap:10px}
+.kpi-min{border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);
+  padding:10px 12px;display:grid;gap:1px;transition:border-color .18s ease}
+.kpi-min:hover{border-color:var(--border-2)}
+.kpi-min .k{font-size:.8rem;color:var(--muted);font-weight:600}
+.kpi-min b{font-size:1.18rem;line-height:1.3}
+.kpi-min .mini{font-size:.76rem}
+.mk-min{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  font-size:.6rem!important;font-weight:700;flex:none}
+.plat-cell{gap:9px;flex-wrap:nowrap}
+
+/* ---- Personas ---- */
+.lista-voz{margin-top:4px}
+.voz{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border)}
+.voz:last-child{border-bottom:none}
+.av{width:31px;height:31px;border-radius:50%;background:var(--primary-soft);border:1px solid var(--primary-line);
+  color:var(--primary-ink);display:grid;place-items:center;font-family:var(--mono);font-size:.7rem;
+  font-weight:700;flex:none}
+.av.alerta{background:var(--alert-soft);border-color:var(--alert);color:var(--alert)}
+.voz-b{flex:1;min-width:0;display:grid;gap:1px}
+.voz-b b{font-size:.92rem}
+.voz-b .mini{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.voz-n{font-weight:700;font-size:1rem}
+
+@media(max-width:1100px){
+  .kw-grid{grid-template-columns:repeat(3,1fr)}
+  .embudo-layout{grid-template-columns:1fr 224px}
+  .termo-row{grid-template-columns:1fr 120px 54px 38px}
+}
+@media(max-width:900px){
+  .embudo-layout{grid-template-columns:1fr}
+  .kpi-mins{grid-template-columns:1fr 1fr}
+  .kw-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:620px){
+  .pulso{height:140px}
+  .filtros{gap:10px}
+  .filtro-canal{width:100%}
+  .filtro-canal select{flex:1;min-width:0}
+  .termo-row{grid-template-columns:1fr 84px 52px;gap:9px}
+  .termo-n{display:none}
+  .kpi-mins{grid-template-columns:1fr}
+}
+@media(max-width:420px){.kw-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 
@@ -813,6 +955,8 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
         <circle cx="16" cy="7" r="2.3" />
         <circle cx="10" cy="17" r="2.3" />
       </symbol>
+      <symbol id="i-panorama" viewBox="0 0 24 24"><path d="M3.5 10.5v3M8 6v12M12.5 3v18M17 7.5v9M21.5 11v2"/></symbol>
+      <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24">
         <path d="m5 12.5 4.5 4.5L19 7" />
       </symbol>
@@ -872,6 +1016,10 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
         <div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div>
       </div>
       <nav>
+        <div class="sb-lbl">Inteligencia</div>
+        <button class="nav" data-p="panorama"><svg class="ico">
+            <use href="#i-panorama" />
+          </svg>Panorama</button>
         <div class="sb-lbl">Producción</div>
         <button class="nav" data-p="flujo" aria-current="page"><svg class="ico">
             <use href="#i-flujo" />
@@ -911,6 +1059,101 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
         <div class="row" id="acciones"></div>
       </div>
       <div class="wrap">
+
+        <!-- PANORAMA -->
+        <section id="p_panorama" hidden>
+          <div class="grid">
+
+            <div class="note" id="panorama_simulado"><svg class="ico"><use href="#i-alerta"/></svg>
+        <div><b>Cifras simuladas.</b> El Panorama todavía no consulta MongoDB: dibuja una serie
+        de ejemplo de 180 días para mostrar la propuesta. Lo que falta para activarlo con datos
+        reales está en <code>PANORAMA.md</code>.</div></div>
+
+      <div class="filtros">
+              <div class="radio" id="rango_btns" role="group" aria-label="Rango de fechas"></div>
+              <label class="filtro-canal"><span class="label">Canal</span>
+                <select id="canal_sel"></select></label>
+              <span class="mini" id="rango_txt"></span>
+            </div>
+
+            <div class="stats" id="kpis"></div>
+
+            <div class="block">
+              <div class="blk-head">
+                <div><p class="blk-title">Pulso de la comunidad</p>
+                  <p class="blk-info">Positivas hacia arriba, negativas hacia abajo. Las líneas punteadas marcan hitos.</p></div>
+                <div class="legend">
+                  <span><i class="sw-pos"></i>Positivas</span>
+                  <span><i class="sw-neu"></i>Neutrales</span>
+                  <span><i class="sw-neg"></i>Negativas</span></div>
+              </div>
+              <div class="lectura" id="lectura"></div>
+              <div class="pulso-wrap">
+                <div class="pulso" id="pulso_graf" role="img"></div>
+              </div>
+              <div class="pulso-eje" id="pulso_eje"></div>
+              <div class="pulso-hitos" id="pulso_hitos"></div>
+            </div>
+
+            <div class="cols2">
+              <div class="block">
+                <p class="blk-title">Temas en ascenso</p>
+                <p class="blk-info">Ordenados por crecimiento contra el periodo anterior.</p>
+                <div class="df"><table><thead><tr><th>Tema</th><th>Vol.</th><th>Var.</th><th>Curva</th><th>Ánimo</th></tr></thead>
+                  <tbody id="tabla_temas"></tbody></table></div>
+              </div>
+              <div class="block">
+                <p class="blk-title">Termómetro por tema</p>
+                <p class="blk-info">Dónde duele y dónde celebra la comunidad, del más frío al más cálido.</p>
+                <div class="termo" id="termo"></div>
+              </div>
+            </div>
+
+            <div class="block">
+              <p class="blk-title">Palabras bajo vigilancia</p>
+              <p class="blk-info">Sigue un término y mira cuánto se menciona y con qué ánimo.</p>
+              <div class="voz-chips" id="claves_chips"></div>
+              <span class="label">Sugerencias · toca para vigilarlas</span>
+              <div class="radio" id="claves_sug"></div>
+              <div class="kw-grid" id="claves_grid"></div>
+            </div>
+
+            <div class="block">
+              <p class="blk-title">Embudo de producción</p>
+              <p class="blk-info">De lo que llegó a lo que salió publicado, con el filtro humano en medio.</p>
+              <div class="embudo-layout">
+                <div class="embudo" id="embudo_fases"></div>
+                <div class="kpi-mins" id="embudo_extra"></div>
+              </div>
+            </div>
+
+            <div class="block">
+              <p class="blk-title">Desempeño por destino</p>
+              <p class="blk-info">Dónde aprueba más el equipo y dónde hay que retocar más el texto.</p>
+              <div class="df"><table><thead><tr><th>Destino</th><th>Generadas</th><th>Publicadas</th><th>Tasa</th><th>Editadas</th><th>Mediana</th></tr></thead>
+                <tbody id="tabla_plat"></tbody></table></div>
+            </div>
+
+            <div class="cols2">
+              <div class="block">
+                <p class="blk-title">Voces que alimentan el contenido</p>
+                <p class="blk-info">Quiénes originaron más casos de éxito en el periodo.</p>
+                <div class="lista-voz" id="lista_voces"></div>
+              </div>
+              <div class="block">
+                <p class="blk-title">Miembros que necesitan apoyo</p>
+                <p class="blk-info">Cuatro o más mensajes negativos. Antes de que se vayan en silencio.</p>
+                <div class="lista-voz" id="lista_riesgo"></div>
+              </div>
+            </div>
+
+            <div class="note info"><svg class="ico"><use href="#i-guardado"/></svg>
+              <div><b>De dónde saldrán estas cifras.</b> Cada mensaje analizado ya se guarda en la
+              colección <code>analisis</code> de MongoDB, y cada pieza generada en <code>contenido_generado</code>.
+              El panel solo pedirá agregaciones ya resueltas, nunca documentos sueltos. OCI Object Storage
+              sigue siendo la fuente de verdad: MongoDB no la reemplaza, la consulta.</div></div>
+          </div>
+        </section>
 
         <!-- FLUJO -->
         <section id="p_flujo">
@@ -1075,7 +1318,7 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
                   <thead>
                     <tr>
                       <th style="width:40px;text-align:center"><input type="checkbox" id="chk_todos_tickets" aria-label="Seleccionar todos los tickets" title="Seleccionar todos"></th>
-                      <th style="width:75px">Sev.</th>
+                      <th style="width:75px">Severidad</th>
                       <th style="width:160px">Reportado por</th>
                       <th style="width:130px">Canal</th>
                       <th style="min-width:260px">Resumen</th>
@@ -1087,8 +1330,7 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
                 </table>
               </div>
               <div class="row" style="margin-top:13px">
-                <button class="btn primary" id="btn_discord">Avisar en Discord · #soporte-interno</button>
-                <button class="btn" id="btn_slack">Avisar en Slack</button>
+                <button class="btn primary" id="btn_discord" disabled title="Selecciona al menos un ticket para avisar">Avisar en Discord · #soporte-interno</button>
               </div>
             </div>
             <details class="acc">
@@ -1258,8 +1500,17 @@ const API = {
   /* POST /procesar — manda el lote y recibe el paquete completo.
      Contrato: docs/contratos/ejemplo_respuesta.json */
   async procesarLote(lote) {
+    
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
-    return this._fetch("/procesar", { method: "POST", body: JSON.stringify(lote) });
+
+    mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
+    try {
+      return await this._fetch("/procesar", { 
+      method: "POST", body: JSON.stringify(lote) 
+    });
+    } finally {
+      mostrarIndicadorProcesando(false);
+    }
   },
 
   /* POST /upload — sube un archivo real al bucket de OCI.
@@ -1287,6 +1538,18 @@ const API = {
     return this._fetch(`/semanas/${slug}`);
   },
 
+  /* GET /curaduria/{slug} — lo ya generado/curado de ese lote. null si aún no existe (404);
+     cualquier otro error se propaga para NO regenerar a ciegas. */
+  async curaduria(slug) {
+    if (this.modoDemo) return null;
+    try {
+      return await this._fetch(`/curaduria/${slug}`);
+    } catch (e) {
+      if (/^404\b/.test(e.message)) return null;
+      throw e;
+    }
+  },
+
   /* PUT /curaduria/{slug} — guarda el estado de todos los activos.
      meta = { periodo_referencia, origen_comunidad, tickets } (opcional) */
   async guardarCuraduria(slug, activos, meta = {}) {
@@ -1298,7 +1561,7 @@ const API = {
      items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
   async generar(slug, items) {
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    mostrarIndicadorProcesando(true);
+    mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
     try {
       return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
     } finally {
@@ -1359,6 +1622,28 @@ const API = {
       body: JSON.stringify({ conectado: conectar }),
     });
   },
+
+  /* ---- Panorama (dashboard) ----
+     Todo sale de MongoDB. El backend resuelve las agregaciones y el panel solo
+     dibuja: nunca mandamos miles de documentos al navegador para sumarlos allí.
+     Un solo endpoint, una sola llamada: el Panorama son ocho agregaciones y no
+     tiene sentido hacer ocho viajes. Las palabras vigiladas vienen dentro de la
+     misma respuesta, en `claves`.
+     Modelo, pipelines y lo que falta para activarlo: PANORAMA.md */
+
+  /* GET /dashboard?slug=2026-semana-05&canal=todos
+     Sin `slug` devuelve el periodo más reciente. Se compara contra la semana
+     anterior, no contra un rango de días: los documentos no tienen una fecha
+     por mensaje, solo el periodo. */
+  async dashboard(slug, canal) {
+    if (this.modoDemo) return null;   // en demo lo calcula dashboard.js sobre la serie simulada
+    const q = new URLSearchParams();
+    if (slug) q.set("slug", slug);
+    if (canal && canal !== "todos") q.set("canal", canal);
+    return this._fetch("/dashboard" + (q.toString() ? `?${q}` : ""));
+  },
+
+
 };
 
 /* Muestra el error al usuario en vez de dejar la pantalla congelada.
@@ -1375,7 +1660,8 @@ async function conError(promesa, mensaje) {
 
 /* Indicador de procesamiento para operaciones asíncronas con IA */
 let peticionesGenerarEnCurso = 0;
-function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+//function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+function mostrarIndicadorProcesando(mostrar, titulo, sub) {
   const el = document.getElementById("indicador_procesando");
   if (mostrar) {
     peticionesGenerarEnCurso++;
@@ -1399,108 +1685,908 @@ if (typeof window !== "undefined") {
 /* Datos simulados para el modo demo.
    Cuando el backend responda, estos se reemplazan por la respuesta de /procesar. */
 
-const DATOS=[
- {id:"m1",autor:"Mariana Souza",canal:"#logros-y-empleos",tipo:"testimonio",sent:.94,score:96,idioma:"es",
-  texto:"Comunidad, ¡quedé seleccionada para el puesto de Desarrolladora Junior de IA! El proyecto del curso de LangChain y OCI que construí en mi portfolio marcó toda la diferencia en la entrevista técnica.",
-  por_que:"Contratación confirmada con el proyecto del curso como detonante",temas:["Contratación / Logros","Portafolio"],
-  cita:"El proyecto del curso de LangChain y OCI marcó toda la diferencia en la entrevista técnica"},
- {id:"m2",autor:"Lucas Albuquerque",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:.05,score:82,idioma:"es",
-  texto:"Tengo dudas sobre cómo estructurar los nodos condicionales en LangGraph cuando la respuesta del LLM necesita reintento.",
-  por_que:"Duda repetida por 3 personas esta semana",temas:["LangGraph / Nodos condicionales"]},
- {id:"m3",autor:"Camila Rojas",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:-.1,score:74,idioma:"es",
-  texto:"¿Cómo hago que un nodo vuelva a intentar si Gemini me devuelve un JSON roto? Me pasa 1 de cada 10 veces.",
-  por_que:"Misma duda que Lucas: se agrupa en una sola FAQ",temas:["LangGraph / Reintentos"]},
- {id:"m4",autor:"Diego Fuentes",canal:"#soporte-labs",tipo:"queja",sent:-.72,score:88,idioma:"es",apoyo:true,
-  texto:"Llevo tres días sin poder entrar al laboratorio de OCI, me sale error de tenancy y ya escribí dos veces sin respuesta.",
-  por_que:"Bloqueo de acceso con riesgo de abandono",temas:["Acceso a laboratorios"]},
- {id:"m5",autor:"Ana Beatriz Lima",canal:"#logros-y-empleos",tipo:"logro",sent:.88,score:91,idioma:"pt",
-  texto:"Pessoal, passei na certificação Oracle Cloud Infrastructure Foundations! Estudei 6 semanas com o grupo de estudos.",
-  por_que:"Certificación lograda con apoyo del grupo de estudio",temas:["Certificaciones"],
-  cita:"Passei na certificação OCI Foundations estudando com o grupo da comunidade"},
- {id:"m6",autor:"Rodrigo Pérez",canal:"#feedback-cursos",tipo:"feedback",sent:.42,score:63,idioma:"es",
-  texto:"El módulo de agentes está buenísimo, pero los ejercicios del final saltan de nivel muy rápido.",
-  por_que:"Feedback accionable sobre la curva del módulo",temas:["Diseño del curso"]},
- {id:"m7",autor:"Valeria Núñez",canal:"#soporte-labs",tipo:"problema_acceso",sent:-.55,score:71,idioma:"es",apoyo:true,
-  texto:"Mi cuenta de estudiante no reconoce el bucket que creé ayer. Necesito entregar el viernes.",
-  por_que:"Segundo reporte de acceso: posible falla generalizada",temas:["Acceso a laboratorios"]},
- {id:"m8",autor:"Héctor Salas",canal:"#general",tipo:"conversacion",sent:.3,score:18,idioma:"es",
-  texto:"¡Buenos días a todos! ☕ feliz lunes",por_que:"Saludo sin contenido aprovechable",temas:["Convivencia"]},
- {id:"m9",autor:"Paula Iriarte",canal:"#logros-y-empleos",tipo:"testimonio",sent:.79,score:84,idioma:"es",
-  texto:"Después de 4 meses, hoy firmé como Data Analyst Jr. Las mentorías de los martes me sirvieron muchísimo.",
-  por_que:"Contratación atribuida a las mentorías del programa",temas:["Contratación / Logros","Mentorías"],
-  cita:"Las mentorías de los martes me sirvieron muchísimo para preparar la entrevista"},
- {id:"m10",autor:"Joao Martins",canal:"#dudas-oci",tipo:"pregunta_tecnica",sent:.12,score:69,idioma:"pt",
-  texto:"Alguém sabe como configurar o bucket Always Free sem gerar custo?",
-  por_que:"Duda frecuente sobre costos de la capa gratuita",temas:["OCI Always Free"]},
- {id:"m11",autor:"Sofía Mendoza",canal:"#general",tipo:"conversacion",sent:.55,score:31,idioma:"es",
-  texto:"gracias equipo, todo claro 🙌",por_que:"Agradecimiento breve, sin contenido",temas:["Convivencia"]},
- {id:"m12",autor:"Andrés Gutiérrez",canal:"#feedback-cursos",tipo:"queja",sent:-.48,score:66,idioma:"es",apoyo:true,
-  texto:"Los videos del módulo 3 se cortan a la mitad y ya reporté el bug la semana pasada.",
-  por_que:"Bug reincidente con frustración acumulada",temas:["Plataforma / Video"]}];
+const DATOS = [
+  {
+    id: "m1",
+    autor: "Mariana Souza",
+    canal: "#logros-y-empleos",
+    tipo: "testimonio",
+    sent: 0.94,
+    score: 96,
+    idioma: "es",
+    texto:
+      "Comunidad, ¡quedé seleccionada para el puesto de Desarrolladora Junior de IA! El proyecto del curso de LangChain y OCI que construí en mi portfolio marcó toda la diferencia en la entrevista técnica.",
+    por_que: "Contratación confirmada con el proyecto del curso como detonante",
+    temas: ["Contratación / Logros", "Portafolio"],
+    cita: "El proyecto del curso de LangChain y OCI marcó toda la diferencia en la entrevista técnica",
+  },
+  {
+    id: "m2",
+    autor: "Lucas Albuquerque",
+    canal: "#dudas-langgraph",
+    tipo: "pregunta_tecnica",
+    sent: 0.05,
+    score: 82,
+    idioma: "es",
+    texto:
+      "Tengo dudas sobre cómo estructurar los nodos condicionales en LangGraph cuando la respuesta del LLM necesita reintento.",
+    por_que: "Duda repetida por 3 personas esta semana",
+    temas: ["LangGraph / Nodos condicionales"],
+  },
+  {
+    id: "m3",
+    autor: "Camila Rojas",
+    canal: "#dudas-langgraph",
+    tipo: "pregunta_tecnica",
+    sent: -0.1,
+    score: 74,
+    idioma: "es",
+    texto:
+      "¿Cómo hago que un nodo vuelva a intentar si Gemini me devuelve un JSON roto? Me pasa 1 de cada 10 veces.",
+    por_que: "Misma duda que Lucas: se agrupa en una sola FAQ",
+    temas: ["LangGraph / Reintentos"],
+  },
+  {
+    id: "m4",
+    autor: "Diego Fuentes",
+    canal: "#soporte-labs",
+    tipo: "queja",
+    sent: -0.72,
+    score: 88,
+    idioma: "es",
+    apoyo: true,
+    texto:
+      "Llevo tres días sin poder entrar al laboratorio de OCI, me sale error de tenancy y ya escribí dos veces sin respuesta.",
+    por_que: "Bloqueo de acceso con riesgo de abandono",
+    temas: ["Acceso a laboratorios"],
+  },
+  {
+    id: "m5",
+    autor: "Ana Beatriz Lima",
+    canal: "#logros-y-empleos",
+    tipo: "logro",
+    sent: 0.88,
+    score: 91,
+    idioma: "pt",
+    texto:
+      "Pessoal, passei na certificação Oracle Cloud Infrastructure Foundations! Estudei 6 semanas com o grupo de estudos.",
+    por_que: "Certificación lograda con apoyo del grupo de estudio",
+    temas: ["Certificaciones"],
+    cita: "Passei na certificação OCI Foundations estudando com o grupo da comunidade",
+  },
+  {
+    id: "m6",
+    autor: "Rodrigo Pérez",
+    canal: "#feedback-cursos",
+    tipo: "feedback",
+    sent: 0.42,
+    score: 63,
+    idioma: "es",
+    texto:
+      "El módulo de agentes está buenísimo, pero los ejercicios del final saltan de nivel muy rápido.",
+    por_que: "Feedback accionable sobre la curva del módulo",
+    temas: ["Diseño del curso"],
+  },
+  {
+    id: "m7",
+    autor: "Valeria Núñez",
+    canal: "#soporte-labs",
+    tipo: "problema_acceso",
+    sent: -0.55,
+    score: 71,
+    idioma: "es",
+    apoyo: true,
+    texto:
+      "Mi cuenta de estudiante no reconoce el bucket que creé ayer. Necesito entregar el viernes.",
+    por_que: "Segundo reporte de acceso: posible falla generalizada",
+    temas: ["Acceso a laboratorios"],
+  },
+  {
+    id: "m8",
+    autor: "Héctor Salas",
+    canal: "#general",
+    tipo: "conversacion",
+    sent: 0.3,
+    score: 18,
+    idioma: "es",
+    texto: "¡Buenos días a todos! ☕ feliz lunes",
+    por_que: "Saludo sin contenido aprovechable",
+    temas: ["Convivencia"],
+  },
+  {
+    id: "m9",
+    autor: "Paula Iriarte",
+    canal: "#logros-y-empleos",
+    tipo: "testimonio",
+    sent: 0.79,
+    score: 84,
+    idioma: "es",
+    texto:
+      "Después de 4 meses, hoy firmé como Data Analyst Jr. Las mentorías de los martes me sirvieron muchísimo.",
+    por_que: "Contratación atribuida a las mentorías del programa",
+    temas: ["Contratación / Logros", "Mentorías"],
+    cita: "Las mentorías de los martes me sirvieron muchísimo para preparar la entrevista",
+  },
+  {
+    id: "m10",
+    autor: "Joao Martins",
+    canal: "#dudas-oci",
+    tipo: "pregunta_tecnica",
+    sent: 0.12,
+    score: 69,
+    idioma: "pt",
+    texto: "Alguém sabe como configurar o bucket Always Free sem gerar custo?",
+    por_que: "Duda frecuente sobre costos de la capa gratuita",
+    temas: ["OCI Always Free"],
+  },
+  {
+    id: "m11",
+    autor: "Sofía Mendoza",
+    canal: "#general",
+    tipo: "conversacion",
+    sent: 0.55,
+    score: 31,
+    idioma: "es",
+    texto: "gracias equipo, todo claro 🙌",
+    por_que: "Agradecimiento breve, sin contenido",
+    temas: ["Convivencia"],
+  },
+  {
+    id: "m12",
+    autor: "Andrés Gutiérrez",
+    canal: "#feedback-cursos",
+    tipo: "queja",
+    sent: -0.48,
+    score: 66,
+    idioma: "es",
+    apoyo: true,
+    texto:
+      "Los videos del módulo 3 se cortan a la mitad y ya reporté el bug la semana pasada.",
+    por_que: "Bug reincidente con frustración acumulada",
+    temas: ["Plataforma / Video"],
+  },
+];
 
-const PLAT={
- linkedin:{nom:"LinkedIn",cuenta:"Página ONE G10 LATAM",color:"#0A66C2",ini:"in",modo:"Publicación asistida",on:true},
- x:{nom:"X",cuenta:"@comunidadONE_g10",color:"#111827",ini:"X",modo:"Publicación asistida",on:true},
- web:{nom:"Web de la comunidad",cuenta:"ayuda.one-g10.dev/faq",color:"#7C3AED",ini:"FAQ",modo:"API · publica el tip",on:true},
- newsletter:{nom:"Newsletter",cuenta:"Mailchimp · lista general",color:"#059669",ini:"NL",modo:"Exporta el markdown",on:false},
- discord:{nom:"Discord",cuenta:"#soporte-interno",color:"#5865F2",ini:"DC",modo:"Webhook · avisa los tickets",on:true},
- slack:{nom:"Slack",cuenta:"Sin espacio de trabajo",color:"#611F69",ini:"SL",modo:"Webhook · avisa los tickets",on:false}};
-const FORMATOS={"Post de LinkedIn":{plat:"linkedin",limite:3000},"Hilo de X":{plat:"x",limite:280,porPost:true},
- "Tip / FAQ":{plat:"web",limite:2500},"Destaque de newsletter":{plat:"newsletter",limite:4000}};
-const TABS=[["linkedin","LinkedIn"],["x","X"],["web","Tip / FAQ"],["newsletter","Newsletter"],["tickets","Tickets"]];
+const PLAT = {
+  linkedin: {
+    nom: "LinkedIn",
+    cuenta: "Página ONE G10 LATAM",
+    color: "#0A66C2",
+    ini: "in",
+    modo: "Publicación asistida",
+    on: true,
+  },
+  x: {
+    nom: "X",
+    cuenta: "@comunidadONE_g10",
+    color: "#111827",
+    ini: "X",
+    modo: "Publicación asistida",
+    on: true,
+  },
+  web: {
+    nom: "Web de la comunidad",
+    cuenta: "ayuda.one-g10.dev/faq",
+    color: "#7C3AED",
+    ini: "FAQ",
+    modo: "API · publica el tip",
+    on: true,
+  },
+  newsletter: {
+    nom: "Newsletter",
+    cuenta: "Mailchimp · lista general",
+    color: "#059669",
+    ini: "NL",
+    modo: "Exporta el markdown",
+    on: false,
+  },
+  discord: {
+    nom: "Discord",
+    cuenta: "#soporte-interno",
+    color: "#5865F2",
+    ini: "DC",
+    modo: "Webhook · avisa los tickets",
+    on: true,
+  },
+  slack: {
+    nom: "Slack",
+    cuenta: "Sin espacio de trabajo",
+    color: "#611F69",
+    ini: "SL",
+    modo: "Webhook · avisa los tickets",
+    on: false,
+  },
+};
+const FORMATOS = {
+  "Post de LinkedIn": { plat: "linkedin", limite: 3000 },
+  "Hilo de X": { plat: "x", limite: 280, porPost: true },
+  "Tip / FAQ": { plat: "web", limite: 2500 },
+  "Destaque de newsletter": { plat: "newsletter", limite: 4000 },
+};
+const TABS = [
+  ["linkedin", "LinkedIn"],
+  ["x", "X"],
+  ["web", "Tip / FAQ"],
+  ["newsletter", "Newsletter"],
+  ["tickets", "Tickets"],
+];
 
-let U={descartar:40,exito_score:70};
-function ruta(m){if(m.score<U.descartar)return "descartado";
- if(m.sent<=-.4||m.tipo==="queja"||m.tipo==="problema_acceso"||m.apoyo)return "ticket";
- if((m.tipo==="testimonio"||m.tipo==="logro")&&m.sent>=.6&&m.score>=U.exito_score)return "exito";
- if(m.tipo==="pregunta_tecnica")return "faq";return "insight";}
-const NOM={exito:"Caso de éxito",faq:"Tip / FAQ",ticket:"Ticket",descartado:"Descartado",insight:"Insight"};
-const PILL={exito:"p-ok",faq:"p-warn",ticket:"p-alert",descartado:"p-mute",insight:"p-pri"};
+let U = { descartar: 40, exito_score: 70 };
+function ruta(m) {
+  if (m.score < U.descartar) return "descartado";
+  if (
+    m.sent <= -0.4 ||
+    m.tipo === "queja" ||
+    m.tipo === "problema_acceso" ||
+    m.apoyo
+  )
+    return "ticket";
+  if (
+    (m.tipo === "testimonio" || m.tipo === "logro") &&
+    m.sent >= 0.6 &&
+    m.score >= U.exito_score
+  )
+    return "exito";
+  if (m.tipo === "pregunta_tecnica") return "faq";
+  return "insight";
+}
+const NOM = {
+  exito: "Caso de éxito",
+  faq: "Tip / FAQ",
+  ticket: "Ticket",
+  descartado: "Descartado",
+  insight: "Insight",
+};
+const PILL = {
+  exito: "p-ok",
+  faq: "p-warn",
+  ticket: "p-alert",
+  descartado: "p-mute",
+  insight: "p-pri",
+};
 
-const citaDe=m=>m.cita||(m.texto.length>140?m.texto.slice(0,140)+"…":m.texto);
-const linkedinTxt=m=>m.idioma==="pt"
- ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${citaDe(m)}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
- : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo==="testimonio"?"ser contratada":"lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${citaDe(m)}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
-const hiloTxt=m=>{const n=m.autor.split(" ")[0];return [
- `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
- `"${citaDe(m)}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
- `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
- `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`].join("\n\n———\n\n");};
+const citaDe = (m) =>
+  m.cita || (m.texto.length > 140 ? m.texto.slice(0, 140) + "…" : m.texto);
+const linkedinTxt = (m) =>
+  m.idioma === "pt"
+    ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${citaDe(m)}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
+    : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo === "testimonio" ? "ser contratada" : "lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${citaDe(m)}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
+const hiloTxt = (m) => {
+  const n = m.autor.split(" ")[0];
+  return [
+    `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
+    `"${citaDe(m)}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
+    `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
+    `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`,
+  ].join("\n\n———\n\n");
+};
 /* faq1/faq2/newsTxt quedan como muestra fija del modo demo.
    faqGenerico/newsletterGenerico arman el contenido a partir de los mensajes
    reales que devuelve /procesar, sin nombres ni temas hardcodeados. */
-const faq1=()=>`**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
-const faq2=()=>`**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
-const newsTxt=()=>`## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
-const faqGenerico=m=>`**Pregunta de ${m.autor} · ${m.canal||"general"}**\n\n${m.texto}\n\n_Motivo de la clasificación: ${m.por_que}_\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
-const newsletterGenerico=(mensajes,pctPos)=>{
- const top=mensajes.slice().sort((a,b)=>b.score-a.score)[0];
- const preguntas=mensajes.filter(m=>m.tipo==="pregunta_tecnica").length;
- return `## Community Highlights\n\n**🏆 Mensaje destacado de la semana**\n${top?top.autor+": "+top.texto.slice(0,140)+(top.texto.length>140?"…":""):"Sin datos"}\n\n**❓ Preguntas técnicas**\n${preguntas} pregunta(s) recibidas.\n\n**🔢 Cifra de la semana**\n${mensajes.length} interacciones · ${pctPos}% positivas.`;};
+const faq1 = () =>
+  `**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const faq2 = () =>
+  `**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
+const newsTxt = () =>
+  `## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
+const faqGenerico = (m) =>
+  `**Pregunta de ${m.autor} · ${m.canal || "general"}**\n\n${m.texto}\n\n_Motivo de la clasificación: ${m.por_que}_\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const newsletterGenerico = (mensajes, pctPos) => {
+  const top = mensajes.slice().sort((a, b) => b.score - a.score)[0];
+  const preguntas = mensajes.filter(
+    (m) => m.tipo === "pregunta_tecnica",
+  ).length;
+  return `## Community Highlights\n\n**🏆 Mensaje destacado de la semana**\n${top ? top.autor + ": " + top.texto.slice(0, 140) + (top.texto.length > 140 ? "…" : "") : "Sin datos"}\n\n**❓ Preguntas técnicas**\n${preguntas} pregunta(s) recibidas.\n\n**🔢 Cifra de la semana**\n${mensajes.length} interacciones · ${pctPos}% positivas.`;
+};
 
 /* semanas anteriores simuladas */
-const HIST={
- "2026-semana-03":{inter:9,pos:67,neg:8,activos:7,publicados:6,tickets:2,
-  temas:["Certificaciones","Entrevistas técnicas","Java Spring"],
-  contenidos:[["linkedin","Post de LinkedIn","Tres estudiantes aprobaron la certificación OCI…","Publicado"],
-   ["x","Hilo de X","De cero a la nube en 8 semanas: el camino de…","Publicado"],
-   ["web","Tip / FAQ","Cómo preparar el entorno de Java Spring en…","Publicado"],
-   ["linkedin","Post de LinkedIn","Nuestra mentoría de los martes cumple un año…","Publicado"],
-   ["newsletter","Destaque de newsletter","Community Highlights · Semana 03","Publicado"],
-   ["web","Tip / FAQ","Errores comunes al configurar el tenancy","Publicado"],
-   ["x","Hilo de X","5 recursos gratis para practicar SQL","Descartado"]],
-  tickets_list:[["Error 500 al subir el proyecto final","Resuelto"],["Video del módulo 2 sin audio","Resuelto"]]},
- "2026-semana-02":{inter:11,pos:71,neg:5,activos:8,publicados:5,tickets:1,
-  temas:["Onboarding","Git y GitHub","Empleabilidad"],
-  contenidos:[["linkedin","Post de LinkedIn","La primera semana de la generación 2026 arrancó…","Publicado"],
-   ["web","Tip / FAQ","Cómo resolver conflictos de merge sin miedo","Publicado"],
-   ["x","Hilo de X","Cómo armar tu primer portafolio dev","Publicado"],
-   ["newsletter","Destaque de newsletter","Community Highlights · Semana 02","Publicado"],
-   ["linkedin","Post de LinkedIn","Dos egresados consiguieron empleo este mes","Publicado"],
-   ["x","Hilo de X","Preguntas frecuentes de la semana","Listo"],
-   ["web","Tip / FAQ","Comandos de Git que sí vas a usar","Listo"],
-   ["linkedin","Post de LinkedIn","Testimonio de la mentoría de carrera","Descartado"]],
-  tickets_list:[["Certificado no se descarga","En curso"]]}};
+const HIST = {
+  "2026-semana-03": {
+    inter: 9,
+    pos: 67,
+    neg: 8,
+    activos: 7,
+    publicados: 6,
+    tickets: 2,
+    temas: ["Certificaciones", "Entrevistas técnicas", "Java Spring"],
+    contenidos: [
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Tres estudiantes aprobaron la certificación OCI…",
+        "Publicado",
+      ],
+      [
+        "x",
+        "Hilo de X",
+        "De cero a la nube en 8 semanas: el camino de…",
+        "Publicado",
+      ],
+      [
+        "web",
+        "Tip / FAQ",
+        "Cómo preparar el entorno de Java Spring en…",
+        "Publicado",
+      ],
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Nuestra mentoría de los martes cumple un año…",
+        "Publicado",
+      ],
+      [
+        "newsletter",
+        "Destaque de newsletter",
+        "Community Highlights · Semana 03",
+        "Publicado",
+      ],
+      [
+        "web",
+        "Tip / FAQ",
+        "Errores comunes al configurar el tenancy",
+        "Publicado",
+      ],
+      ["x", "Hilo de X", "5 recursos gratis para practicar SQL", "Descartado"],
+    ],
+    tickets_list: [
+      ["Error 500 al subir el proyecto final", "Resuelto"],
+      ["Video del módulo 2 sin audio", "Resuelto"],
+    ],
+  },
+  "2026-semana-02": {
+    inter: 11,
+    pos: 71,
+    neg: 5,
+    activos: 8,
+    publicados: 5,
+    tickets: 1,
+    temas: ["Onboarding", "Git y GitHub", "Empleabilidad"],
+    contenidos: [
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "La primera semana de la generación 2026 arrancó…",
+        "Publicado",
+      ],
+      [
+        "web",
+        "Tip / FAQ",
+        "Cómo resolver conflictos de merge sin miedo",
+        "Publicado",
+      ],
+      ["x", "Hilo de X", "Cómo armar tu primer portafolio dev", "Publicado"],
+      [
+        "newsletter",
+        "Destaque de newsletter",
+        "Community Highlights · Semana 02",
+        "Publicado",
+      ],
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Dos egresados consiguieron empleo este mes",
+        "Publicado",
+      ],
+      ["x", "Hilo de X", "Preguntas frecuentes de la semana", "Listo"],
+      ["web", "Tip / FAQ", "Comandos de Git que sí vas a usar", "Listo"],
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Testimonio de la mentoría de carrera",
+        "Descartado",
+      ],
+    ],
+    tickets_list: [["Certificado no se descarga", "En curso"]],
+  },
+};
+
+/* ============================================================
+   Serie histórica simulada · 90 días de comunidad ya analizada.
+   Es el espejo exacto de lo que devolverá la colección `interacciones`
+   de MongoDB. Cada objeto de aquí es un documento de allá.
+   Contrato y pipelines de agregación: docs/DASHBOARD.md
+   ============================================================ */
+
+/* Generador con semilla: los mismos números en cada carga, en cada máquina.
+   Sin esto la demo cambiaría de cifras delante del jurado. */
+function semilla(n){return function(){n|=0;n=n+0x6D2B79F5|0;let t=Math.imul(n^n>>>15,1|n);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+/* Campana centrada en m con desviación s, recortada a [-1,1]. */
+function gauss(r,m,s){const u=1-r(),v=r();
+  return Math.max(-1,Math.min(1,m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)));}
+
+/* 180 días: el doble del rango máximo que ofrece el panel. Sin esto, comparar
+   los últimos 90 días contra los 90 previos no tendría contra qué comparar y
+   las variaciones saldrían infladas. */
+const DIAS_SERIE=180;
+const RANGO_MAX=90;
+
+/* Cada tema tiene volumen propio, tendencia y temperatura.
+   `evento` simula un incidente que arranca el día indicado. */
+const TEMAS_SERIE=[
+ {t:"Acceso a laboratorios",base:1.1,tend:.6,sent:[-.62,.22],tipo:"queja",canal:"#soporte-labs",
+  evento:{hace:16,mult:5.2},claves:["tenancy","laboratorio","acceso"]},
+ {t:"Plataforma / Video",base:.9,tend:.5,sent:[-.52,.22],tipo:"queja",canal:"#soporte-labs",
+  evento:{hace:10,mult:3.4},claves:["video","módulo 3","reproductor"]},
+ {t:"Contratación / Logros",base:2.6,tend:.5,sent:[.82,.13],tipo:"testimonio",canal:"#logros-y-empleos",
+  claves:["empleo","entrevista","portafolio"]},
+ {t:"Certificaciones",base:2.1,tend:.6,sent:[.76,.15],tipo:"logro",canal:"#logros-y-empleos",
+  claves:["certificación","examen"]},
+ {t:"LangGraph / Nodos",base:2.4,tend:1.1,sent:[.05,.21],tipo:"pregunta_tecnica",canal:"#dudas-langgraph",
+  claves:["LangGraph","reintento","Gemini"]},
+ {t:"OCI Always Free",base:1.9,tend:.3,sent:[.12,.22],tipo:"pregunta_tecnica",canal:"#dudas-oci",
+  claves:["bucket","Always Free","costo"]},
+ {t:"Mentorías",base:1.7,tend:-.15,sent:[.66,.18],tipo:"feedback",canal:"#feedback-cursos",
+  claves:["mentoría","mentor"]},
+ {t:"Diseño del curso",base:2.0,tend:-.35,sent:[.26,.31],tipo:"feedback",canal:"#feedback-cursos",
+  claves:["ejercicios","módulo"]},
+ {t:"Portafolio",base:1.8,tend:.55,sent:[.48,.23],tipo:"conversacion",canal:"#general",
+  claves:["portafolio","GitHub","proyecto"]},
+ {t:"Empleabilidad",base:1.9,tend:.25,sent:[.44,.28],tipo:"conversacion",canal:"#logros-y-empleos",
+  claves:["CV","LinkedIn","empleo"]},
+ {t:"Git y GitHub",base:1.3,tend:-.2,sent:[.18,.24],tipo:"pregunta_tecnica",canal:"#dudas-oci",
+  claves:["merge","GitHub","rama"]},
+ {t:"Convivencia",base:3.4,tend:0,sent:[.40,.25],tipo:"conversacion",canal:"#general",
+  claves:["gracias","comunidad"]}];
+
+const VOCES=["Mariana Souza","Lucas Albuquerque","Camila Rojas","Ana Beatriz Lima","Rodrigo Pérez",
+ "Paula Iriarte","Joao Martins","Sofía Mendoza","Andrés Gutiérrez","Valeria Núñez","Diego Fuentes",
+ "Héctor Salas","Renata Coelho","Iván Delgado","Bruna Teixeira","Nicolás Vera","Tatiana Ospina",
+ "Felipe Cárdenas","Gabriela Moreno","Matías Silva","Carla Benítez","Thiago Ramos","Elena Duarte",
+ "Pablo Arenas","Juliana Prado","Emilio Ferrer","Natalia Quiroz","Samuel Ortega","Luciana Farias",
+ "Kevin Mora","Zaida Contreras","Greco Villalba","Jesús Paredes","Carolina Ríos"];
+/* En una caída se queja mucha gente distinta, pero unos pocos vuelven semana
+   tras semana. Ese puñado es el que el panel tiene que señalar: es quien está
+   a punto de abandonar. Un tercio de lo negativo sale de aquí. */
+const VOCES_FRICCION=["Diego Fuentes","Valeria Núñez","Andrés Gutiérrez","Renata Coelho",
+ "Matías Silva","Tatiana Ospina"];
+
+const SCORE_BASE={testimonio:84,logro:79,pregunta_tecnica:69,queja:71,feedback:59,conversacion:26,problema_acceso:75};
+const FORMATO_DE={linkedin:"Post de LinkedIn",x:"Hilo de X",web:"Tip / FAQ",newsletter:"Destaque de newsletter"};
+
+/* ---- Construcción de la serie ---- */
+const SERIE=(function(){
+  const hoy=new Date();hoy.setHours(12,0,0,0);
+  const inter=[],act=[];let nAct=0;
+
+  for(let d=0;d<=DIAS_SERIE;d++){
+    const fecha=new Date(hoy);fecha.setDate(hoy.getDate()-(DIAS_SERIE-d));
+    const dow=fecha.getDay();
+    const finde=dow===0||dow===6?.45:dow===1?1.18:1;
+
+    TEMAS_SERIE.forEach((tm,ti)=>{
+      const r=semilla(d*97+ti*1013+7);
+      let v=tm.base*finde*(1+tm.tend*(d/DIAS_SERIE));   /* crece parejo a lo largo de la serie */
+      const arranca=DIAS_SERIE-tm.evento?.hace;
+      if(tm.evento&&d>=arranca){
+        const rampa=Math.min(1,(d-arranca)/6);
+        v*=1+(tm.evento.mult-1)*rampa;
+      }
+      const n=Math.round(v*(.7+r()*.6));
+
+      for(let k=0;k<n;k++){
+        const sent=gauss(r,tm.sent[0],tm.sent[1]);
+        const duro=sent<-.4;
+        const pool=duro&&r()<.34?VOCES_FRICCION:VOCES;
+        const autor=pool[Math.floor(r()*pool.length)];
+        const tipo=duro&&tm.tipo==="queja"&&r()<.35?"problema_acceso":tm.tipo;
+        const score=Math.max(5,Math.min(99,
+          Math.round(SCORE_BASE[tipo]+Math.abs(sent)*13+(r()-.5)*26)));
+        const m={fecha,dia:d,autor,canal:tm.canal,tema:tm.t,tipo,sent:+sent.toFixed(2),score,
+          apoyo:duro,claves:tm.claves.filter(()=>r()<.62)};
+        m.ruta=ruta(m);
+        inter.push(m);
+
+        /* Un mensaje aprovechable produce activos. El estado imita la realidad:
+           no todo lo generado se aprueba y no todo lo aprobado se publica. */
+        const destinos=m.ruta==="exito"?(r()<.55?["linkedin","x"]:["linkedin"])
+          :m.ruta==="faq"?["web"]
+          :m.ruta==="insight"&&r()<.18?["newsletter"]:[];
+        destinos.forEach(p=>{
+          const g=r(),edit=r()<.39;
+          const estado=g<.055?"Descartado":g<.22?"Pendiente":g<.31?"Listo":"Publicado";
+          /* El canal viaja con la pieza: sin él, filtrar el panorama por canal
+             dejaría las métricas de producción en cero. */
+          act.push({id:"H"+(++nAct),fecha,dia:d,plat:p,formato:FORMATO_DE[p],autor,tema:tm.t,canal:tm.canal,
+            fuente_sent:m.sent,editado:edit,ediciones:edit?1+Math.floor(r()*3):0,estado,
+            horas:+(.6+r()*7.4).toFixed(1)});
+        });
+      }
+    });
+  }
+  return {inter,act,hoy};
+})();
+
+/* Hitos que explican los picos del gráfico. Vienen de la colección `hitos`. */
+const HITOS=[{hace:62,txt:"Arranca el módulo de agentes"},
+ {hace:30,txt:"Semana de certificaciones"},
+ {hace:14,txt:"Caída de los laboratorios de OCI"}]
+ .map(h=>({...h,dia:DIAS_SERIE-h.hace}));
+
+/* Palabras clave vigiladas. En MongoDB viven en `seguimiento_claves`. */
+const CLAVES_INICIALES=["tenancy","LangGraph","certificación","bucket"];
+const CLAVES_SUGERIDAS=["entrevista","video","reintento","portafolio","mentoría","empleo",
+ "Gemini","GitHub","módulo 3","Always Free","acceso","proyecto"];
+
+/* ============================================================
+   Panorama · agregaciones y render.
+   Cada función de agregación de este archivo es el equivalente en
+   JavaScript de un pipeline de MongoDB. El nombre del pipeline va
+   anotado sobre cada una. Cuando el backend esté arriba, estas
+   funciones se borran y el panel solo pinta lo que llega de
+   GET /dashboard. Modelo y pipelines: docs/DASHBOARD.md
+   ============================================================ */
+
+let DASH={rango:30,canal:"todos",slug:null,claves:[...CLAVES_INICIALES]};
+
+/* Respuesta de GET /dashboard, o null si no hay backend/MongoDB.
+   Con PANO, las funciones de agregación de abajo no calculan nada: solo
+   traducen lo que ya vino resuelto del servidor. Sin PANO, siguen trabajando
+   sobre la serie simulada exactamente como antes. */
+let PANO=null;
+const MIN_POR_PIEZA=22;   /* minutos que cuesta escribir y revisar una pieza a mano */
+const MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const fnum=n=>n.toLocaleString("es-MX");
+const fdia=f=>f.getDate()+" "+MESES[f.getMonth()];
+
+/* Variación contra el periodo anterior, ya formateada. */
+function delta(a,b,sufijo){
+  /* En puntos, un 0 previo es un dato legítimo (índice de sentimiento neutro),
+     no "sin dato": solo el porcentaje necesita un divisor distinto de cero. */
+  if(sufijo==="pts"){const d=Math.round(a-b);
+    return{t:(d>=0?"+":"−")+Math.abs(d)+" pts",c:d>0?"up":d<0?"down":"",n:d};}
+  if(!b)return{t:a?"nuevo":"—",c:a?"up":""};
+  const p=sufijo==="pts"?Math.round(a-b):Math.round((a/b-1)*100);
+  return{t:(p>=0?"+":"−")+Math.abs(p)+(sufijo==="pts"?" pts":"%"),c:p>0?"up":p<0?"down":"",n:p};
+}
+const chispa=(vals,color)=>{
+  const w=66,h=20,mx=Math.max(...vals,1),paso=vals.length>1?w/(vals.length-1):w;
+  const p=vals.map((v,i)=>`${(i*paso).toFixed(1)},${(h-2.5-v/mx*(h-5)).toFixed(1)}`).join(" ");
+  return `<svg class="chispa" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${p}"
+    fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+};
+
+/* ---- La ventana de tiempo: actual, anterior y cómo se agrupa ---- */
+function ventana(){
+  if(PANO)return{api:true,cubos:PANO.pulso.length,R:PANO.pulso.length,gran:1,
+    msg:[],msgPrev:[],act:[],actPrev:[],desde:null,hasta:null,corte:0};
+  const R=DASH.rango, corte=DIAS_SERIE-R, corteP=DIAS_SERIE-2*R;
+  const canal=DASH.canal, pasa=m=>canal==="todos"||m.canal===canal;
+  return{
+    R, gran:R>30?7:1, cubos:R>30?Math.ceil(R/7):R,
+    msg:SERIE.inter.filter(m=>m.dia>corte&&pasa(m)),
+    msgPrev:SERIE.inter.filter(m=>m.dia>corteP&&m.dia<=corte&&pasa(m)),
+    act:SERIE.act.filter(a=>a.dia>corte&&pasa(a)),
+    actPrev:SERIE.act.filter(a=>a.dia>corteP&&a.dia<=corte&&pasa(a)),
+    desde:SERIE.inter.find(m=>m.dia>corte).fecha, hasta:SERIE.hoy, corte
+  };
+}
+/* $match por rango y canal, $group por $dateTrunc y etiqueta de sentimiento.
+   Pipeline: pulso_diario */
+function pulso(v){
+  if(PANO)return PANO.pulso.map(c=>({pos:c.positivas,neu:c.neutrales,neg:c.negativas,
+    tot:c.total,etiqueta:(c.periodo||"").replace(/^\d{4}-semana-/,"Semana ")}));
+  const cubos=Array.from({length:v.cubos},()=>({pos:0,neu:0,neg:0,tot:0,f0:null,f1:null}));
+  v.msg.forEach(m=>{
+    const off=DIAS_SERIE-m.dia, i=Math.min(v.cubos-1,v.cubos-1-Math.floor(off/v.gran));
+    const c=cubos[i];c.tot++;c[m.sent>.2?"pos":m.sent<-.2?"neg":"neu"]++;
+    if(!c.f0||m.fecha<c.f0)c.f0=m.fecha; if(!c.f1||m.fecha>c.f1)c.f1=m.fecha;
+  });
+  return cubos;
+}
+/* $unwind temas + $facet actual/previo + $group por tema. Pipeline: temas_en_ascenso */
+function porTema(v){
+  if(PANO)return PANO.temas.map(t=>({tema:t.tema,n:t.n,sent:t.sentimiento,serie:null,
+    nuevo:t.nuevo,d:t.variacion==null?{t:"nuevo",c:"up",n:null}
+      :{t:(t.variacion>=0?"+":"−")+Math.abs(t.variacion)+"%",c:t.variacion>0?"up":t.variacion<0?"down":"",n:t.variacion}}));
+  const acc={},prev={},serie={};
+  v.msg.forEach(m=>{
+    const a=acc[m.tema]||(acc[m.tema]={n:0,s:0,neg:0});
+    a.n++;a.s+=m.sent;if(m.sent<-.2)a.neg++;
+    const off=DIAS_SERIE-m.dia, i=Math.min(v.cubos-1,v.cubos-1-Math.floor(off/v.gran));
+    (serie[m.tema]||(serie[m.tema]=Array(v.cubos).fill(0)))[i]++;
+  });
+  v.msgPrev.forEach(m=>prev[m.tema]=(prev[m.tema]||0)+1);
+  return Object.entries(acc).map(([t,a])=>({
+    tema:t,n:a.n,sent:a.s/a.n,neg:a.neg,serie:serie[t],
+    nuevo:!prev[t],d:delta(a.n,prev[t]||0)
+  }));
+}
+/* $facet sobre interacciones y activos. Pipeline: embudo_de_produccion */
+function embudo(v){
+  if(PANO){const e=PANO.embudo;return{tot:e.analizadas,aprov:e.aprovechables,
+    tickets:e.tickets,gen:e.generadas,apro:e.aprobadas,pub:e.publicadas,
+    limpios:e.pct_sin_editar==null?null:Math.round(e.pct_sin_editar*e.aprobadas/100),
+    pctLimpios:e.pct_sin_editar,mediana:null,ediciones:null};}
+  const tot=v.msg.length, aprov=v.msg.filter(m=>m.ruta!=="descartado").length,
+    tickets=v.msg.filter(m=>m.ruta==="ticket").length, gen=v.act.length,
+    apro=v.act.filter(a=>a.estado==="Listo"||a.estado==="Publicado"),
+    pub=v.act.filter(a=>a.estado==="Publicado"),
+    limpios=apro.filter(a=>!a.editado).length,
+    horas=pub.map(a=>a.horas).sort((x,y)=>x-y);
+  return{tot,aprov,tickets,gen,apro:apro.length,pub:pub.length,limpios,
+    mediana:horas.length?horas[Math.floor(horas.length/2)]:0,
+    ediciones:apro.length?apro.reduce((s,a)=>s+a.ediciones,0)/apro.length:0};
+}
+/* $group por plataforma sobre activos. Pipeline: desempeno_por_plataforma */
+function porPlataforma(v){
+  if(PANO)return PANO.plataformas.map(f=>({plat:(FORMATOS[f.formato]||{}).plat||"web",
+    gen:f.generadas,pub:f.publicadas,tasa:f.tasa,edit:f.pct_edit,mediana:null,
+    formato:f.formato}));
+  return Object.keys(FORMATO_DE).map(p=>{
+    const g=v.act.filter(a=>a.plat===p), pub=g.filter(a=>a.estado==="Publicado"),
+      ed=g.filter(a=>a.editado).length, h=pub.map(a=>a.horas).sort((x,y)=>x-y);
+    return{plat:p,gen:g.length,pub:pub.length,
+      tasa:g.length?Math.round(pub.length/g.length*100):0,
+      edit:g.length?Math.round(ed/g.length*100):0,
+      mediana:h.length?h[Math.floor(h.length/2)]:0};
+  }).filter(x=>x.gen);
+}
+/* $match ruta:"exito" + $group por autor. Pipeline: voces_destacadas */
+function voces(v){
+  if(PANO)return PANO.voces.map(x=>({autor:x.autor,n:x.n,sent:1,tema:(x.canales||[])[0]||"—"}));
+  const a={};
+  v.msg.filter(m=>m.ruta==="exito").forEach(m=>{
+    const x=a[m.autor]||(a[m.autor]={n:0,temas:{},sent:0});
+    x.n++;x.sent+=m.sent;x.temas[m.tema]=(x.temas[m.tema]||0)+1;});
+  return Object.entries(a).map(([autor,x])=>({autor,n:x.n,sent:x.sent/x.n,
+    tema:Object.entries(x.temas).sort((p,q)=>q[1]-p[1])[0][0]}))
+    .sort((p,q)=>q.n-p.n).slice(0,5);
+}
+/* $match sentimiento < -0.4 + $group por autor + $match count >= 4.
+   Pipeline: miembros_en_riesgo */
+function enRiesgo(v){
+  if(PANO)return PANO.riesgo.map(x=>({autor:x.autor,n:x.n,
+    canal:(x.canales||[]).join(", ")||"—",tema:null,ult:null}));
+  const a={};
+  v.msg.filter(m=>m.sent<-.4).forEach(m=>{
+    const x=a[m.autor]||(a[m.autor]={n:0,canales:{},temas:{},ult:null});
+    x.n++;x.canales[m.canal]=(x.canales[m.canal]||0)+1;x.temas[m.tema]=(x.temas[m.tema]||0)+1;
+    if(!x.ult||m.fecha>x.ult)x.ult=m.fecha;});
+  const top=(o)=>Object.entries(o).sort((p,q)=>q[1]-p[1])[0][0];
+  return Object.entries(a).filter(([,x])=>x.n>=4)
+    .map(([autor,x])=>({autor,n:x.n,canal:top(x.canales),tema:top(x.temas),ult:x.ult}))
+    .sort((p,q)=>q.n-p.n).slice(0,5);
+}
+/* $match con índice de texto sobre el mensaje. Pipeline: seguimiento_de_claves */
+function serieClave(v,termino){
+  if(PANO){const k=PANO.claves.find(c=>c.termino===termino)||{menciones:0,previo:0,sentimiento:0};
+    return{termino,n:k.menciones,sent:k.sentimiento,serie:null,d:delta(k.menciones,k.previo)};}
+  const s=Array(v.cubos).fill(0);let n=0,sent=0,prev=0;
+  v.msg.forEach(m=>{
+    if(!m.claves.includes(termino))return;
+    n++;sent+=m.sent;
+    const off=DIAS_SERIE-m.dia;s[Math.min(v.cubos-1,v.cubos-1-Math.floor(off/v.gran))]++;});
+  v.msgPrev.forEach(m=>{if(m.claves.includes(termino))prev++;});
+  return{termino,n,sent:n?sent/n:0,serie:s,d:delta(n,prev)};
+}
+
+/* ============================ RENDER ============================ */
+const RANGOS=[[7,"7 días"],[30,"30 días"],[90,"90 días"]];
+const tonoSent=s=>s>.2?"var(--ok)":s<-.2?"var(--alert)":"var(--neutral)";
+const clasePill=s=>s>.2?"p-ok":s<-.2?"p-alert":"p-mute";
+
+async function visualizarDashboard(){
+  /* Se intenta el backend en silencio. Si no hay MongoDB, o el endpoint aún no
+     existe, se dibuja la serie simulada: el Panorama nunca se queda en blanco.
+     No se usa conError() a propósito: en una instalación sin Mongo saltaría un
+     toast de error en cada carga, y eso no es un fallo, es el estado esperado. */
+  try{ PANO = await API.dashboard(DASH.slug, DASH.canal); }
+  catch(e){ PANO = null; console.info("Panorama sin backend, se usa la serie de ejemplo:", e.message); }
+
+  const aviso=document.getElementById("panorama_simulado");
+  if(aviso)aviso.hidden=!!PANO;
+  if(PANO&&PANO.periodo)DASH.slug=PANO.periodo.actual;
+
+  const v=ventana();
+  visualizarFiltros(v);visualizarKpis(v);visualizarPulso(v);visualizarTemas(v);
+  visualizarClaves(v);visualizarEmbudo(v);visualizarVoces(v);
+}
+
+/* Qué bloques tienen datos. Sin backend, todos: la serie simulada es completa. */
+const cubre=k=>!PANO||!PANO.cobertura||PANO.cobertura[k]!==false;
+const faltaActivar=`<p class="mini">Este bloque necesita que el análisis guarde
+  <code>temas</code> y <code>claves</code>. Ver <code>PANORAMA.md</code>.</p>`;
+
+function visualizarFiltros(v){
+  if(PANO){
+    /* Con datos reales se elige periodo, no rango de días: los documentos no
+       traen fecha por mensaje, solo el slug de la semana. */
+    const disp=PANO.periodo.disponibles.slice(-4);
+    rango_btns.innerHTML=disp.map(sl=>
+      `<button aria-pressed="${DASH.slug===sl}" data-s="${sl}">${sl.replace(/^\d{4}-semana-/,"Semana ")}</button>`).join("");
+    rango_btns.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{
+      DASH.slug=b.dataset.s;visualizarDashboard();});
+    rango_txt.textContent=PANO.periodo.previo
+      ? `${DASH.slug.replace(/^\d{4}-semana-/,"Semana ")} · comparada con ${PANO.periodo.previo.replace(/^\d{4}-semana-/,"semana ")}`
+      : `${DASH.slug.replace(/^\d{4}-semana-/,"Semana ")} · sin semana previa para comparar`;
+  }else{
+    rango_btns.innerHTML=RANGOS.map(([n,t])=>
+      `<button aria-pressed="${DASH.rango===n}" data-r="${n}">${t}</button>`).join("");
+    rango_btns.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+      DASH.rango=+b.dataset.r;visualizarDashboard();});
+    rango_txt.textContent=`${fdia(v.desde)} – ${fdia(v.hasta)} · comparado con los ${v.R} días previos`;
+  }
+  const canales=PANO?PANO.canales:[...new Set(SERIE.inter.map(m=>m.canal))].sort();
+  canal_sel.innerHTML=`<option value="todos">Todos los canales</option>`+
+    canales.map(c=>`<option value="${c}">${c}</option>`).join("");
+  canal_sel.value=DASH.canal;
+  canal_sel.onchange=()=>{DASH.canal=canal_sel.value;visualizarDashboard();};
+}
+
+function visualizarKpis(v){
+  if(PANO){const a=PANO.metricas.actual,p=PANO.metricas.previo||{};
+    kpis.innerHTML=[
+     ["Interacciones analizadas",fnum(a.interacciones),delta(a.interacciones,p.interacciones||0)],
+     ["Índice de sentimiento",(a.indice_sentimiento>=0?"+":"−")+Math.abs(a.indice_sentimiento),
+      delta(a.indice_sentimiento,p.indice_sentimiento||0,"pts")],
+     ["Señales aprovechadas",a.pct_aprovechadas+"%",delta(a.pct_aprovechadas,p.pct_aprovechadas||0,"pts")],
+     ["Piezas publicadas",fnum(a.publicadas),delta(a.publicadas,p.publicadas||0)],
+     ["Horas de redacción ahorradas",a.horas_ahorradas+" h",delta(a.horas_ahorradas,p.horas_ahorradas||0)]
+    ].map(([k,val,d])=>`<div class="stat"><div class="k">${k}</div><div class="v">${val}</div>
+      <div class="d ${d.c}">${d.t}</div></div>`).join("");
+    return;}
+  const ind=s=>s.length?Math.round((s.filter(m=>m.sent>.2).length-s.filter(m=>m.sent<-.2).length)/s.length*100):0,
+    aprov=s=>s.length?Math.round(s.filter(m=>m.ruta!=="descartado").length/s.length*100):0,
+    pub=a=>a.filter(x=>x.estado==="Publicado").length;
+  const p=pub(v.act), pp=pub(v.actPrev),
+    hrs=Math.round(p*MIN_POR_PIEZA/60), hrsP=Math.round(pp*MIN_POR_PIEZA/60);
+  kpis.innerHTML=[
+   ["Interacciones analizadas",fnum(v.msg.length),delta(v.msg.length,v.msgPrev.length)],
+   ["Índice de sentimiento",(ind(v.msg)>=0?"+":"−")+Math.abs(ind(v.msg)),delta(ind(v.msg),ind(v.msgPrev),"pts")],
+   ["Señales aprovechadas",aprov(v.msg)+"%",delta(aprov(v.msg),aprov(v.msgPrev),"pts")],
+   ["Piezas publicadas",fnum(p),delta(p,pp)],
+   ["Horas de redacción ahorradas",hrs+" h",delta(hrs,hrsP)]
+  ].map(([k,val,d])=>`<div class="stat"><div class="k">${k}</div><div class="v">${val}</div>
+    <div class="d ${d.c}">${d.t}</div></div>`).join("");
+}
+
+function visualizarPulso(v){
+  const c=pulso(v), mxUp=Math.max(...c.map(x=>x.pos+x.neu),1), mxDn=Math.max(...c.map(x=>x.neg),1);
+  const etq=x=>x.etiqueta||(v.gran===1?fdia(x.f1||v.hasta):`${fdia(x.f0||v.desde)} – ${fdia(x.f1||v.hasta)}`);
+  const leer=x=>`<b>${etq(x)}</b><span class="sep3"></span><b>${x.tot}</b> interacciones
+    <em><i class="sw-pos"></i><b>${x.pos}</b> positivas</em>
+    <em><i class="sw-neu"></i><b>${x.neu}</b> neutrales</em>
+    <em><i class="sw-neg"></i><b>${x.neg}</b> negativas</em>`;
+  const total=PANO
+    ? c.reduce((a,x)=>({tot:a.tot+x.tot,pos:a.pos+x.pos,neu:a.neu+x.neu,neg:a.neg+x.neg}),
+               {tot:0,pos:0,neu:0,neg:0})
+    : {tot:v.msg.length,pos:v.msg.filter(m=>m.sent>.2).length,
+       neg:v.msg.filter(m=>m.sent<-.2).length,neu:0};
+  if(!PANO)total.neu=total.tot-total.pos-total.neg;
+  const rotulo=PANO?`${c.length} semana${c.length===1?"":"s"}`:`${fdia(v.desde)} – ${fdia(v.hasta)}`;
+  const base=`<b>${rotulo}</b><span class="sep3"></span><b>${fnum(total.tot)}</b> interacciones
+    <em><i class="sw-pos"></i><b>${total.pos}</b> positivas</em>
+    <em><i class="sw-neu"></i><b>${total.neu}</b> neutrales</em>
+    <em><i class="sw-neg"></i><b>${total.neg}</b> negativas</em>`;
+  lectura.innerHTML=base;
+  pulso_graf.innerHTML=c.map(x=>`<div class="pcol" data-lee="${encodeURIComponent(leer(x))}">
+      <div class="pup"><i class="s-pos" style="height:${x.pos/mxUp*100}%"></i><i class="s-neu" style="height:${x.neu/mxUp*100}%"></i></div>
+      <div class="peje"></div>
+      <div class="pdn"><i class="s-neg" style="height:${x.neg/mxDn*100}%"></i></div></div>`).join("")+
+    (PANO?[]:HITOS.filter(h=>h.dia>v.corte)).map(h=>
+      `<span class="hito" style="left:${(h.dia-v.corte)/v.R*100}%"><b></b></span>`).join("");
+  pulso_graf.setAttribute("aria-label",`Pulso de la comunidad: ${total.tot} interacciones.`);
+  const marcas=[...new Set([c[0],c[Math.floor(c.length/2)],c[c.length-1]].filter(Boolean).map(etq))];
+  pulso_eje.innerHTML=marcas.map((t,i)=>
+    `<span class="${marcas.length===3&&i===1?"centro":""}">${t}</span>`).join("");
+  const dentro=PANO?[]:HITOS.filter(h=>h.dia>v.corte);
+  pulso_hitos.innerHTML=dentro.length
+    ? dentro.map(h=>`<span class="hito-txt"><i></i>${h.txt}</span>`).join("")
+    : `<span class="mini">${PANO?"Una columna por semana. El detalle diario necesita una fecha por mensaje.":"Sin hitos registrados en el periodo."}</span>`;
+  /* Una sola línea de lectura bajo la cabecera, en vez de un globo que tape
+     la leyenda. Sin cálculo de posición y responde igual al dedo que al cursor. */
+  pulso_graf.querySelectorAll(".pcol").forEach(col=>{
+    const ver=()=>lectura.innerHTML=decodeURIComponent(col.dataset.lee);
+    col.onmouseenter=ver;col.onpointerdown=ver;
+    col.onmouseleave=()=>lectura.innerHTML=base;});
+  pulso_graf.onmouseleave=()=>lectura.innerHTML=base;
+}
+
+function visualizarTemas(v){
+  if(!cubre("temas")){tabla_temas.innerHTML=`<tr><td colspan="5">${faltaActivar}</td></tr>`;
+    termo.innerHTML=faltaActivar;return;}
+  const t=porTema(v);
+  tabla_temas.innerHTML=t.slice().sort((a,b)=>(b.d.n??999)-(a.d.n??999)).slice(0,7).map(x=>`<tr>
+    <td><b>${x.tema}</b>${x.nuevo?' <span class="pill p-pri">nuevo</span>':""}</td>
+    <td class="mono">${x.n}</td>
+    <td class="mono ${x.d.c}">${x.d.t}</td>
+    <td>${x.serie?chispa(x.serie,x.sent<-.2?"var(--alert)":"var(--primary)"):'<span class="mini">—</span>'}</td>
+    <td><span class="pill ${clasePill(x.sent)}">${x.sent>=0?"+":"−"}${Math.abs(x.sent).toFixed(2)}</span></td></tr>`).join("");
+  const paraTermo=PANO?PANO.termometro.map(x=>({tema:x.tema,n:x.n,sent:x.sentimiento})):t;
+  termo.innerHTML=paraTermo.slice().sort((a,b)=>a.sent-b.sent).map(x=>{
+    const w=Math.min(50,Math.abs(x.sent)*50), neg=x.sent<0;
+    return `<div class="termo-row"><span class="termo-nom">${x.tema}</span>
+      <span class="termo-bar"><b></b><i class="${neg?"neg":"pos"}" style="${neg?"right:50%":"left:50%"};width:${w}%"></i></span>
+      <span class="mono termo-val" style="color:${tonoSent(x.sent)}">${x.sent>=0?"+":"−"}${Math.abs(x.sent).toFixed(2)}</span>
+      <span class="mono termo-n">${x.n}</span></div>`;}).join("");
+}
+
+function visualizarClaves(v){
+  if(!cubre("claves")){claves_chips.innerHTML="";claves_sug.innerHTML="";
+    claves_grid.innerHTML=faltaActivar;return;}
+  /* Con datos reales, las palabras las decide el análisis, no el panel: no hay
+     endpoint para vigilar o dejar de vigilar una, así que no se ofrecen chips. */
+  if(PANO)DASH.claves=PANO.claves.map(c=>c.termino);
+  claves_chips.innerHTML=DASH.claves.map(c=>
+    `<span class="vchip">${c}<button data-q="${c}" aria-label="Dejar de vigilar ${c}">×</button></span>`).join("")
+    ||`<span class="mini">No vigilas ninguna palabra todavía.</span>`;
+  if(PANO)claves_chips.querySelectorAll("button").forEach(b=>b.remove());
+  else claves_chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    DASH.claves=DASH.claves.filter(x=>x!==b.dataset.q);visualizarDashboard();});
+  if(PANO){claves_sug.innerHTML='<span class="mini">Las extrae el análisis de cada mensaje.</span>';}
+  else claves_sug.innerHTML=CLAVES_SUGERIDAS.filter(c=>!DASH.claves.includes(c)).slice(0,8)
+    .map(c=>`<button data-a="${c}">${ic("mas")}${c}</button>`).join("");
+  claves_sug.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{
+    DASH.claves=[...DASH.claves,b.dataset.a];visualizarDashboard();
+    toast("Palabra en seguimiento",b.dataset.a+" se agregó al panel",true);});
+  claves_grid.innerHTML=DASH.claves.map(c=>{const k=serieClave(v,c);
+    return `<div class="kw"><div class="kw-top"><b>${k.termino}</b>
+        <span class="pill ${clasePill(k.sent)}">${k.sent>=0?"+":"−"}${Math.abs(k.sent).toFixed(2)}</span></div>
+      <div class="kw-n"><span class="v mono">${k.n}</span><span class="mini">menciones</span>
+        <span class="mono ${k.d.c} kw-d">${k.d.t}</span></div>
+      ${k.serie?chispa(k.serie,k.sent<-.2?"var(--alert)":"var(--primary)"):""}</div>`;}).join("")
+    ||`<p class="mini">Agrega una palabra de la lista de sugerencias para empezar a vigilarla.</p>`;
+}
+
+function visualizarEmbudo(v){
+  const e=embudo(v), pc=n=>e.tot?Math.round(n/e.tot*100):0;
+  const fases=[["Interacciones analizadas",e.tot,100],
+    ["Con señal aprovechable",e.aprov,pc(e.aprov)],
+    ["Piezas generadas por la IA",e.gen,pc(e.gen)],
+    ["Aprobadas por una persona",e.apro,pc(e.apro)],
+    ["Publicadas",e.pub,pc(e.pub)]];
+  embudo_fases.innerHTML=fases.map(([n,val,p],i)=>`<div class="fase">
+      <div class="fase-l"><span>${n}</span><b class="mono">${fnum(val)}</b></div>
+      <div class="fase-bar"><i style="width:${Math.max(p,2)}%"></i></div>
+      ${i?`<div class="fase-conv mono">${fases[i-1][1]?Math.round(val/fases[i-1][1]*100):0}% de la fase anterior</div>`:""}
+    </div>`).join("");
+  const pctLimpios=e.pctLimpios!=null?e.pctLimpios:(e.apro?Math.round(e.limpios/e.apro*100):null);
+  embudo_extra.innerHTML=[
+    ["Aprobadas sin tocar el texto",pctLimpios==null?"—":pctLimpios+"%","Mide qué tan buena es la redacción del modelo"],
+    ["Ediciones por pieza aprobada",e.ediciones==null?"—":e.ediciones.toFixed(1),
+     e.ediciones==null?"Falta guardar un contador de ediciones":"Cuántos retoques necesita en promedio"],
+    ["Tiempo mediano de curaduría",e.mediana==null?"—":e.mediana.toFixed(1)+" h",
+     e.mediana==null?"Falta guardar fecha_publicado en cada pieza":"De generada a publicada"],
+    ["Tickets derivados al equipo",fnum(e.tickets),"Rama que nunca se publica"]
+  ].map(([k,val,d])=>`<div class="kpi-min"><span class="k">${k}</span><b class="mono">${val}</b>
+    <span class="mini">${d}</span></div>`).join("");
+  tabla_plat.innerHTML=porPlataforma(v).map(x=>{const p=PLAT[x.plat];return `<tr>
+    <td><span class="row plat-cell"><span class="mk mk-min" style="--pc:${p.color}">${p.ini}</span>${p.nom}</span></td>
+    <td class="mono">${x.gen}</td><td class="mono"><b>${x.pub}</b></td>
+    <td class="mono">${x.tasa}%</td><td class="mono">${x.edit}%</td>
+    <td class="mono">${x.mediana==null?"—":x.mediana.toFixed(1)+" h"}</td></tr>`;}).join("");
+}
+
+function visualizarVoces(v){
+  const vo=voces(v);
+  lista_voces.innerHTML=vo.length?vo.map(x=>`<div class="voz">
+    <span class="av">${x.autor.split(" ").map(s=>s[0]).slice(0,2).join("")}</span>
+    <span class="voz-b"><b>${x.autor}</b><span class="mini">${x.tema}</span></span>
+    <span class="mono voz-n">${x.n}</span></div>`).join("")
+    :'<p class="mini">Sin casos de éxito en el periodo.</p>';
+  const ri=enRiesgo(v);
+  lista_riesgo.innerHTML=ri.length?ri.map(x=>`<div class="voz">
+    <span class="av alerta">${x.autor.split(" ").map(s=>s[0]).slice(0,2).join("")}</span>
+    <span class="voz-b"><b>${x.autor}</b><span class="mini">${[x.n+" mensajes negativos",x.tema,x.canal].filter(Boolean).join(" · ")}</span></span>
+    <button class="btn sm" data-r="${x.autor}">Avisar</button></div>`).join("")
+    :'<p class="mini">Nadie acumula señales de frustración en el periodo. Buena noticia.</p>';
+  /* Avisa de verdad: marca los tickets pendientes de esa persona y delega en
+     avisar("discord") de app.js, que es la función que ya existe y funciona.
+     No se duplica la lógica de envío: si cambia allá, cambia aquí. */
+  lista_riesgo.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+    const autor=b.dataset.r;
+    const suyos=E.tickets.filter(t=>{
+      const m=msg(t.fuente);
+      return m&&m.autor===autor&&t.estado!=="Enviado"&&t.estado!=="Resuelto";});
+    if(!suyos.length){
+      ir("tickets");
+      return toast("Sin tickets pendientes",autor+" no tiene tickets abiertos en este lote.");}
+    E.tickets.forEach(t=>t.seleccionado=false);
+    suyos.forEach(t=>t.seleccionado=true);
+    avisar("discord");});
+}
+
 /* Lógica del panel: navegación, render y acciones.
    Las llamadas al backend viven en api.js */
 
@@ -1534,21 +2620,101 @@ const save = () => { };   /* el estado vive en memoria durante la sesión; en pr
    "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
 async function guardarCuraduriaEnOCI() {
   if (!E.slug) return "local";
-  /* Cada activo viaja con su origen, en la misma forma que el archivo de entrada */
-  const activos = E.activos.map(a => ({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
-  const tickets = E.tickets.map(t => ({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
-  const r = await conError(
-    API.guardarCuraduria(E.slug, activos, { periodo_referencia: E.periodo, origen_comunidad: E.origen, tickets }),
-    "No se pudo guardar la curaduría en OCI");
-  return !!r;
+  /* Un lote puede mezclar periodos (Semana_01, Semana_05...): cada activo/ticket se guarda en
+     activos/<slug>/curaduria.json del slug de SU mensaje de origen, no todo bajo un único slug. */
+  const porSlug = new Map();
+  const grupo = s => { if (!porSlug.has(s)) porSlug.set(s, { activos: [], tickets: [] }); return porSlug.get(s); };
+  E.activos.forEach(a => grupo(slugDe(a.fuente)).activos.push({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
+  E.tickets.forEach(t => grupo(slugDe(t.fuente)).tickets.push({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
+  let ok = true;
+  for (const [slug, g] of porSlug) {
+    const m0 = DATOS.find(d => slugDe(d.id) === slug) || {};
+    const r = await conError(
+      API.guardarCuraduria(slug, g.activos, { periodo_referencia: m0.periodo_referencia || E.periodo, origen_comunidad: m0.origen_comunidad || E.origen, tickets: g.tickets }),
+      "No se pudo guardar la curaduría en OCI");
+    ok = ok && !!r;
+  }
+  return ok;
 }
+
+/* Slug (periodo) del mensaje de origen; si no lo trae, el del lote */
+const slugDe = id => (msg(id) || {}).slug || E.slug;
 
 function fuenteDetalle(m) {
   if (!m) return null;
   return {
-    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
+    archivo: m.archivo, etag: m.etag, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
     interaccion: { autor: m.autor, canal: m.canal, tipo: m.tipo, texto: m.texto }
   };
+}
+
+/* ---- Huella y reconciliación: lo ya generado NO se vuelve a generar ----
+   huella = formato + archivo de origen + etag del archivo (la newsletter, todo el lote).
+   Si la huella coincide con la guardada en activos/<slug>/curaduria.json, se reutiliza el texto. */
+const NEWSLETTER = "Destaque de newsletter";
+function hash53(s) {   /* cyrb53: hash corto y estable, suficiente para comparar */
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+function huellaDe(a) {
+  const m = msg(a.fuente) || {};
+  const origen = a.formato === NEWSLETTER
+    ? DATOS.map(d => `${d.archivo}@${d.etag}`).sort().join("|")
+    : `${m.archivo}@${m.etag}`;
+  return hash53(`${a.formato}|${origen}`);
+}
+const claveActivo = (formato, archivo, slug) => formato === NEWSLETTER ? `${NEWSLETTER}|${slug}` : `${formato}|${archivo}`;
+
+/* Cruza los activos recién construidos con los guardados. Devuelve los que SÍ hay que generar.
+   Se conserva id, texto, estado y ediciones de lo ya existente (un texto editado o ya en cola
+   /publicado nunca se pisa). Los nuevos reciben ids que no chocan con ninguno guardado. */
+/* Fusiona las curadurías de varios slugs en un solo objeto, marcando el slug de origen y
+   resolviendo ids repetidos entre slugs (cada archivo guardado tenía su propia numeración A1, A2…). */
+function fusionarGuardados(docs) {
+  const vistos = new Set(), activos = [], tickets = [];
+  let k = 1000;
+  docs.filter(Boolean).forEach(d => {
+    (d.activos || []).forEach(a => {
+      const id = vistos.has(a.id) ? "A" + (k++) : a.id;
+      vistos.add(id); activos.push({ ...a, id, _slug: d.slug });
+    });
+    tickets.push(...(d.tickets || []));
+  });
+  return { activos, tickets };
+}
+
+function reconciliar(c, guardado) {
+  const gAct = (guardado && guardado.activos) || [], gTic = (guardado && guardado.tickets) || [];
+  const porClave = new Map(gAct.map(g => [claveActivo(g.formato, (g.fuente_detalle || {}).archivo, g._slug), g]));
+  const ocupados = new Set(gAct.map(g => g.id));
+  const pendientes = []; let reutilizados = 0;
+
+  c.activos.forEach(n => {
+    n.huella = huellaDe(n);
+    const g = porClave.get(claveActivo(n.formato, (msg(n.fuente) || {}).archivo, slugDe(n.fuente)));
+    const protegido = g && (g.editado || (g.estado && g.estado !== "Pendiente"));
+    const igual = g && (g.huella ? g.huella === n.huella : n.formato !== NEWSLETTER);   /* sin huella = guardado antiguo */
+    if (g && g.texto && (igual || protegido)) {
+      Object.assign(n, { id: g.id, texto: g.texto, estado: g.estado || "Pendiente", editado: g.editado,
+        publicado: g.publicado, base: g.base, version: g.version, variante: g.variante,
+        huella: igual ? n.huella : g.huella });
+      reutilizados++;
+    } else pendientes.push(n);
+  });
+  /* ids propios de los pendientes: ninguno puede repetir uno guardado o ya reutilizado */
+  const usados = new Set([...ocupados, ...c.activos.filter(n => !pendientes.includes(n)).map(n => n.id)]);
+  let k = 1;
+  pendientes.forEach(n => { do { n.id = "A" + (k++); } while (usados.has(n.id)); usados.add(n.id); });
+
+  /* los tickets conservan estado/aviso (antes se reiniciaban a "Abierto" en cada procesamiento) */
+  c.tickets.forEach(t => {
+    const g = gTic.find(x => x.archivo && x.archivo === (msg(t.fuente) || {}).archivo);
+    if (g) Object.assign(t, { estado: g.estado, aviso: g.aviso, seleccionado: g.seleccionado ?? t.seleccionado });
+  });
+  return { pendientes, reutilizados };
 }
 
 /* Mensaje que se manda a /generar (sin campos de UI) */
@@ -1561,19 +2727,24 @@ const paraGenerar = m => ({
 /* Pide al backend el texto de cada activo (Cohere + guía de voz guardada).
    Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
 async function redactarConVoz(activos, textoPrevio = {}) {
-  if (!E.slug) return false;   /* lote de ejemplo: sin backend */
+  if (!E.slug || !activos.length) return false;   /* lote de ejemplo (sin backend) o nada pendiente */
+ 
   const items = activos.map(a => ({
-    id: a.id, formato: a.formato, mensaje: paraGenerar(msg(a.fuente) || {}),
+    id: a.id, formato: a.formato, slug: slugDe(a.fuente), huella: huellaDe(a), mensaje: paraGenerar(msg(a.fuente) || {}),
     mensajes: a.formato === "Destaque de newsletter" ? DATOS.map(paraGenerar) : null,
     texto_previo: textoPrevio[a.id] || null
   }));
+
   const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
+  
   if (!r) return false;
-  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; } });
+  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; a.huella = huellaDe(a); } });
+  
   const fallos = Object.keys(r.errores || {}).length;
   if (fallos) toast(`${fallos} activo${fallos === 1 ? "" : "s"} sin generar`, "Se dejó la plantilla local", false);
   return Object.keys(r.resultados).length > 0;
 }
+
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
@@ -1609,6 +2780,7 @@ function construir() {
 }
 
 const META = {
+  panorama: ["Panorama de la comunidad", "Qué dice la comunidad y qué produjo Insight Mind con eso."],
   flujo: ["Procesar lote", "Ingesta, análisis y curaduría en un solo flujo."],
   tickets: ["Tickets", "Lo que no se publica: se avisa al equipo."],
   publicaciones: ["Publicaciones", "Qué salió publicado, dónde y cuándo."],
@@ -1682,7 +2854,9 @@ async function subirYValidar() {
 
 const PASOS = ["validar · esquema Pydantic", "limpiar · enmascarar datos personales", "analizar · sentimiento y temas", "agrupar_preguntas · dudas similares", "router · 4 reglas condicionales", "generar · LinkedIn, X, FAQ y newsletter", "newsletter_semanal · highlights", "consolidar · paquete oficial", "guardar · OCI Object Storage"];
 btn_procesar.onclick = () => {
+  
   irPaso(2); 
+  
   steps.innerHTML = "";
   oci_linea.hidden = true;
   oci_ruta.textContent = "";
@@ -1702,7 +2876,8 @@ btn_procesar.onclick = () => {
     barra.style.transform = `scaleX(${i / nodos.length})`;
    
     if (i >= nodos.length) { 
-      barra.style.transform = "scaleX(1)"; return peticion.then(fin); 
+      barra.style.transform = "scaleX(1)"; 
+      return peticion.then(fin); 
     }
 
     nodos[i].className = "step run"; i++; setTimeout(paso, 360);
@@ -1723,17 +2898,29 @@ async function fin(resultado) {
     sent: m.sent, score: m.score, idioma: m.idioma || "es", texto: m.texto,
     por_que: m.por_que, temas: [m.tipo],
     apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
-    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
+    archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
   E.periodo = (resultado.periodos || [])[0] || null;
   E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
   const c = construir();
-  const conIA = await redactarConVoz(c.activos);   /* reemplaza las plantillas por texto generado con la guía de voz */
+  /* Lo ya generado vive en activos/<slug>/curaduria.json: solo se redacta lo nuevo o lo que cambió. */
+  let guardado = null;
+  if (E.slug) {
+    try {
+      const slugs = [...new Set(DATOS.map(d => d.slug || E.slug))];
+      guardado = fusionarGuardados(await Promise.all(slugs.map(s => API.curaduria(s))));
+    }
+    catch (e) {   /* sin poder leerlo, NO se regenera: se pisaría lo ya generado */
+      console.error(e); toast("No se pudo leer la curaduría guardada", e.message); irPaso(1); return;
+    }
+  }
+  const { pendientes, reutilizados } = reconciliar(c, guardado);
+  const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${c.activos.length} activos y ${c.tickets.length} tickets generados` + (conIA ? " · con tu guía de voz" : ""), true);
+  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (conIA ? " · con tu guía de voz" : ""), true);
 }
 btn_a_3.onclick = () => irPaso(3);
 
@@ -2069,6 +3256,7 @@ function publicarLote(plat) {
 
 // procesa la lista de tickets pendientes
 function filasTickets() {
+
   return E.tickets.map(t => {
     const m = msg(t.fuente); 
     const esEnviado = t.estado === "Enviado" || t.estado === "Resuelto";
@@ -2090,20 +3278,61 @@ function filasTickets() {
       <td style="width:110px">${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
       <td style="width:110px"><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
+
+}
+
+function actualizarEstadoBotonesAviso() {
+ 
+  debugger;
+
+  if (avisandoTickets) return;
+  const elegiblesSeleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
+  const haySeleccion = elegiblesSeleccionados.length > 0;
+
+  const btnDiscord = document.getElementById("btn_discord");
+  if (btnDiscord) {
+    btnDiscord.disabled = !haySeleccion;
+    btnDiscord.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  }
+
+  const btnAvisar = document.getElementById("btn_avisar");
+  if (btnAvisar) {
+    btnAvisar.disabled = !haySeleccion;
+    btnAvisar.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  }
 }
 
 function sincronizarChecksTickets() {
+  
   const master = document.getElementById("chk_todos_tickets");
   const masterCur = document.getElementById("chk_todos_tickets_curaduria");
   const checks = document.querySelectorAll(".chk-ticket");
 
   function actualizarMasters() {
+    
+    // tickets que pueden ser seleccionados segun estado
     const elegibles = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
+   
     const totalElegibles = elegibles.length;
 
     if (!totalElegibles) {
-      if (master) { master.checked = false; master.indeterminate = false; master.disabled = true; master.title = "Todos los tickets ya fueron enviados"; }
-      if (masterCur) { masterCur.checked = false; masterCur.indeterminate = false; masterCur.disabled = true; masterCur.title = "Todos los tickets ya fueron enviados"; }
+
+      if (master) { 
+        master.checked = false; 
+        master.indeterminate = false; 
+        master.disabled = true; 
+        master.title = "Todos los tickets ya fueron enviados"; 
+      }
+      
+      if (masterCur) { 
+        masterCur.checked = false; 
+        masterCur.indeterminate = false; 
+        masterCur.disabled = true; 
+        masterCur.title = "Todos los tickets ya fueron enviados"; 
+      }
+      
+      actualizarEstadoBotonesAviso();
+
       return;
     }
 
@@ -2118,10 +3347,14 @@ function sincronizarChecksTickets() {
       master.checked = todos;
       master.indeterminate = alguno;
     }
+
     if (masterCur) {
       masterCur.checked = todos;
       masterCur.indeterminate = alguno;
     }
+
+    actualizarEstadoBotonesAviso();
+
   }
 
   checks.forEach(chk => {
@@ -2149,9 +3382,12 @@ function sincronizarChecksTickets() {
         t.seleccionado = false;
       }
     });
+
     document.querySelectorAll(".chk-ticket:not(:disabled)").forEach(chk => { chk.checked = val; });
     document.querySelectorAll(".chk-ticket:disabled").forEach(chk => { chk.checked = false; });
+
     actualizarMasters();
+    
   };
 
   if (master) master.onchange = onMasterChange;
@@ -2165,7 +3401,8 @@ function visualizarTickets() {
   
   b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
   
-  tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  tabla_tickets.innerHTML = E.procesado ? filasTickets() : 
+    '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
   
   // ToDo actualización de históricos
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
@@ -2188,7 +3425,7 @@ function visualizarTicketsEn(cont) {
     <span class="mini mono">${E.tickets.length}</span></div>
     <div class="item"><div class="df"><table><thead><tr>
       <th style="width:40px;text-align:center"><input type="checkbox" id="chk_todos_tickets_curaduria" aria-label="Seleccionar todos los tickets" title="Seleccionar todos"></th>
-      <th style="width:75px">Sev.</th>
+      <th style="width:75px">Severidad</th>
       <th style="width:160px">Reportado por</th>
       <th style="width:130px">Canal</th>
       <th style="min-width:260px">Resumen</th>
@@ -2206,18 +3443,21 @@ let avisandoTickets = false;
 
 function setBloqueoBotonesAviso(bloquear) {
   avisandoTickets = bloquear;
-  const botones = [
-    document.getElementById("btn_discord"),
-    document.getElementById("btn_slack"),
-    document.getElementById("btn_avisar")
-  ].filter(Boolean);
+  if (bloquear) {
+    const botones = [
+      document.getElementById("btn_discord"),
+      document.getElementById("btn_avisar")
+    ].filter(Boolean);
 
-  botones.forEach(btn => {
-    btn.disabled = bloquear;
-  });
+    botones.forEach(btn => {
+      btn.disabled = true;
+    });
+  } else {
+    actualizarEstadoBotonesAviso();
+  }
 }
 
-// función para enviar mensajes de los tickets pendientes mediante slack/discord
+// función para enviar mensajes de los tickets pendientes mediante discord
 async function avisar(dest) {
   if (avisandoTickets) return;
 
@@ -2279,8 +3519,8 @@ async function avisar(dest) {
 }
 
 // botones de aviso rápido en la sección de Tickets
-btn_discord.onclick = () => avisar("discord"); 
-btn_slack.onclick = () => avisar("slack");
+const btn_discord = document.getElementById("btn_discord");
+if (btn_discord) btn_discord.onclick = () => avisar("discord"); 
 
 /* ---------- PUBLICACIONES ---------- */
 function visualizarPubs() {
@@ -2371,14 +3611,15 @@ function alternar(k) {
 }
 
 /* ---------- AJUSTES ---------- */
-const ESTILOS = ["Cercano", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin hashtags", "Primera persona plural"];
+const ESTILOS = ["Cercano", "Amistoso", "Profesional", "Formal", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin emojis", "Sin hashtags", "Primera persona plural"];
+const EXCLUYENTES = { "Con emojis": "Sin emojis", "Sin emojis": "Con emojis" };
 function visualizarChips() {
   voz_chips.innerHTML = E.chips.map(c => `<span class="vchip">${c}<button data-q="${c}" title="Quitar">×</button></span>`).join("");
   voz_chips.querySelectorAll("button").forEach(b => b.onclick = () => { E.chips = E.chips.filter(x => x !== b.dataset.q); save(); visualizarChips(); });
   chips_estilo.innerHTML = ESTILOS.map(e => `<button aria-pressed="${E.chips.includes(e)}" data-e="${e}">${E.chips.includes(e) ? ic("check") : ""}${e}</button>`).join("");
   chips_estilo.querySelectorAll("button").forEach(b => b.onclick = () => {
     const e = b.dataset.e;
-    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips, e]; 
+    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips.filter(x => x !== EXCLUYENTES[e]), e]; 
     save(); 
     visualizarChips();
   });
@@ -2387,6 +3628,7 @@ function visualizarChips() {
 btn_voz.onclick = async () => {
   const r = await conError(API.guardarVoz(voz.value, E.chips), "No se pudo guardar la guía de voz");
   if (!r) return;
+  if (r.voz) { voz.value = r.voz.texto; E.chips = r.voz.chips; visualizarChips(); }   /* estado = lo realmente persistido */
   voz_msg.textContent = E.chips.length ? "Guardada con " + E.chips.length + " chips de estilo" : "Guardada";
   toast("Guía de voz guardada", "Se aplica a todo lo que se genere desde ahora", true);
 };
@@ -2408,7 +3650,7 @@ function recalcular() {
       const v = previos.find(x => x.formato === n.formato && x.fuente === n.fuente);
       if (v) Object.assign(n, {
         estado: v.estado, texto: v.texto, editado: v.editado,
-        publicado: v.publicado, base: v.base, version: v.version, variante: v.variante
+        publicado: v.publicado, base: v.base, version: v.version, variante: v.variante, huella: v.huella
       });
     });
     const perdidos = previos.filter(v => !c.activos.some(n => n.formato === v.formato && n.fuente === v.fuente)
@@ -2460,6 +3702,10 @@ function visualizar() {
 
 visualizarChips(); 
 visualizar(); 
+/* El Panorama se dibuja una sola vez: sus cifras son historia ya cerrada en
+   MongoDB y no cambian porque en esta sesión se apruebe o se publique algo.
+   Sus propios filtros lo vuelven a dibujar cuando hace falta. */
+visualizarDashboard(); 
 ir("flujo");
 irPaso(1);
 
