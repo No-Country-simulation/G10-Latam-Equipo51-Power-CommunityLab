@@ -1,9 +1,9 @@
 # Panorama · el dashboard sobre MongoDB
 
 > Para el frente de Data Analysis.
-> **Lo que se ve hoy en pantalla son cifras simuladas.** Este documento dice exactamente
-> qué falta para que sean reales, revisado contra `backend/db.py` y
-> `backend/analizador_sentimiento.py` tal como están en `main`.
+> **El endpoint ya está escrito y probado:** `GET /dashboard`, en
+> `backend/rutas_dashboard.py`. Lo que todavía se ve en pantalla son cifras
+> simuladas, porque falta que el front consuma el endpoint (último apartado).
 
 ## Qué agrega esta rama
 
@@ -36,7 +36,7 @@ Archivos nuevos: `js/dashboard.js` (agregaciones y dibujo) y `js/datos-dashboard
 | Embudo de producción | **Parcial** | Faltan `ediciones` y los tiempos de curaduría |
 | Desempeño por destino | **Parcial** | Falta la mediana de horas |
 | Voces y miembros en riesgo | **Sí** | — |
-| Filtro por canal | **Parcial** | `analisis.canal` existe; `contenido_generado` no guarda el canal |
+| Filtro por canal | **Sí** | Usa `analisis.canal` y `fuente_detalle.interaccion.canal` |
 
 ### Por qué fallan los que fallan
 
@@ -101,17 +101,12 @@ Al aprobar o publicar, guardar también `fecha_publicado` y `ediciones` (un cont
 el booleano `editado` que ya existe). Sin eso el embudo igual funciona: solo pierde
 "tiempo mediano de curaduría", "ediciones por pieza" y la mediana por destino.
 
-### 4. El canal en el activo · desbloquea el filtro por canal completo
+### 4. El canal en el activo · ya está resuelto
 
-`contenido_generado` no guarda de qué canal vino la pieza. En `guardar_generado()` y
-`guardar_curaduria()`, copiar el canal del mensaje fuente:
-
-```python
-"canal_origen": mensaje.get("canal"),
-```
-
-Sin esto, filtrar el Panorama por canal deja las métricas de producción en cero.
-**Ya nos pasó** al construir la maqueta: fue un bug real, no una hipótesis.
+En una revisión anterior dije que `contenido_generado` no guardaba el canal. **Me
+equivoqué:** `rutas_contenido._fuente_detalle()` ya guarda
+`fuente_detalle.interaccion.canal` en cada pieza. El endpoint filtra por ahí y no
+hace falta ningún campo nuevo.
 
 ### 5. Índices
 
@@ -263,16 +258,91 @@ nada más.
 
 ---
 
-## Cómo conectarlo
+---
 
-`js/dashboard.js` calcula hoy las agregaciones en el navegador sobre la serie simulada.
-**Cada función lleva anotado arriba el nombre del pipeline que la sustituye.** Al conectar:
+## El endpoint: `GET /dashboard`
 
-1. Exponer `GET /dashboard?rango=...&canal=...` en FastAPI con los pipelines de arriba.
-2. En `js/api.js` ya está declarado `API.dashboard(rango, canal)`.
-3. Borrar las funciones de agregación de `dashboard.js` y dibujar lo que llega.
-4. Quitar el aviso de "Cifras simuladas" de `index.html` (`#panorama_simulado`).
+Ya está escrito en **`backend/rutas_dashboard.py`** y conectado en `main.py`. Sigue la
+convención del repo: un módulo por endpoint, con su propio `APIRouter`, igual que
+`rutas_contenido.py`.
 
-**El panel nunca habla con MongoDB directamente.** Pide agregaciones ya resueltas: mandar
-miles de documentos al navegador para sumarlos ahí no escala y rompe el trato que tenemos
-con `api.js`, donde vive toda la comunicación con el backend.
+### Parámetros
+
+| Parámetro | Obligatorio | Qué hace |
+|---|---|---|
+| `slug` | No | Periodo a mirar (`2026-semana-05`). Por defecto, el más reciente |
+| `canal` | No | Canal exacto (`#soporte-labs`) o `todos` |
+
+### Qué devuelve
+
+```json
+{
+  "periodo":   { "actual": "2026-semana-05", "previo": "2026-semana-04",
+                 "disponibles": ["2026-semana-04", "2026-semana-05"] },
+  "canal": "todos",
+  "canales": ["#dudas-langgraph", "#general", "#logros-y-empleos", "#soporte-labs"],
+  "cobertura": { "metricas": true, "pulso": true, "embudo": true, "plataformas": true,
+                 "voces": true, "riesgo": true,
+                 "temas": false, "termometro": false, "claves": false,
+                 "granularidad": "semana" },
+  "metricas":    { "actual": {...}, "previo": {...}, "supuesto_min_por_pieza": 22 },
+  "pulso":       [ { "periodo": "...", "total": 6, "positivas": 1, "neutrales": 2, "negativas": 3 } ],
+  "temas":       [ { "tema": "...", "n": 3, "variacion": null, "nuevo": true, "sentimiento": -0.6 } ],
+  "termometro":  [ { "tema": "...", "n": 3, "sentimiento": -0.6 } ],
+  "claves":      [ { "termino": "tenancy", "menciones": 2, "previo": 0, "sentimiento": -0.6 } ],
+  "embudo":      { "analizadas": 6, "aprovechables": 5, "tickets": 3, "generadas": 3,
+                   "aprobadas": 2, "publicadas": 2, "pct_sin_editar": 50 },
+  "plataformas": [ { "formato": "Post de LinkedIn", "generadas": 2, "publicadas": 2,
+                     "tasa": 100, "pct_edit": 50 } ],
+  "voces":       [ { "autor": "Ana Ribeiro", "n": 1, "canales": ["#logros-y-empleos"] } ],
+  "riesgo":      [ { "autor": "Diego Fuentes", "n": 2, "canales": ["#soporte-labs"] } ]
+}
+```
+
+### `cobertura` es la clave para no confundir a nadie
+
+Dice **por periodo** qué bloques tienen datos. Si `temas` viene en `false` no es un
+error: es que el análisis todavía no guardaba ese campo **en esa semana**. Se consulta
+por periodo y no en toda la colección a propósito: el día que se active la extracción
+de temas, las semanas viejas seguirán sin tenerlos, y el front debe poder decir
+"falta activar" en vez de dejar un panel vacío sin explicación.
+
+`granularidad: "semana"` avisa que el pulso es semanal. Cuando exista una fecha por
+mensaje, pasará a `"dia"` y el front no necesita cambiar.
+
+### Respuestas de error
+
+| Código | Cuándo |
+|---|---|
+| `503` | `MONGO_URI` sin configurar, o Mongo inalcanzable |
+| `404` | No hay análisis en MongoDB todavía (corre `POST /sincronizar`) |
+| `404` | El `slug` pedido no existe; el mensaje lista los disponibles |
+
+Nunca propaga un error del driver al navegador.
+
+### Probarlo sin MongoDB
+
+```bash
+pip install mongomock
+python pruebas/prueba_dashboard.py
+```
+
+Levanta un Mongo en memoria con documentos de la forma exacta que escribe `db.py` y
+corre las ocho agregaciones. **Así se validaron los pipelines de este documento.**
+
+---
+
+## Lo único que falta: que el front lo consuma
+
+`js/dashboard.js` todavía calcula las agregaciones en el navegador sobre la serie
+simulada. **Cada función lleva anotado arriba el nombre del pipeline que la
+sustituye.** Para conectar:
+
+1. En `visualizarDashboard()`, pedir `await API.dashboard(slug, canal)`.
+2. Si responde, dibujar eso; si falla, quedarse con la serie simulada.
+3. Ocultar el aviso `#panorama_simulado` cuando los datos sean reales.
+4. Usar `cobertura` para marcar los bloques que todavía no tienen datos.
+
+**El panel nunca habla con MongoDB directamente.** Pide agregaciones ya resueltas:
+mandar miles de documentos al navegador para sumarlos ahí no escala y rompe el trato
+que tenemos con `api.js`, donde vive toda la comunicación con el backend.

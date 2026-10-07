@@ -150,31 +150,23 @@ const API = {
   /* ---- Panorama (dashboard) ----
      Todo sale de MongoDB. El backend resuelve las agregaciones y el panel solo
      dibuja: nunca mandamos miles de documentos al navegador para sumarlos allí.
+     Un solo endpoint, una sola llamada: el Panorama son ocho agregaciones y no
+     tiene sentido hacer ocho viajes. Las palabras vigiladas vienen dentro de la
+     misma respuesta, en `claves`.
      Modelo, pipelines y lo que falta para activarlo: PANORAMA.md */
 
-  /* GET /dashboard?rango=30&canal=todos — el panorama completo en una llamada */
-  async dashboard(rango, canal) {
+  /* GET /dashboard?slug=2026-semana-05&canal=todos
+     Sin `slug` devuelve el periodo más reciente. Se compara contra la semana
+     anterior, no contra un rango de días: los documentos no tienen una fecha
+     por mensaje, solo el periodo. */
+  async dashboard(slug, canal) {
     if (this.modoDemo) return null;   // en demo lo calcula dashboard.js sobre la serie simulada
-    const q = new URLSearchParams({ rango, canal });
-    return this._fetch(`/dashboard?${q}`);
+    const q = new URLSearchParams();
+    if (slug) q.set("slug", slug);
+    if (canal && canal !== "todos") q.set("canal", canal);
+    return this._fetch("/dashboard" + (q.toString() ? `?${q}` : ""));
   },
 
-  /* GET /dashboard/claves — palabras que el equipo vigila, con su serie */
-  async claves(rango, canal) {
-    if (this.modoDemo) return null;
-    const q = new URLSearchParams({ rango, canal });
-    return this._fetch(`/dashboard/claves?${q}`);
-  },
-
-  /* POST y DELETE /dashboard/claves/{termino} — agregar o quitar una palabra */
-  async vigilarClave(termino) {
-    if (this.modoDemo) return { status: "exito" };
-    return this._fetch(`/dashboard/claves/${encodeURIComponent(termino)}`, { method: "POST" });
-  },
-  async dejarClave(termino) {
-    if (this.modoDemo) return { status: "exito" };
-    return this._fetch(`/dashboard/claves/${encodeURIComponent(termino)}`, { method: "DELETE" });
-  },
 
 };
 
