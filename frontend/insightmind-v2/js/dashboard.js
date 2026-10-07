@@ -274,8 +274,10 @@ function visualizarVoces(v){
   lista_riesgo.innerHTML=ri.length?ri.map(x=>`<div class="voz">
     <span class="av alerta">${x.autor.split(" ").map(s=>s[0]).slice(0,2).join("")}</span>
     <span class="voz-b"><b>${x.autor}</b><span class="mini">${x.n} mensajes negativos · ${x.tema} · ${x.canal}</span></span>
-    <button class="btn sm" data-r="${x.autor}">Avisar</button></div>`).join("")
+    <button class="btn sm" data-r="${x.autor}">Ver tickets</button></div>`).join("")
     :'<p class="mini">Nadie acumula señales de frustración en el periodo. Buena noticia.</p>';
-  lista_riesgo.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>
-    toast("Aviso enviado",b.dataset.r+" · #soporte-interno",true));
+  /* Lleva a Tickets, que es donde se avisa de verdad por Discord. Antes este
+     botón decía "Avisar" y solo mostraba un toast: prometía un envío que nunca
+     ocurría. Un botón que miente es peor que no tener botón. */
+  lista_riesgo.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>ir("tickets"));
 }
