@@ -138,6 +138,7 @@ const paraGenerar = m => ({
 /* Pide al backend el texto de cada activo (Cohere + guía de voz guardada).
    Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
 async function redactarConVoz(activos, textoPrevio = {}) {
+  
   if (!E.slug || !activos.length) return false;   /* lote de ejemplo (sin backend) o nada pendiente */
  
   const items = activos.map(a => ({
@@ -145,6 +146,8 @@ async function redactarConVoz(activos, textoPrevio = {}) {
     mensajes: a.formato === "Destaque de newsletter" ? DATOS.map(paraGenerar) : null,
     texto_previo: textoPrevio[a.id] || null
   }));
+
+  debugger ; 
 
   const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
   
@@ -262,41 +265,82 @@ async function subirYValidar() {
 
 /* ---------- PROCESAMIENTO DE MENSAJES ---------- */
 
-const PASOS = ["validar · esquema Pydantic", "limpiar · enmascarar datos personales", "analizar · sentimiento y temas", "agrupar_preguntas · dudas similares", "router · 4 reglas condicionales", "generar · LinkedIn, X, FAQ y newsletter", "newsletter_semanal · highlights", "consolidar · paquete oficial", "guardar · OCI Object Storage"];
-btn_procesar.onclick = () => {
+function actualizarProgreso(pct) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  const elBarra = document.getElementById("barra");
   
+  if (elBarra) {
+    elBarra.style.width = `${p}%`;
+    elBarra.style.transform = "none";
+  }
+
+  const elProg = elBarra ? elBarra.closest(".prog") : null;
+  if (elProg) {
+    elProg.setAttribute("aria-valuenow", p);
+  }
+
+  const elPorcentaje = document.getElementById("porcentaje");
+  if (elPorcentaje) {
+    elPorcentaje.textContent = `${p}%`;
+  }
+}
+
+const PASOS = [
+  "validar · esquema Pydantic", 
+  "limpiar · enmascarar datos personales", 
+  "analizar · sentimiento y temas", 
+  "agrupar_preguntas · dudas similares", 
+  "router · 4 reglas condicionales", 
+  "consolidar · datos procesados", 
+  "guardar · almacenar datos en OCI Object Storage"
+];
+
+// Botón para el ejecutar el procesamiento 
+btn_procesar.onclick = async () => {
+
+  // Cambia a la vista de progreso
   irPaso(2); 
   
   steps.innerHTML = "";
   oci_linea.hidden = true;
   oci_ruta.textContent = "";
   analisis_resultado.hidden = true;
-  barra.style.transform = "scaleX(0)";
+  actualizarProgreso(0);
 
   PASOS.forEach(p => steps.appendChild(el("div", "step", '<span class="sdot"></span><span>' + p + '</span>')));
-  const nodos = [...steps.children]; let i = 0;
-  /* La llamada real a /procesar arranca ya (lee el bucket, analiza cada
-     mensaje con Cohere). La animación de pasos corre en paralelo solo
-     como feedback visual; cuando termina, esperamos la respuesta real. */
+  const nodos = [...steps.children]; 
+
+  /*
+  "generar · contenido (LinkedIn, X, FAQ y newsletter", 
+  "procesando contenido"
+  */
+  
+  // invoca /procesar
   const peticion = conError(API.procesarLote({}),
     "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
-  (function paso() {
-    
-    if (i > 0) nodos[i - 1].className = "step done";
-    barra.style.transform = `scaleX(${i / nodos.length})`;
-   
-    if (i >= nodos.length) { 
-      barra.style.transform = "scaleX(1)"; 
-      return peticion.then(fin); 
-    }
 
-    nodos[i].className = "step run"; i++; setTimeout(paso, 360);
+  for (let i = 0; i < nodos.length; i++) {
+    debugger ;
+    if (E.paso !== 2) return;
+    nodos[i].className = "step run";
+    await new Promise(r => setTimeout(r, 600));  //espera de 0.6s entre cada paso
+    if (E.paso !== 2) return;
+    nodos[i].className = "step done";
+    const pct = Math.round(((i + 1) / nodos.length) * 100);
+    actualizarProgreso(pct);
+  }
 
-  })();
+  const resultado = await peticion;
+  fin(resultado);
 };
 
 async function fin(resultado) {
-  if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
+  
+  if (!resultado) { 
+    irPaso(1); 
+    return; 
+  }   /* conError ya mostró el toast de error */
+
   E.slug = resultado.slug;
   oci_ruta.textContent = `activos/${E.slug}/paquete-distribucion.json`; oci_linea.hidden = false;
 
@@ -310,10 +354,12 @@ async function fin(resultado) {
     apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
     archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
+
   E.periodo = (resultado.periodos || [])[0] || null;
   E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
   const c = construir();
+
   /* Lo ya generado vive en activos/<slug>/curaduria.json: solo se redacta lo nuevo o lo que cambió. */
   let guardado = null;
   if (E.slug) {
@@ -325,13 +371,19 @@ async function fin(resultado) {
       console.error(e); toast("No se pudo leer la curaduría guardada", e.message); irPaso(1); return;
     }
   }
+  
   const { pendientes, reutilizados } = reconciliar(c, guardado);
+
+  debugger
+
+  // invoca /generar
   const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
   analisis_resultado.hidden = false;
   toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (conIA ? " · con tu guía de voz" : ""), true);
 }
+
 btn_a_3.onclick = () => irPaso(3);
 
 /* ---------- ANÁLISIS ---------- */

@@ -301,8 +301,8 @@ code{font-family:var(--mono);font-size:.84rem;background:var(--panel-2);padding:
 .note{border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--radius-lg);padding:12px 15px;font-size:.9rem}
 .note.err{border-color:var(--alert);background:var(--alert-soft)}
 .note.info{border-color:var(--primary);background:var(--primary-soft)}
-.prog{height:7px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
-.prog i{display:block;height:100%;background:var(--primary);transform-origin:left;transform:scaleX(0);transition:transform .35s ease}
+.prog{height:8px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--border);position:relative}
+.prog i{display:block;height:100%;background:var(--primary);border-radius:999px;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1)}
 .steps{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:.85rem;margin-top:12px}
 .step{color:var(--faint)} .step.done{color:var(--ink-2)} .step.run{color:var(--primary);font-weight:500}
 

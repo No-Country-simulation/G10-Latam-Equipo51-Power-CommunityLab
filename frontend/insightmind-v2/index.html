@@ -203,8 +203,11 @@
             <div id="paso_2" hidden>
               <div class="grid">
                 <div class="block" id="blk_proceso">
-                  <p class="blk-title">Ejecución del grafo</p>
-                  <div class="prog"><i id="barra" style="width:0%"></i></div>
+                  <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <p class="blk-title" style="margin:0">Ejecución del grafo de procesos</p>
+                    <span id="porcentaje" class="mono" style="font-weight:600;font-size:.92rem;color:var(--primary)">0%</span>
+                  </div>
+                  <div class="prog" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de ejecución"><i id="barra" style="width:0%"></i></div>
                   <div class="steps" id="steps"></div>
                   <div class="note info" id="oci_linea" style="margin-top:13px" hidden><svg class="ico">
                       <use href="#i-guardado" />

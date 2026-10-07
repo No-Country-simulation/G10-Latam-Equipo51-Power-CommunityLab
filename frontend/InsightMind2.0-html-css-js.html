@@ -312,8 +312,8 @@ code{font-family:var(--mono);font-size:.84rem;background:var(--panel-2);padding:
 .note{border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--radius-lg);padding:12px 15px;font-size:.9rem}
 .note.err{border-color:var(--alert);background:var(--alert-soft)}
 .note.info{border-color:var(--primary);background:var(--primary-soft)}
-.prog{height:7px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
-.prog i{display:block;height:100%;background:var(--primary);transform-origin:left;transform:scaleX(0);transition:transform .35s ease}
+.prog{height:8px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--border);position:relative}
+.prog i{display:block;height:100%;background:var(--primary);border-radius:999px;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1)}
 .steps{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:.85rem;margin-top:12px}
 .step{color:var(--faint)} .step.done{color:var(--ink-2)} .step.run{color:var(--primary);font-weight:500}
 
@@ -974,8 +974,11 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
             <div id="paso_2" hidden>
               <div class="grid">
                 <div class="block" id="blk_proceso">
-                  <p class="blk-title">Ejecución del grafo</p>
-                  <div class="prog"><i id="barra" style="width:0%"></i></div>
+                  <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <p class="blk-title" style="margin:0">Ejecución del grafo</p>
+                    <span id="porcentaje" class="mono" style="font-weight:600;font-size:.92rem;color:var(--primary)">0%</span>
+                  </div>
+                  <div class="prog" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de ejecución"><i id="barra" style="width:0%"></i></div>
                   <div class="steps" id="steps"></div>
                   <div class="note info" id="oci_linea" style="margin-top:13px" hidden><svg class="ico">
                       <use href="#i-guardado" />
@@ -1075,7 +1078,7 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
                   <thead>
                     <tr>
                       <th style="width:40px;text-align:center"><input type="checkbox" id="chk_todos_tickets" aria-label="Seleccionar todos los tickets" title="Seleccionar todos"></th>
-                      <th style="width:75px">Sev.</th>
+                      <th style="width:75px">Severidad</th>
                       <th style="width:160px">Reportado por</th>
                       <th style="width:130px">Canal</th>
                       <th style="min-width:260px">Resumen</th>
@@ -1087,8 +1090,7 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
                 </table>
               </div>
               <div class="row" style="margin-top:13px">
-                <button class="btn primary" id="btn_discord">Avisar en Discord · #soporte-interno</button>
-                <button class="btn" id="btn_slack">Avisar en Slack</button>
+                <button class="btn primary" id="btn_discord" disabled title="Selecciona al menos un ticket para avisar">Avisar en Discord · #soporte-interno</button>
               </div>
             </div>
             <details class="acc">
@@ -1258,8 +1260,18 @@ const API = {
   /* POST /procesar — manda el lote y recibe el paquete completo.
      Contrato: docs/contratos/ejemplo_respuesta.json */
   async procesarLote(lote) {
+    
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
-    return this._fetch("/procesar", { method: "POST", body: JSON.stringify(lote) });
+
+    mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
+    
+    try {
+      return await this._fetch("/procesar", { 
+      method: "POST", body: JSON.stringify(lote) 
+    });
+    } finally {
+      mostrarIndicadorProcesando(false);
+    }
   },
 
   /* POST /upload — sube un archivo real al bucket de OCI.
@@ -1287,6 +1299,18 @@ const API = {
     return this._fetch(`/semanas/${slug}`);
   },
 
+  /* GET /curaduria/{slug} — lo ya generado/curado de ese lote. null si aún no existe (404);
+     cualquier otro error se propaga para NO regenerar a ciegas. */
+  async curaduria(slug) {
+    if (this.modoDemo) return null;
+    try {
+      return await this._fetch(`/curaduria/${slug}`);
+    } catch (e) {
+      if (/^404\b/.test(e.message)) return null;
+      throw e;
+    }
+  },
+
   /* PUT /curaduria/{slug} — guarda el estado de todos los activos.
      meta = { periodo_referencia, origen_comunidad, tickets } (opcional) */
   async guardarCuraduria(slug, activos, meta = {}) {
@@ -1298,7 +1322,7 @@ const API = {
      items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
   async generar(slug, items) {
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    mostrarIndicadorProcesando(true);
+    mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
     try {
       return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
     } finally {
@@ -1375,7 +1399,8 @@ async function conError(promesa, mensaje) {
 
 /* Indicador de procesamiento para operaciones asíncronas con IA */
 let peticionesGenerarEnCurso = 0;
-function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+//function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+function mostrarIndicadorProcesando(mostrar, titulo, sub) {
   const el = document.getElementById("indicador_procesando");
   if (mostrar) {
     peticionesGenerarEnCurso++;
@@ -1399,108 +1424,401 @@ if (typeof window !== "undefined") {
 /* Datos simulados para el modo demo.
    Cuando el backend responda, estos se reemplazan por la respuesta de /procesar. */
 
-const DATOS=[
- {id:"m1",autor:"Mariana Souza",canal:"#logros-y-empleos",tipo:"testimonio",sent:.94,score:96,idioma:"es",
-  texto:"Comunidad, ¡quedé seleccionada para el puesto de Desarrolladora Junior de IA! El proyecto del curso de LangChain y OCI que construí en mi portfolio marcó toda la diferencia en la entrevista técnica.",
-  por_que:"Contratación confirmada con el proyecto del curso como detonante",temas:["Contratación / Logros","Portafolio"],
-  cita:"El proyecto del curso de LangChain y OCI marcó toda la diferencia en la entrevista técnica"},
- {id:"m2",autor:"Lucas Albuquerque",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:.05,score:82,idioma:"es",
-  texto:"Tengo dudas sobre cómo estructurar los nodos condicionales en LangGraph cuando la respuesta del LLM necesita reintento.",
-  por_que:"Duda repetida por 3 personas esta semana",temas:["LangGraph / Nodos condicionales"]},
- {id:"m3",autor:"Camila Rojas",canal:"#dudas-langgraph",tipo:"pregunta_tecnica",sent:-.1,score:74,idioma:"es",
-  texto:"¿Cómo hago que un nodo vuelva a intentar si Gemini me devuelve un JSON roto? Me pasa 1 de cada 10 veces.",
-  por_que:"Misma duda que Lucas: se agrupa en una sola FAQ",temas:["LangGraph / Reintentos"]},
- {id:"m4",autor:"Diego Fuentes",canal:"#soporte-labs",tipo:"queja",sent:-.72,score:88,idioma:"es",apoyo:true,
-  texto:"Llevo tres días sin poder entrar al laboratorio de OCI, me sale error de tenancy y ya escribí dos veces sin respuesta.",
-  por_que:"Bloqueo de acceso con riesgo de abandono",temas:["Acceso a laboratorios"]},
- {id:"m5",autor:"Ana Beatriz Lima",canal:"#logros-y-empleos",tipo:"logro",sent:.88,score:91,idioma:"pt",
-  texto:"Pessoal, passei na certificação Oracle Cloud Infrastructure Foundations! Estudei 6 semanas com o grupo de estudos.",
-  por_que:"Certificación lograda con apoyo del grupo de estudio",temas:["Certificaciones"],
-  cita:"Passei na certificação OCI Foundations estudando com o grupo da comunidade"},
- {id:"m6",autor:"Rodrigo Pérez",canal:"#feedback-cursos",tipo:"feedback",sent:.42,score:63,idioma:"es",
-  texto:"El módulo de agentes está buenísimo, pero los ejercicios del final saltan de nivel muy rápido.",
-  por_que:"Feedback accionable sobre la curva del módulo",temas:["Diseño del curso"]},
- {id:"m7",autor:"Valeria Núñez",canal:"#soporte-labs",tipo:"problema_acceso",sent:-.55,score:71,idioma:"es",apoyo:true,
-  texto:"Mi cuenta de estudiante no reconoce el bucket que creé ayer. Necesito entregar el viernes.",
-  por_que:"Segundo reporte de acceso: posible falla generalizada",temas:["Acceso a laboratorios"]},
- {id:"m8",autor:"Héctor Salas",canal:"#general",tipo:"conversacion",sent:.3,score:18,idioma:"es",
-  texto:"¡Buenos días a todos! ☕ feliz lunes",por_que:"Saludo sin contenido aprovechable",temas:["Convivencia"]},
- {id:"m9",autor:"Paula Iriarte",canal:"#logros-y-empleos",tipo:"testimonio",sent:.79,score:84,idioma:"es",
-  texto:"Después de 4 meses, hoy firmé como Data Analyst Jr. Las mentorías de los martes me sirvieron muchísimo.",
-  por_que:"Contratación atribuida a las mentorías del programa",temas:["Contratación / Logros","Mentorías"],
-  cita:"Las mentorías de los martes me sirvieron muchísimo para preparar la entrevista"},
- {id:"m10",autor:"Joao Martins",canal:"#dudas-oci",tipo:"pregunta_tecnica",sent:.12,score:69,idioma:"pt",
-  texto:"Alguém sabe como configurar o bucket Always Free sem gerar custo?",
-  por_que:"Duda frecuente sobre costos de la capa gratuita",temas:["OCI Always Free"]},
- {id:"m11",autor:"Sofía Mendoza",canal:"#general",tipo:"conversacion",sent:.55,score:31,idioma:"es",
-  texto:"gracias equipo, todo claro 🙌",por_que:"Agradecimiento breve, sin contenido",temas:["Convivencia"]},
- {id:"m12",autor:"Andrés Gutiérrez",canal:"#feedback-cursos",tipo:"queja",sent:-.48,score:66,idioma:"es",apoyo:true,
-  texto:"Los videos del módulo 3 se cortan a la mitad y ya reporté el bug la semana pasada.",
-  por_que:"Bug reincidente con frustración acumulada",temas:["Plataforma / Video"]}];
+const DATOS = [
+  {
+    id: "m1",
+    autor: "Mariana Souza",
+    canal: "#logros-y-empleos",
+    tipo: "testimonio",
+    sent: 0.94,
+    score: 96,
+    idioma: "es",
+    texto:
+      "Comunidad, ¡quedé seleccionada para el puesto de Desarrolladora Junior de IA! El proyecto del curso de LangChain y OCI que construí en mi portfolio marcó toda la diferencia en la entrevista técnica.",
+    por_que: "Contratación confirmada con el proyecto del curso como detonante",
+    temas: ["Contratación / Logros", "Portafolio"],
+    cita: "El proyecto del curso de LangChain y OCI marcó toda la diferencia en la entrevista técnica",
+  },
+  {
+    id: "m2",
+    autor: "Lucas Albuquerque",
+    canal: "#dudas-langgraph",
+    tipo: "pregunta_tecnica",
+    sent: 0.05,
+    score: 82,
+    idioma: "es",
+    texto:
+      "Tengo dudas sobre cómo estructurar los nodos condicionales en LangGraph cuando la respuesta del LLM necesita reintento.",
+    por_que: "Duda repetida por 3 personas esta semana",
+    temas: ["LangGraph / Nodos condicionales"],
+  },
+  {
+    id: "m3",
+    autor: "Camila Rojas",
+    canal: "#dudas-langgraph",
+    tipo: "pregunta_tecnica",
+    sent: -0.1,
+    score: 74,
+    idioma: "es",
+    texto:
+      "¿Cómo hago que un nodo vuelva a intentar si Gemini me devuelve un JSON roto? Me pasa 1 de cada 10 veces.",
+    por_que: "Misma duda que Lucas: se agrupa en una sola FAQ",
+    temas: ["LangGraph / Reintentos"],
+  },
+  {
+    id: "m4",
+    autor: "Diego Fuentes",
+    canal: "#soporte-labs",
+    tipo: "queja",
+    sent: -0.72,
+    score: 88,
+    idioma: "es",
+    apoyo: true,
+    texto:
+      "Llevo tres días sin poder entrar al laboratorio de OCI, me sale error de tenancy y ya escribí dos veces sin respuesta.",
+    por_que: "Bloqueo de acceso con riesgo de abandono",
+    temas: ["Acceso a laboratorios"],
+  },
+  {
+    id: "m5",
+    autor: "Ana Beatriz Lima",
+    canal: "#logros-y-empleos",
+    tipo: "logro",
+    sent: 0.88,
+    score: 91,
+    idioma: "pt",
+    texto:
+      "Pessoal, passei na certificação Oracle Cloud Infrastructure Foundations! Estudei 6 semanas com o grupo de estudos.",
+    por_que: "Certificación lograda con apoyo del grupo de estudio",
+    temas: ["Certificaciones"],
+    cita: "Passei na certificação OCI Foundations estudando com o grupo da comunidade",
+  },
+  {
+    id: "m6",
+    autor: "Rodrigo Pérez",
+    canal: "#feedback-cursos",
+    tipo: "feedback",
+    sent: 0.42,
+    score: 63,
+    idioma: "es",
+    texto:
+      "El módulo de agentes está buenísimo, pero los ejercicios del final saltan de nivel muy rápido.",
+    por_que: "Feedback accionable sobre la curva del módulo",
+    temas: ["Diseño del curso"],
+  },
+  {
+    id: "m7",
+    autor: "Valeria Núñez",
+    canal: "#soporte-labs",
+    tipo: "problema_acceso",
+    sent: -0.55,
+    score: 71,
+    idioma: "es",
+    apoyo: true,
+    texto:
+      "Mi cuenta de estudiante no reconoce el bucket que creé ayer. Necesito entregar el viernes.",
+    por_que: "Segundo reporte de acceso: posible falla generalizada",
+    temas: ["Acceso a laboratorios"],
+  },
+  {
+    id: "m8",
+    autor: "Héctor Salas",
+    canal: "#general",
+    tipo: "conversacion",
+    sent: 0.3,
+    score: 18,
+    idioma: "es",
+    texto: "¡Buenos días a todos! ☕ feliz lunes",
+    por_que: "Saludo sin contenido aprovechable",
+    temas: ["Convivencia"],
+  },
+  {
+    id: "m9",
+    autor: "Paula Iriarte",
+    canal: "#logros-y-empleos",
+    tipo: "testimonio",
+    sent: 0.79,
+    score: 84,
+    idioma: "es",
+    texto:
+      "Después de 4 meses, hoy firmé como Data Analyst Jr. Las mentorías de los martes me sirvieron muchísimo.",
+    por_que: "Contratación atribuida a las mentorías del programa",
+    temas: ["Contratación / Logros", "Mentorías"],
+    cita: "Las mentorías de los martes me sirvieron muchísimo para preparar la entrevista",
+  },
+  {
+    id: "m10",
+    autor: "Joao Martins",
+    canal: "#dudas-oci",
+    tipo: "pregunta_tecnica",
+    sent: 0.12,
+    score: 69,
+    idioma: "pt",
+    texto: "Alguém sabe como configurar o bucket Always Free sem gerar custo?",
+    por_que: "Duda frecuente sobre costos de la capa gratuita",
+    temas: ["OCI Always Free"],
+  },
+  {
+    id: "m11",
+    autor: "Sofía Mendoza",
+    canal: "#general",
+    tipo: "conversacion",
+    sent: 0.55,
+    score: 31,
+    idioma: "es",
+    texto: "gracias equipo, todo claro 🙌",
+    por_que: "Agradecimiento breve, sin contenido",
+    temas: ["Convivencia"],
+  },
+  {
+    id: "m12",
+    autor: "Andrés Gutiérrez",
+    canal: "#feedback-cursos",
+    tipo: "queja",
+    sent: -0.48,
+    score: 66,
+    idioma: "es",
+    apoyo: true,
+    texto:
+      "Los videos del módulo 3 se cortan a la mitad y ya reporté el bug la semana pasada.",
+    por_que: "Bug reincidente con frustración acumulada",
+    temas: ["Plataforma / Video"],
+  },
+];
 
-const PLAT={
- linkedin:{nom:"LinkedIn",cuenta:"Página ONE G10 LATAM",color:"#0A66C2",ini:"in",modo:"Publicación asistida",on:true},
- x:{nom:"X",cuenta:"@comunidadONE_g10",color:"#111827",ini:"X",modo:"Publicación asistida",on:true},
- web:{nom:"Web de la comunidad",cuenta:"ayuda.one-g10.dev/faq",color:"#7C3AED",ini:"FAQ",modo:"API · publica el tip",on:true},
- newsletter:{nom:"Newsletter",cuenta:"Mailchimp · lista general",color:"#059669",ini:"NL",modo:"Exporta el markdown",on:false},
- discord:{nom:"Discord",cuenta:"#soporte-interno",color:"#5865F2",ini:"DC",modo:"Webhook · avisa los tickets",on:true},
- slack:{nom:"Slack",cuenta:"Sin espacio de trabajo",color:"#611F69",ini:"SL",modo:"Webhook · avisa los tickets",on:false}};
-const FORMATOS={"Post de LinkedIn":{plat:"linkedin",limite:3000},"Hilo de X":{plat:"x",limite:280,porPost:true},
- "Tip / FAQ":{plat:"web",limite:2500},"Destaque de newsletter":{plat:"newsletter",limite:4000}};
-const TABS=[["linkedin","LinkedIn"],["x","X"],["web","Tip / FAQ"],["newsletter","Newsletter"],["tickets","Tickets"]];
+const PLAT = {
+  linkedin: {
+    nom: "LinkedIn",
+    cuenta: "Página ONE G10 LATAM",
+    color: "#0A66C2",
+    ini: "in",
+    modo: "Publicación asistida",
+    on: true,
+  },
+  x: {
+    nom: "X",
+    cuenta: "@comunidadONE_g10",
+    color: "#111827",
+    ini: "X",
+    modo: "Publicación asistida",
+    on: true,
+  },
+  web: {
+    nom: "Web de la comunidad",
+    cuenta: "ayuda.one-g10.dev/faq",
+    color: "#7C3AED",
+    ini: "FAQ",
+    modo: "API · publica el tip",
+    on: true,
+  },
+  newsletter: {
+    nom: "Newsletter",
+    cuenta: "Mailchimp · lista general",
+    color: "#059669",
+    ini: "NL",
+    modo: "Exporta el markdown",
+    on: false,
+  },
+  discord: {
+    nom: "Discord",
+    cuenta: "#soporte-interno",
+    color: "#5865F2",
+    ini: "DC",
+    modo: "Webhook · avisa los tickets",
+    on: true,
+  },
+  slack: {
+    nom: "Slack",
+    cuenta: "Sin espacio de trabajo",
+    color: "#611F69",
+    ini: "SL",
+    modo: "Webhook · avisa los tickets",
+    on: false,
+  },
+};
+const FORMATOS = {
+  "Post de LinkedIn": { plat: "linkedin", limite: 3000 },
+  "Hilo de X": { plat: "x", limite: 280, porPost: true },
+  "Tip / FAQ": { plat: "web", limite: 2500 },
+  "Destaque de newsletter": { plat: "newsletter", limite: 4000 },
+};
+const TABS = [
+  ["linkedin", "LinkedIn"],
+  ["x", "X"],
+  ["web", "Tip / FAQ"],
+  ["newsletter", "Newsletter"],
+  ["tickets", "Tickets"],
+];
 
-let U={descartar:40,exito_score:70};
-function ruta(m){if(m.score<U.descartar)return "descartado";
- if(m.sent<=-.4||m.tipo==="queja"||m.tipo==="problema_acceso"||m.apoyo)return "ticket";
- if((m.tipo==="testimonio"||m.tipo==="logro")&&m.sent>=.6&&m.score>=U.exito_score)return "exito";
- if(m.tipo==="pregunta_tecnica")return "faq";return "insight";}
-const NOM={exito:"Caso de éxito",faq:"Tip / FAQ",ticket:"Ticket",descartado:"Descartado",insight:"Insight"};
-const PILL={exito:"p-ok",faq:"p-warn",ticket:"p-alert",descartado:"p-mute",insight:"p-pri"};
+let U = { descartar: 40, exito_score: 70 };
+function ruta(m) {
+  if (m.score < U.descartar) return "descartado";
+  if (
+    m.sent <= -0.4 ||
+    m.tipo === "queja" ||
+    m.tipo === "problema_acceso" ||
+    m.apoyo
+  )
+    return "ticket";
+  if (
+    (m.tipo === "testimonio" || m.tipo === "logro") &&
+    m.sent >= 0.6 &&
+    m.score >= U.exito_score
+  )
+    return "exito";
+  if (m.tipo === "pregunta_tecnica") return "faq";
+  return "insight";
+}
+const NOM = {
+  exito: "Caso de éxito",
+  faq: "Tip / FAQ",
+  ticket: "Ticket",
+  descartado: "Descartado",
+  insight: "Insight",
+};
+const PILL = {
+  exito: "p-ok",
+  faq: "p-warn",
+  ticket: "p-alert",
+  descartado: "p-mute",
+  insight: "p-pri",
+};
 
-const citaDe=m=>m.cita||(m.texto.length>140?m.texto.slice(0,140)+"…":m.texto);
-const linkedinTxt=m=>m.idioma==="pt"
- ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${citaDe(m)}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
- : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo==="testimonio"?"ser contratada":"lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${citaDe(m)}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
-const hiloTxt=m=>{const n=m.autor.split(" ")[0];return [
- `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
- `"${citaDe(m)}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
- `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
- `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`].join("\n\n———\n\n");};
+const citaDe = (m) =>
+  m.cita || (m.texto.length > 140 ? m.texto.slice(0, 140) + "…" : m.texto);
+const linkedinTxt = (m) =>
+  m.idioma === "pt"
+    ? `Nada nos deixa mais orgulhosos do que ver nossos talentos conquistando o mercado! 🚀\n\n${m.autor} conquistou a certificação Oracle Cloud Infrastructure Foundations depois de seis semanas com o grupo de estudos.\n\n"${citaDe(m)}"\n\nParabéns, ${m.autor.split(" ")[0]}! 👏\n\n#OracleCloud #ComunidadeONE`
+    : `Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀\n\n${m.autor} acaba de ${m.tipo === "testimonio" ? "ser contratada" : "lograr un hito importante"} y nos contó qué hizo la diferencia:\n\n"${citaDe(m)}"\n\nConstruir proyectos reales sigue siendo el camino más corto entre aprender y trabajar. ¡Felicidades, ${m.autor.split(" ")[0]}! 👏\n\n#TalentosTech #OracleCloud`;
+const hiloTxt = (m) => {
+  const n = m.autor.split(" ")[0];
+  return [
+    `${n} entró a la comunidad hace unos meses sin experiencia en la nube.\n\nHoy tiene una historia que contar 🧵`,
+    `"${citaDe(m)}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
+    `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
+    `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`,
+  ].join("\n\n———\n\n");
+};
 /* faq1/faq2/newsTxt quedan como muestra fija del modo demo.
    faqGenerico/newsletterGenerico arman el contenido a partir de los mensajes
    reales que devuelve /procesar, sin nombres ni temas hardcodeados. */
-const faq1=()=>`**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
-const faq2=()=>`**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
-const newsTxt=()=>`## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
-const faqGenerico=m=>`**Pregunta de ${m.autor} · ${m.canal||"general"}**\n\n${m.texto}\n\n_Motivo de la clasificación: ${m.por_que}_\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
-const newsletterGenerico=(mensajes,pctPos)=>{
- const top=mensajes.slice().sort((a,b)=>b.score-a.score)[0];
- const preguntas=mensajes.filter(m=>m.tipo==="pregunta_tecnica").length;
- return `## Community Highlights\n\n**🏆 Mensaje destacado de la semana**\n${top?top.autor+": "+top.texto.slice(0,140)+(top.texto.length>140?"…":""):"Sin datos"}\n\n**❓ Preguntas técnicas**\n${preguntas} pregunta(s) recibidas.\n\n**🔢 Cifra de la semana**\n${mensajes.length} interacciones · ${pctPos}% positivas.`;};
+const faq1 = () =>
+  `**Nodos condicionales con reintento en LangGraph**\n\nPreguntado por 3 personas esta semana.\n\nEl reintento vive en el nodo, no en el router.\n\n1. Valida la salida del LLM con un esquema Pydantic dentro del nodo.\n2. Si falla, lanza la excepción y deja que la política de reintentos la capture.\n3. Tras 2 intentos, marca el mensaje como "no analizado" y sigue con el lote.\n4. El router lee el estado ya validado y elige la rama.\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const faq2 = () =>
+  `**Cómo usar el bucket Always Free sin generar costo**\n\n1. Crea el bucket en tu región de inicio, tier Standard.\n2. No actives replicación ni versionado.\n3. Always Free incluye 20 GB: vigila el panel de uso.\n4. Borra los objetos de prueba al terminar cada práctica.`;
+const newsTxt = () =>
+  `## Community Highlights · Semana 04\n\n**🏆 Logro de la semana**\nMariana Souza consiguió empleo como Desarrolladora Junior de IA.\n\n**❓ Pregunta de la semana**\nNodos condicionales con reintento en LangGraph: 3 personas preguntaron lo mismo.\n\n**📈 Tema en tendencia**\nCertificaciones de Oracle Cloud: 2 aprobadas.\n\n**🔢 Cifra de la semana**\n12 interacciones · 58% positivas.`;
+const faqGenerico = (m) =>
+  `**Pregunta de ${m.autor} · ${m.canal || "general"}**\n\n${m.texto}\n\n_Motivo de la clasificación: ${m.por_que}_\n\n⚠️ Requiere validación de mentor antes de publicarse.`;
+const newsletterGenerico = (mensajes, pctPos) => {
+  const top = mensajes.slice().sort((a, b) => b.score - a.score)[0];
+  const preguntas = mensajes.filter(
+    (m) => m.tipo === "pregunta_tecnica",
+  ).length;
+  return `## Community Highlights\n\n**🏆 Mensaje destacado de la semana**\n${top ? top.autor + ": " + top.texto.slice(0, 140) + (top.texto.length > 140 ? "…" : "") : "Sin datos"}\n\n**❓ Preguntas técnicas**\n${preguntas} pregunta(s) recibidas.\n\n**🔢 Cifra de la semana**\n${mensajes.length} interacciones · ${pctPos}% positivas.`;
+};
 
 /* semanas anteriores simuladas */
-const HIST={
- "2026-semana-03":{inter:9,pos:67,neg:8,activos:7,publicados:6,tickets:2,
-  temas:["Certificaciones","Entrevistas técnicas","Java Spring"],
-  contenidos:[["linkedin","Post de LinkedIn","Tres estudiantes aprobaron la certificación OCI…","Publicado"],
-   ["x","Hilo de X","De cero a la nube en 8 semanas: el camino de…","Publicado"],
-   ["web","Tip / FAQ","Cómo preparar el entorno de Java Spring en…","Publicado"],
-   ["linkedin","Post de LinkedIn","Nuestra mentoría de los martes cumple un año…","Publicado"],
-   ["newsletter","Destaque de newsletter","Community Highlights · Semana 03","Publicado"],
-   ["web","Tip / FAQ","Errores comunes al configurar el tenancy","Publicado"],
-   ["x","Hilo de X","5 recursos gratis para practicar SQL","Descartado"]],
-  tickets_list:[["Error 500 al subir el proyecto final","Resuelto"],["Video del módulo 2 sin audio","Resuelto"]]},
- "2026-semana-02":{inter:11,pos:71,neg:5,activos:8,publicados:5,tickets:1,
-  temas:["Onboarding","Git y GitHub","Empleabilidad"],
-  contenidos:[["linkedin","Post de LinkedIn","La primera semana de la generación 2026 arrancó…","Publicado"],
-   ["web","Tip / FAQ","Cómo resolver conflictos de merge sin miedo","Publicado"],
-   ["x","Hilo de X","Cómo armar tu primer portafolio dev","Publicado"],
-   ["newsletter","Destaque de newsletter","Community Highlights · Semana 02","Publicado"],
-   ["linkedin","Post de LinkedIn","Dos egresados consiguieron empleo este mes","Publicado"],
-   ["x","Hilo de X","Preguntas frecuentes de la semana","Listo"],
-   ["web","Tip / FAQ","Comandos de Git que sí vas a usar","Listo"],
-   ["linkedin","Post de LinkedIn","Testimonio de la mentoría de carrera","Descartado"]],
-  tickets_list:[["Certificado no se descarga","En curso"]]}};
+const HIST = {
+  "2026-semana-03": {
+    inter: 9,
+    pos: 67,
+    neg: 8,
+    activos: 7,
+    publicados: 6,
+    tickets: 2,
+    temas: ["Certificaciones", "Entrevistas técnicas", "Java Spring"],
+    contenidos: [
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Tres estudiantes aprobaron la certificación OCI…",
+        "Publicado",
+      ],
+      [
+        "x",
+        "Hilo de X",
+        "De cero a la nube en 8 semanas: el camino de…",
+        "Publicado",
+      ],
+      [
+        "web",
+        "Tip / FAQ",
+        "Cómo preparar el entorno de Java Spring en…",
+        "Publicado",
+      ],
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Nuestra mentoría de los martes cumple un año…",
+        "Publicado",
+      ],
+      [
+        "newsletter",
+        "Destaque de newsletter",
+        "Community Highlights · Semana 03",
+        "Publicado",
+      ],
+      [
+        "web",
+        "Tip / FAQ",
+        "Errores comunes al configurar el tenancy",
+        "Publicado",
+      ],
+      ["x", "Hilo de X", "5 recursos gratis para practicar SQL", "Descartado"],
+    ],
+    tickets_list: [
+      ["Error 500 al subir el proyecto final", "Resuelto"],
+      ["Video del módulo 2 sin audio", "Resuelto"],
+    ],
+  },
+  "2026-semana-02": {
+    inter: 11,
+    pos: 71,
+    neg: 5,
+    activos: 8,
+    publicados: 5,
+    tickets: 1,
+    temas: ["Onboarding", "Git y GitHub", "Empleabilidad"],
+    contenidos: [
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "La primera semana de la generación 2026 arrancó…",
+        "Publicado",
+      ],
+      [
+        "web",
+        "Tip / FAQ",
+        "Cómo resolver conflictos de merge sin miedo",
+        "Publicado",
+      ],
+      ["x", "Hilo de X", "Cómo armar tu primer portafolio dev", "Publicado"],
+      [
+        "newsletter",
+        "Destaque de newsletter",
+        "Community Highlights · Semana 02",
+        "Publicado",
+      ],
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Dos egresados consiguieron empleo este mes",
+        "Publicado",
+      ],
+      ["x", "Hilo de X", "Preguntas frecuentes de la semana", "Listo"],
+      ["web", "Tip / FAQ", "Comandos de Git que sí vas a usar", "Listo"],
+      [
+        "linkedin",
+        "Post de LinkedIn",
+        "Testimonio de la mentoría de carrera",
+        "Descartado",
+      ],
+    ],
+    tickets_list: [["Certificado no se descarga", "En curso"]],
+  },
+};
+
 /* Lógica del panel: navegación, render y acciones.
    Las llamadas al backend viven en api.js */
 
@@ -1534,21 +1852,101 @@ const save = () => { };   /* el estado vive en memoria durante la sesión; en pr
    "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
 async function guardarCuraduriaEnOCI() {
   if (!E.slug) return "local";
-  /* Cada activo viaja con su origen, en la misma forma que el archivo de entrada */
-  const activos = E.activos.map(a => ({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
-  const tickets = E.tickets.map(t => ({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
-  const r = await conError(
-    API.guardarCuraduria(E.slug, activos, { periodo_referencia: E.periodo, origen_comunidad: E.origen, tickets }),
-    "No se pudo guardar la curaduría en OCI");
-  return !!r;
+  /* Un lote puede mezclar periodos (Semana_01, Semana_05...): cada activo/ticket se guarda en
+     activos/<slug>/curaduria.json del slug de SU mensaje de origen, no todo bajo un único slug. */
+  const porSlug = new Map();
+  const grupo = s => { if (!porSlug.has(s)) porSlug.set(s, { activos: [], tickets: [] }); return porSlug.get(s); };
+  E.activos.forEach(a => grupo(slugDe(a.fuente)).activos.push({ ...a, fuente_detalle: fuenteDetalle(msg(a.fuente)) }));
+  E.tickets.forEach(t => grupo(slugDe(t.fuente)).tickets.push({ ...t, archivo: (msg(t.fuente) || {}).archivo }));
+  let ok = true;
+  for (const [slug, g] of porSlug) {
+    const m0 = DATOS.find(d => slugDe(d.id) === slug) || {};
+    const r = await conError(
+      API.guardarCuraduria(slug, g.activos, { periodo_referencia: m0.periodo_referencia || E.periodo, origen_comunidad: m0.origen_comunidad || E.origen, tickets: g.tickets }),
+      "No se pudo guardar la curaduría en OCI");
+    ok = ok && !!r;
+  }
+  return ok;
 }
+
+/* Slug (periodo) del mensaje de origen; si no lo trae, el del lote */
+const slugDe = id => (msg(id) || {}).slug || E.slug;
 
 function fuenteDetalle(m) {
   if (!m) return null;
   return {
-    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
+    archivo: m.archivo, etag: m.etag, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia,
     interaccion: { autor: m.autor, canal: m.canal, tipo: m.tipo, texto: m.texto }
   };
+}
+
+/* ---- Huella y reconciliación: lo ya generado NO se vuelve a generar ----
+   huella = formato + archivo de origen + etag del archivo (la newsletter, todo el lote).
+   Si la huella coincide con la guardada en activos/<slug>/curaduria.json, se reutiliza el texto. */
+const NEWSLETTER = "Destaque de newsletter";
+function hash53(s) {   /* cyrb53: hash corto y estable, suficiente para comparar */
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+function huellaDe(a) {
+  const m = msg(a.fuente) || {};
+  const origen = a.formato === NEWSLETTER
+    ? DATOS.map(d => `${d.archivo}@${d.etag}`).sort().join("|")
+    : `${m.archivo}@${m.etag}`;
+  return hash53(`${a.formato}|${origen}`);
+}
+const claveActivo = (formato, archivo, slug) => formato === NEWSLETTER ? `${NEWSLETTER}|${slug}` : `${formato}|${archivo}`;
+
+/* Cruza los activos recién construidos con los guardados. Devuelve los que SÍ hay que generar.
+   Se conserva id, texto, estado y ediciones de lo ya existente (un texto editado o ya en cola
+   /publicado nunca se pisa). Los nuevos reciben ids que no chocan con ninguno guardado. */
+/* Fusiona las curadurías de varios slugs en un solo objeto, marcando el slug de origen y
+   resolviendo ids repetidos entre slugs (cada archivo guardado tenía su propia numeración A1, A2…). */
+function fusionarGuardados(docs) {
+  const vistos = new Set(), activos = [], tickets = [];
+  let k = 1000;
+  docs.filter(Boolean).forEach(d => {
+    (d.activos || []).forEach(a => {
+      const id = vistos.has(a.id) ? "A" + (k++) : a.id;
+      vistos.add(id); activos.push({ ...a, id, _slug: d.slug });
+    });
+    tickets.push(...(d.tickets || []));
+  });
+  return { activos, tickets };
+}
+
+function reconciliar(c, guardado) {
+  const gAct = (guardado && guardado.activos) || [], gTic = (guardado && guardado.tickets) || [];
+  const porClave = new Map(gAct.map(g => [claveActivo(g.formato, (g.fuente_detalle || {}).archivo, g._slug), g]));
+  const ocupados = new Set(gAct.map(g => g.id));
+  const pendientes = []; let reutilizados = 0;
+
+  c.activos.forEach(n => {
+    n.huella = huellaDe(n);
+    const g = porClave.get(claveActivo(n.formato, (msg(n.fuente) || {}).archivo, slugDe(n.fuente)));
+    const protegido = g && (g.editado || (g.estado && g.estado !== "Pendiente"));
+    const igual = g && (g.huella ? g.huella === n.huella : n.formato !== NEWSLETTER);   /* sin huella = guardado antiguo */
+    if (g && g.texto && (igual || protegido)) {
+      Object.assign(n, { id: g.id, texto: g.texto, estado: g.estado || "Pendiente", editado: g.editado,
+        publicado: g.publicado, base: g.base, version: g.version, variante: g.variante,
+        huella: igual ? n.huella : g.huella });
+      reutilizados++;
+    } else pendientes.push(n);
+  });
+  /* ids propios de los pendientes: ninguno puede repetir uno guardado o ya reutilizado */
+  const usados = new Set([...ocupados, ...c.activos.filter(n => !pendientes.includes(n)).map(n => n.id)]);
+  let k = 1;
+  pendientes.forEach(n => { do { n.id = "A" + (k++); } while (usados.has(n.id)); usados.add(n.id); });
+
+  /* los tickets conservan estado/aviso (antes se reiniciaban a "Abierto" en cada procesamiento) */
+  c.tickets.forEach(t => {
+    const g = gTic.find(x => x.archivo && x.archivo === (msg(t.fuente) || {}).archivo);
+    if (g) Object.assign(t, { estado: g.estado, aviso: g.aviso, seleccionado: g.seleccionado ?? t.seleccionado });
+  });
+  return { pendientes, reutilizados };
 }
 
 /* Mensaje que se manda a /generar (sin campos de UI) */
@@ -1561,19 +1959,24 @@ const paraGenerar = m => ({
 /* Pide al backend el texto de cada activo (Cohere + guía de voz guardada).
    Si falla, los activos conservan la plantilla local. Devuelve true si se generó algo. */
 async function redactarConVoz(activos, textoPrevio = {}) {
-  if (!E.slug) return false;   /* lote de ejemplo: sin backend */
+  if (!E.slug || !activos.length) return false;   /* lote de ejemplo (sin backend) o nada pendiente */
+ 
   const items = activos.map(a => ({
-    id: a.id, formato: a.formato, mensaje: paraGenerar(msg(a.fuente) || {}),
+    id: a.id, formato: a.formato, slug: slugDe(a.fuente), huella: huellaDe(a), mensaje: paraGenerar(msg(a.fuente) || {}),
     mensajes: a.formato === "Destaque de newsletter" ? DATOS.map(paraGenerar) : null,
     texto_previo: textoPrevio[a.id] || null
   }));
+
   const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
+  
   if (!r) return false;
-  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; } });
+  activos.forEach(a => { if (r.resultados[a.id]) { a.texto = r.resultados[a.id]; a.base = a.texto; delete a.version; a.huella = huellaDe(a); } });
+  
   const fallos = Object.keys(r.errores || {}).length;
   if (fallos) toast(`${fallos} activo${fallos === 1 ? "" : "s"} sin generar`, "Se dejó la plantilla local", false);
   return Object.keys(r.resultados).length > 0;
 }
+
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
@@ -1680,38 +2083,58 @@ async function subirYValidar() {
 
 /* ---------- PROCESAMIENTO DE MENSAJES ---------- */
 
+function actualizarProgreso(pct) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  const elBarra = document.getElementById("barra");
+  if (elBarra) {
+    elBarra.style.width = `${p}%`;
+    elBarra.style.transform = "none";
+  }
+  const elProg = elBarra ? elBarra.closest(".prog") : null;
+  if (elProg) {
+    elProg.setAttribute("aria-valuenow", p);
+  }
+  const elPorcentaje = document.getElementById("porcentaje");
+  if (elPorcentaje) {
+    elPorcentaje.textContent = `${p}%`;
+  }
+}
+
 const PASOS = ["validar · esquema Pydantic", "limpiar · enmascarar datos personales", "analizar · sentimiento y temas", "agrupar_preguntas · dudas similares", "router · 4 reglas condicionales", "generar · LinkedIn, X, FAQ y newsletter", "newsletter_semanal · highlights", "consolidar · paquete oficial", "guardar · OCI Object Storage"];
-btn_procesar.onclick = () => {
+btn_procesar.onclick = async () => {
   irPaso(2); 
+  
   steps.innerHTML = "";
   oci_linea.hidden = true;
   oci_ruta.textContent = "";
   analisis_resultado.hidden = true;
-  barra.style.transform = "scaleX(0)";
+  actualizarProgreso(0);
 
   PASOS.forEach(p => steps.appendChild(el("div", "step", '<span class="sdot"></span><span>' + p + '</span>')));
-  const nodos = [...steps.children]; let i = 0;
-  /* La llamada real a /procesar arranca ya (lee el bucket, analiza cada
-     mensaje con Cohere). La animación de pasos corre en paralelo solo
-     como feedback visual; cuando termina, esperamos la respuesta real. */
+  const nodos = [...steps.children]; 
+  
   const peticion = conError(API.procesarLote({}),
     "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
-  (function paso() {
-    
-    if (i > 0) nodos[i - 1].className = "step done";
-    barra.style.transform = `scaleX(${i / nodos.length})`;
-   
-    if (i >= nodos.length) { 
-      barra.style.transform = "scaleX(1)"; return peticion.then(fin); 
-    }
 
-    nodos[i].className = "step run"; i++; setTimeout(paso, 360);
+  for (let i = 0; i < nodos.length; i++) {
+    if (E.paso !== 2) return;
+    nodos[i].className = "step run";
+    await new Promise(r => setTimeout(r, 1000));
+    if (E.paso !== 2) return;
+    nodos[i].className = "step done";
+    const pct = Math.round(((i + 1) / nodos.length) * 100);
+    actualizarProgreso(pct);
+  }
 
-  })();
+  const resultado = await peticion;
+  fin(resultado);
 };
 
 async function fin(resultado) {
-  if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
+  if (!resultado) { 
+    irPaso(1); 
+    return; 
+  }   /* conError ya mostró el toast de error */
   E.slug = resultado.slug;
   oci_ruta.textContent = `activos/${E.slug}/paquete-distribucion.json`; oci_linea.hidden = false;
 
@@ -1723,17 +2146,31 @@ async function fin(resultado) {
     sent: m.sent, score: m.score, idioma: m.idioma || "es", texto: m.texto,
     por_que: m.por_que, temas: [m.tipo],
     apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
-    archivo: m.archivo, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
+    archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
   E.periodo = (resultado.periodos || [])[0] || null;
   E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
   const c = construir();
-  const conIA = await redactarConVoz(c.activos);   /* reemplaza las plantillas por texto generado con la guía de voz */
+
+  /* Lo ya generado vive en activos/<slug>/curaduria.json: solo se redacta lo nuevo o lo que cambió. */
+  let guardado = null;
+  if (E.slug) {
+    try {
+      const slugs = [...new Set(DATOS.map(d => d.slug || E.slug))];
+      guardado = fusionarGuardados(await Promise.all(slugs.map(s => API.curaduria(s))));
+    }
+    catch (e) {   /* sin poder leerlo, NO se regenera: se pisaría lo ya generado */
+      console.error(e); toast("No se pudo leer la curaduría guardada", e.message); irPaso(1); return;
+    }
+  }
+  
+  const { pendientes, reutilizados } = reconciliar(c, guardado);
+  const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${c.activos.length} activos y ${c.tickets.length} tickets generados` + (conIA ? " · con tu guía de voz" : ""), true);
+  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (conIA ? " · con tu guía de voz" : ""), true);
 }
 btn_a_3.onclick = () => irPaso(3);
 
@@ -2069,6 +2506,7 @@ function publicarLote(plat) {
 
 // procesa la lista de tickets pendientes
 function filasTickets() {
+
   return E.tickets.map(t => {
     const m = msg(t.fuente); 
     const esEnviado = t.estado === "Enviado" || t.estado === "Resuelto";
@@ -2090,20 +2528,59 @@ function filasTickets() {
       <td style="width:110px">${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
       <td style="width:110px"><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
+
+}
+
+function actualizarEstadoBotonesAviso() {
+ 
+  if (avisandoTickets) return;
+  const elegiblesSeleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
+  const haySeleccion = elegiblesSeleccionados.length > 0;
+
+  const btnDiscord = document.getElementById("btn_discord");
+  if (btnDiscord) {
+    btnDiscord.disabled = !haySeleccion;
+    btnDiscord.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  }
+
+  const btnAvisar = document.getElementById("btn_avisar");
+  if (btnAvisar) {
+    btnAvisar.disabled = !haySeleccion;
+    btnAvisar.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  }
 }
 
 function sincronizarChecksTickets() {
+  
   const master = document.getElementById("chk_todos_tickets");
   const masterCur = document.getElementById("chk_todos_tickets_curaduria");
   const checks = document.querySelectorAll(".chk-ticket");
 
   function actualizarMasters() {
+    
+    // tickets que pueden ser seleccionados segun estado
     const elegibles = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
+   
     const totalElegibles = elegibles.length;
 
     if (!totalElegibles) {
-      if (master) { master.checked = false; master.indeterminate = false; master.disabled = true; master.title = "Todos los tickets ya fueron enviados"; }
-      if (masterCur) { masterCur.checked = false; masterCur.indeterminate = false; masterCur.disabled = true; masterCur.title = "Todos los tickets ya fueron enviados"; }
+
+      if (master) { 
+        master.checked = false; 
+        master.indeterminate = false; 
+        master.disabled = true; 
+        master.title = "Todos los tickets ya fueron enviados"; 
+      }
+      
+      if (masterCur) { 
+        masterCur.checked = false; 
+        masterCur.indeterminate = false; 
+        masterCur.disabled = true; 
+        masterCur.title = "Todos los tickets ya fueron enviados"; 
+      }
+      
+      actualizarEstadoBotonesAviso();
+
       return;
     }
 
@@ -2118,10 +2595,14 @@ function sincronizarChecksTickets() {
       master.checked = todos;
       master.indeterminate = alguno;
     }
+
     if (masterCur) {
       masterCur.checked = todos;
       masterCur.indeterminate = alguno;
     }
+
+    actualizarEstadoBotonesAviso();
+
   }
 
   checks.forEach(chk => {
@@ -2149,9 +2630,12 @@ function sincronizarChecksTickets() {
         t.seleccionado = false;
       }
     });
+
     document.querySelectorAll(".chk-ticket:not(:disabled)").forEach(chk => { chk.checked = val; });
     document.querySelectorAll(".chk-ticket:disabled").forEach(chk => { chk.checked = false; });
+
     actualizarMasters();
+    
   };
 
   if (master) master.onchange = onMasterChange;
@@ -2165,7 +2649,8 @@ function visualizarTickets() {
   
   b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
   
-  tabla_tickets.innerHTML = E.procesado ? filasTickets() : '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  tabla_tickets.innerHTML = E.procesado ? filasTickets() : 
+    '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
   
   // ToDo actualización de históricos
   tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
@@ -2188,7 +2673,7 @@ function visualizarTicketsEn(cont) {
     <span class="mini mono">${E.tickets.length}</span></div>
     <div class="item"><div class="df"><table><thead><tr>
       <th style="width:40px;text-align:center"><input type="checkbox" id="chk_todos_tickets_curaduria" aria-label="Seleccionar todos los tickets" title="Seleccionar todos"></th>
-      <th style="width:75px">Sev.</th>
+      <th style="width:75px">Severidad</th>
       <th style="width:160px">Reportado por</th>
       <th style="width:130px">Canal</th>
       <th style="min-width:260px">Resumen</th>
@@ -2206,18 +2691,21 @@ let avisandoTickets = false;
 
 function setBloqueoBotonesAviso(bloquear) {
   avisandoTickets = bloquear;
-  const botones = [
-    document.getElementById("btn_discord"),
-    document.getElementById("btn_slack"),
-    document.getElementById("btn_avisar")
-  ].filter(Boolean);
+  if (bloquear) {
+    const botones = [
+      document.getElementById("btn_discord"),
+      document.getElementById("btn_avisar")
+    ].filter(Boolean);
 
-  botones.forEach(btn => {
-    btn.disabled = bloquear;
-  });
+    botones.forEach(btn => {
+      btn.disabled = true;
+    });
+  } else {
+    actualizarEstadoBotonesAviso();
+  }
 }
 
-// función para enviar mensajes de los tickets pendientes mediante slack/discord
+// función para enviar mensajes de los tickets pendientes mediante discord
 async function avisar(dest) {
   if (avisandoTickets) return;
 
@@ -2279,8 +2767,8 @@ async function avisar(dest) {
 }
 
 // botones de aviso rápido en la sección de Tickets
-btn_discord.onclick = () => avisar("discord"); 
-btn_slack.onclick = () => avisar("slack");
+const btn_discord = document.getElementById("btn_discord");
+if (btn_discord) btn_discord.onclick = () => avisar("discord"); 
 
 /* ---------- PUBLICACIONES ---------- */
 function visualizarPubs() {
@@ -2371,14 +2859,15 @@ function alternar(k) {
 }
 
 /* ---------- AJUSTES ---------- */
-const ESTILOS = ["Cercano", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin hashtags", "Primera persona plural"];
+const ESTILOS = ["Cercano", "Amistoso", "Profesional", "Formal", "Inspirador", "Celebratorio", "Didáctico", "Técnico", "Breve", "Sobrio", "Con emojis", "Sin emojis", "Sin hashtags", "Primera persona plural"];
+const EXCLUYENTES = { "Con emojis": "Sin emojis", "Sin emojis": "Con emojis" };
 function visualizarChips() {
   voz_chips.innerHTML = E.chips.map(c => `<span class="vchip">${c}<button data-q="${c}" title="Quitar">×</button></span>`).join("");
   voz_chips.querySelectorAll("button").forEach(b => b.onclick = () => { E.chips = E.chips.filter(x => x !== b.dataset.q); save(); visualizarChips(); });
   chips_estilo.innerHTML = ESTILOS.map(e => `<button aria-pressed="${E.chips.includes(e)}" data-e="${e}">${E.chips.includes(e) ? ic("check") : ""}${e}</button>`).join("");
   chips_estilo.querySelectorAll("button").forEach(b => b.onclick = () => {
     const e = b.dataset.e;
-    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips, e]; 
+    E.chips = E.chips.includes(e) ? E.chips.filter(x => x !== e) : [...E.chips.filter(x => x !== EXCLUYENTES[e]), e]; 
     save(); 
     visualizarChips();
   });
@@ -2387,6 +2876,7 @@ function visualizarChips() {
 btn_voz.onclick = async () => {
   const r = await conError(API.guardarVoz(voz.value, E.chips), "No se pudo guardar la guía de voz");
   if (!r) return;
+  if (r.voz) { voz.value = r.voz.texto; E.chips = r.voz.chips; visualizarChips(); }   /* estado = lo realmente persistido */
   voz_msg.textContent = E.chips.length ? "Guardada con " + E.chips.length + " chips de estilo" : "Guardada";
   toast("Guía de voz guardada", "Se aplica a todo lo que se genere desde ahora", true);
 };
@@ -2408,7 +2898,7 @@ function recalcular() {
       const v = previos.find(x => x.formato === n.formato && x.fuente === n.fuente);
       if (v) Object.assign(n, {
         estado: v.estado, texto: v.texto, editado: v.editado,
-        publicado: v.publicado, base: v.base, version: v.version, variante: v.variante
+        publicado: v.publicado, base: v.base, version: v.version, variante: v.variante, huella: v.huella
       });
     });
     const perdidos = previos.filter(v => !c.activos.some(n => n.formato === v.formato && n.fuente === v.fuente)

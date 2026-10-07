@@ -28,6 +28,7 @@ const API = {
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
 
     mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
+    
     try {
       return await this._fetch("/procesar", { 
       method: "POST", body: JSON.stringify(lote) 
