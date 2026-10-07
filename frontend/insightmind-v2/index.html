@@ -235,10 +235,10 @@
             </div>
 
             <div class="note info"><svg class="ico"><use href="#i-guardado"/></svg>
-              <div><b>De dónde salen estas cifras.</b> Cada mensaje analizado se guarda como un documento en
-              la colección <code>interacciones</code> de MongoDB, y cada pieza generada en <code>activos</code>.
-              El panel solo pide agregaciones ya resueltas. OCI Object Storage sigue guardando el paquete
-              semanal oficial: MongoDB no lo reemplaza, lo consulta.</div></div>
+              <div><b>De dónde saldrán estas cifras.</b> Cada mensaje analizado ya se guarda en la
+              colección <code>analisis</code> de MongoDB, y cada pieza generada en <code>contenido_generado</code>.
+              El panel solo pedirá agregaciones ya resueltas, nunca documentos sueltos. OCI Object Storage
+              sigue siendo la fuente de verdad: MongoDB no la reemplaza, la consulta.</div></div>
           </div>
         </section>
 
