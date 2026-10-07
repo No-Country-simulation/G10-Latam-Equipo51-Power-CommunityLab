@@ -274,10 +274,20 @@ function visualizarVoces(v){
   lista_riesgo.innerHTML=ri.length?ri.map(x=>`<div class="voz">
     <span class="av alerta">${x.autor.split(" ").map(s=>s[0]).slice(0,2).join("")}</span>
     <span class="voz-b"><b>${x.autor}</b><span class="mini">${x.n} mensajes negativos · ${x.tema} · ${x.canal}</span></span>
-    <button class="btn sm" data-r="${x.autor}">Ver tickets</button></div>`).join("")
+    <button class="btn sm" data-r="${x.autor}">Avisar</button></div>`).join("")
     :'<p class="mini">Nadie acumula señales de frustración en el periodo. Buena noticia.</p>';
-  /* Lleva a Tickets, que es donde se avisa de verdad por Discord. Antes este
-     botón decía "Avisar" y solo mostraba un toast: prometía un envío que nunca
-     ocurría. Un botón que miente es peor que no tener botón. */
-  lista_riesgo.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>ir("tickets"));
+  /* Avisa de verdad: marca los tickets pendientes de esa persona y delega en
+     avisar("discord") de app.js, que es la función que ya existe y funciona.
+     No se duplica la lógica de envío: si cambia allá, cambia aquí. */
+  lista_riesgo.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+    const autor=b.dataset.r;
+    const suyos=E.tickets.filter(t=>{
+      const m=msg(t.fuente);
+      return m&&m.autor===autor&&t.estado!=="Enviado"&&t.estado!=="Resuelto";});
+    if(!suyos.length){
+      ir("tickets");
+      return toast("Sin tickets pendientes",autor+" no tiene tickets abiertos en este lote.");}
+    E.tickets.forEach(t=>t.seleccionado=false);
+    suyos.forEach(t=>t.seleccionado=true);
+    avisar("discord");});
 }
