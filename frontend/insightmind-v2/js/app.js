@@ -291,7 +291,9 @@ const PASOS = [
   "agrupar_preguntas · dudas similares", 
   "router · 4 reglas condicionales", 
   "consolidar · paquete oficial", 
-  "guardar · OCI Object Storage"
+  "guardar · OCI Object Storage",
+  "procesar · procesando registros con IA", 
+  "generar · generando contenido con IA"
 ];
 
 /***
@@ -318,33 +320,49 @@ btn_procesar.onclick = async () => {
 
   PASOS.forEach(p => steps.appendChild(el("div", "step", '<span class="sdot"></span><span>' + p + '</span>')));
   const nodos = [...steps.children]; 
-  const totalPasos = nodos.length;
+  
+  /* Los 2 últimos nodos (procesar, generar) dependen de FastAPI: no se animan en el bucle inicial */
+  const pasosIniciales = Math.max(0, nodos.length - 2);
 
-  for (let i = 0; i < totalPasos; i++) {
+  for (let i = 0; i < pasosIniciales; i++) {
+    
     if (E.paso !== 2) return;
     nodos[i].className = "step run";
+    
     await new Promise(r => setTimeout(r, 600));  // espera de 0.6s entre cada paso
+    
     if (E.paso !== 2) return;
     nodos[i].className = "step done";
-    const pct = totalPasos > 0 ? Math.round(((i + 1) / totalPasos) * 70) : 70;
-    actualizarProgreso(pct);
+    actualizarProgreso(Math.round(((i + 1) / pasosIniciales) * 70));
   }
+  actualizarProgreso(70);
 
-  if (totalPasos === 0) {
-    actualizarProgreso(70);
-  }
-
-  // invoca /procesar en FastAPI: al recibir response sube 15% (a 85%)
+  // Paso "procesar": done solo cuando responde /procesar (sube a 85%)
+  const nodoProcesar = nodos[pasosIniciales];
+  if (nodoProcesar) nodoProcesar.className = "step run";
+  
   const resultado = await procesarLote();
-  if (!resultado) { irPaso(1); return; }
+  if (!resultado) { 
+    if (nodoProcesar) nodoProcesar.className = "step"; 
+    irPaso(1); 
+    return; 
+  }
+  
   if (E.paso !== 2) return;
-  actualizarProgreso(85);
+ 
+  if (nodoProcesar) nodoProcesar.className = "step done";
+  actualizarProgreso(85); // proceso completado, se aumenta progreso
 
-  await fin(resultado);
+  await fin(resultado, nodos[pasosIniciales + 1]);
+
 };
 
-async function fin(resultado) {
-  if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
+async function fin(resultado, nodoGenerar = null) {
+  
+  if (!resultado) { irPaso(1); 
+    return; 
+  }   /* conError ya mostró el toast de error */
+
   E.slug = resultado.slug;
   oci_ruta.textContent = `activos/${E.slug}/paquete-distribucion.json`; oci_linea.hidden = false;
 
@@ -378,15 +396,20 @@ async function fin(resultado) {
   
   const { pendientes, reutilizados } = reconciliar(c, guardado);
 
-  // invoca /generar en FastAPI: al recibir response sube 15% (a 100%)
-  const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
+  // Paso "generar": done sólo cuando responde /generar (sube a 100% el progreso)
+  if (nodoGenerar) nodoGenerar.className = "step run";
+  const response = await redactarConVoz(pendientes);
+  
   if (E.paso !== 2) return;
+  
+  if (nodoGenerar) nodoGenerar.className = "step done";
   actualizarProgreso(100);
 
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
   visualizar(); 
+
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (conIA ? " · con tu guía de voz" : ""), true);
+  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (response ? " · con tu guía de voz" : ""), true);
 }
 
 btn_a_3.onclick = () => irPaso(3);

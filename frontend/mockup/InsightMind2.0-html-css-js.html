@@ -2884,7 +2884,9 @@ const PASOS = [
   "agrupar_preguntas · dudas similares", 
   "router · 4 reglas condicionales", 
   "consolidar · paquete oficial", 
-  "guardar · OCI Object Storage"
+  "guardar · OCI Object Storage",
+  "procesar · procesando registros con IA", 
+  "generar · generando contenido con IA"
 ];
 
 /***
@@ -2911,9 +2913,10 @@ btn_procesar.onclick = async () => {
 
   PASOS.forEach(p => steps.appendChild(el("div", "step", '<span class="sdot"></span><span>' + p + '</span>')));
   const nodos = [...steps.children]; 
-  const totalPasos = nodos.length;
+  const pasosIniciales = Math.min(7, nodos.length);
 
-  for (let i = 0; i < totalPasos; i++) {
+  // Primer bloque: los primeros 7 pasos se ejecutan y llevan la barra al 70%
+  for (let i = 0; i < pasosIniciales; i++) {
     if (E.paso !== 2) return;
     nodos[i].className = "step run";
    
@@ -2921,24 +2924,28 @@ btn_procesar.onclick = async () => {
    
     if (E.paso !== 2) return;
     nodos[i].className = "step done";
-    const pct = totalPasos > 0 ? Math.round(((i + 1) / totalPasos) * 70) : 70;
+    const pct = Math.round(((i + 1) / pasosIniciales) * 70);
     actualizarProgreso(pct);
   }
 
-  if (totalPasos === 0) {
-    actualizarProgreso(70);
-  }
+  // Paso 8 (procesar): ligado a procesarLote() -> al recibir response sube 15% (a 85%)
+  const nodoProcesar = nodos[7];
+  if (nodoProcesar) nodoProcesar.className = "step run";
 
-  // invoca /procesar en FastAPI: al recibir response sube 15% (a 85%)
   const resultado = await procesarLote();
-  if (!resultado) { irPaso(1); return; }
+  if (!resultado) {
+    if (nodoProcesar) nodoProcesar.className = "step";
+    irPaso(1);
+    return;
+  }
   if (E.paso !== 2) return;
+  if (nodoProcesar) nodoProcesar.className = "step done";
   actualizarProgreso(85);
 
-  await fin(resultado);
+  await fin(resultado, nodos);
 };
 
-async function fin(resultado) {
+async function fin(resultado, nodos = [...(steps?.children || [])]) {
   
   if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
   E.slug = resultado.slug;
@@ -2974,9 +2981,14 @@ async function fin(resultado) {
   
   const { pendientes, reutilizados } = reconciliar(c, guardado);
 
-  // invoca /generar en FastAPI: al recibir response sube 15% (a 100%)
+  // Paso 9 (generar): ligado a redactarConVoz() -> al recibir response sube 15% (a 100%)
+  const nodoGenerar = nodos[8] || steps?.children?.[8];
+  if (nodoGenerar) nodoGenerar.className = "step run";
+
+  // invoca /generar en FastAPI
   const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
   if (E.paso !== 2) return;
+  if (nodoGenerar) nodoGenerar.className = "step done";
   actualizarProgreso(100);
 
   E.activos = c.activos; E.tickets = c.tickets; E.procesado = true; save();
