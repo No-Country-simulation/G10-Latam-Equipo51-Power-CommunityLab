@@ -17,6 +17,7 @@ from backend.analizador_sentimiento import (
 )
 from backend import cache_analisis, contexto, db
 from backend.rutas_contenido import router as router_contenido
+from backend.rutas_dashboard import router as router_dashboard
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from datetime import datetime
 from dotenv import load_dotenv
@@ -359,6 +360,7 @@ def actualizar_curaduria(
 
 
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
+app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
 
 
 # Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde

@@ -19,7 +19,9 @@ sí arrastraba código viejo. Esta no:
 - `modoDemo`, que sigue en `false`.
 - El `mount` de `main.py`, que sigue apuntando a `frontend/insightmind-v2`.
 
-El diff del front contra `main` es de **978 líneas añadidas y 0 borradas**.
+El diff contra `main` es de **3.073 líneas añadidas y 139 borradas**, y esas 139 son
+todas de archivos míos o del build regenerado. Ningún archivo del equipo perdió
+una línea: `main.py` es **+2 / −0**.
 
 ## Archivos nuevos
 
@@ -30,6 +32,21 @@ El diff del front contra `main` es de **978 líneas añadidas y 0 borradas**.
 | `frontend/insightmind-v2/PANORAMA.md` | Modelo de datos, pipelines y contrato del endpoint |
 | `backend/rutas_dashboard.py` | El endpoint `GET /dashboard` |
 | `pruebas/prueba_dashboard.py` | Prueba de los pipelines contra un Mongo en memoria |
+
+## Dos limpiezas de higiene
+
+**`frontend/mockup/InsightMind2.0-html-css-js.html` pasó a
+`InsightMind2.0-snapshot-2026-09-26.html`.** Tenía el mismo nombre que el build
+vivo pero no era el mismo archivo: 1645 líneas contra 3715, una foto anterior a la
+selección de tickets, al indicador de procesamiento y al Panorama. Dos archivos con
+el mismo nombre y distinto contenido son peores que un duplicado real. Solo se
+renombró; el contenido no se tocó.
+
+**Se borró la rama `fe-ajustes-progreso-v25`.** Apuntaba el `mount` de `main.py` a
+una carpeta `frontend/insightmind-2.5` que era una copia vieja del panel con
+`modoDemo: true`: quien corriera esa rama tenía **toda** la aplicación desconectada
+del backend, no solo Discord. Si hiciera falta recuperarla, su último commit fue
+`9ea6f63`.
 
 ## Archivos modificados, todo aditivo
 

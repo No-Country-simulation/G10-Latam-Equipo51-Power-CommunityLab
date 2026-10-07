@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Junta index.html + css + js en un solo archivo, para compartir el prototipo por link."""
+"""Junta index.html + css + js en un solo archivo, para compartir el prototipo por link.
+
+El orden de los js importa y es el mismo que en index.html:
+datos-dashboard.js usa ruta() de datos-ejemplo.js al construir su serie, y
+app.js llama a visualizarDashboard() de dashboard.js al arrancar.
+
+Escribe SIEMPRE sobre frontend/InsightMind2.0-html-css-js.html. No genera
+archivos nuevos: ese es el único build y se sobreescribe.
+"""
 import re, pathlib
 raiz = pathlib.Path(__file__).parent
 html = (raiz/"index.html").read_text(encoding="utf-8")

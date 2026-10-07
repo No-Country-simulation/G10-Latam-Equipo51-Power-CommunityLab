@@ -2910,6 +2910,14 @@ btn_procesar.onclick = async () => {
   // invoca /procesar
   const peticion = conError(API.procesarLote({}),
     "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
+  /*(function paso() {
+    
+    if (i > 0) nodos[i - 1].className = "step done";
+    barra.style.transform = `scaleX(${i / nodos.length})`;
+   
+    if (i >= nodos.length) { 
+      barra.style.transform = "scaleX(1)"; return peticion.then(fin); 
+    }*/
 
   for (let i = 0; i < nodos.length; i++) {
     if (E.paso !== 2) return;
