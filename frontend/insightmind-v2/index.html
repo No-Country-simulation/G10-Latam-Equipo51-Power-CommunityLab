@@ -42,6 +42,8 @@
         <circle cx="16" cy="7" r="2.3" />
         <circle cx="10" cy="17" r="2.3" />
       </symbol>
+      <symbol id="i-panorama" viewBox="0 0 24 24"><path d="M3.5 10.5v3M8 6v12M12.5 3v18M17 7.5v9M21.5 11v2"/></symbol>
+      <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24">
         <path d="m5 12.5 4.5 4.5L19 7" />
       </symbol>
@@ -101,6 +103,10 @@
         <div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div>
       </div>
       <nav>
+        <div class="sb-lbl">Inteligencia</div>
+        <button class="nav" data-p="panorama"><svg class="ico">
+            <use href="#i-panorama" />
+          </svg>Panorama</button>
         <div class="sb-lbl">Producción</div>
         <button class="nav" data-p="flujo" aria-current="page"><svg class="ico">
             <use href="#i-flujo" />
@@ -140,6 +146,101 @@
         <div class="row" id="acciones"></div>
       </div>
       <div class="wrap">
+
+        <!-- PANORAMA -->
+        <section id="p_panorama" hidden>
+          <div class="grid">
+
+            <div class="note" id="panorama_simulado"><svg class="ico"><use href="#i-alerta"/></svg>
+        <div><b>Cifras simuladas.</b> El Panorama todavía no consulta MongoDB: dibuja una serie
+        de ejemplo de 180 días para mostrar la propuesta. Lo que falta para activarlo con datos
+        reales está en <code>PANORAMA.md</code>.</div></div>
+
+      <div class="filtros">
+              <div class="radio" id="rango_btns" role="group" aria-label="Rango de fechas"></div>
+              <label class="filtro-canal"><span class="label">Canal</span>
+                <select id="canal_sel"></select></label>
+              <span class="mini" id="rango_txt"></span>
+            </div>
+
+            <div class="stats" id="kpis"></div>
+
+            <div class="block">
+              <div class="blk-head">
+                <div><p class="blk-title">Pulso de la comunidad</p>
+                  <p class="blk-info">Positivas hacia arriba, negativas hacia abajo. Las líneas punteadas marcan hitos.</p></div>
+                <div class="legend">
+                  <span><i class="sw-pos"></i>Positivas</span>
+                  <span><i class="sw-neu"></i>Neutrales</span>
+                  <span><i class="sw-neg"></i>Negativas</span></div>
+              </div>
+              <div class="lectura" id="lectura"></div>
+              <div class="pulso-wrap">
+                <div class="pulso" id="pulso_graf" role="img"></div>
+              </div>
+              <div class="pulso-eje" id="pulso_eje"></div>
+              <div class="pulso-hitos" id="pulso_hitos"></div>
+            </div>
+
+            <div class="cols2">
+              <div class="block">
+                <p class="blk-title">Temas en ascenso</p>
+                <p class="blk-info">Ordenados por crecimiento contra el periodo anterior.</p>
+                <div class="df"><table><thead><tr><th>Tema</th><th>Vol.</th><th>Var.</th><th>Curva</th><th>Ánimo</th></tr></thead>
+                  <tbody id="tabla_temas"></tbody></table></div>
+              </div>
+              <div class="block">
+                <p class="blk-title">Termómetro por tema</p>
+                <p class="blk-info">Dónde duele y dónde celebra la comunidad, del más frío al más cálido.</p>
+                <div class="termo" id="termo"></div>
+              </div>
+            </div>
+
+            <div class="block">
+              <p class="blk-title">Palabras bajo vigilancia</p>
+              <p class="blk-info">Sigue un término y mira cuánto se menciona y con qué ánimo.</p>
+              <div class="voz-chips" id="claves_chips"></div>
+              <span class="label">Sugerencias · toca para vigilarlas</span>
+              <div class="radio" id="claves_sug"></div>
+              <div class="kw-grid" id="claves_grid"></div>
+            </div>
+
+            <div class="block">
+              <p class="blk-title">Embudo de producción</p>
+              <p class="blk-info">De lo que llegó a lo que salió publicado, con el filtro humano en medio.</p>
+              <div class="embudo-layout">
+                <div class="embudo" id="embudo_fases"></div>
+                <div class="kpi-mins" id="embudo_extra"></div>
+              </div>
+            </div>
+
+            <div class="block">
+              <p class="blk-title">Desempeño por destino</p>
+              <p class="blk-info">Dónde aprueba más el equipo y dónde hay que retocar más el texto.</p>
+              <div class="df"><table><thead><tr><th>Destino</th><th>Generadas</th><th>Publicadas</th><th>Tasa</th><th>Editadas</th><th>Mediana</th></tr></thead>
+                <tbody id="tabla_plat"></tbody></table></div>
+            </div>
+
+            <div class="cols2">
+              <div class="block">
+                <p class="blk-title">Voces que alimentan el contenido</p>
+                <p class="blk-info">Quiénes originaron más casos de éxito en el periodo.</p>
+                <div class="lista-voz" id="lista_voces"></div>
+              </div>
+              <div class="block">
+                <p class="blk-title">Miembros que necesitan apoyo</p>
+                <p class="blk-info">Cuatro o más mensajes negativos. Antes de que se vayan en silencio.</p>
+                <div class="lista-voz" id="lista_riesgo"></div>
+              </div>
+            </div>
+
+            <div class="note info"><svg class="ico"><use href="#i-guardado"/></svg>
+              <div><b>De dónde salen estas cifras.</b> Cada mensaje analizado se guarda como un documento en
+              la colección <code>interacciones</code> de MongoDB, y cada pieza generada en <code>activos</code>.
+              El panel solo pide agregaciones ya resueltas. OCI Object Storage sigue guardando el paquete
+              semanal oficial: MongoDB no lo reemplaza, lo consulta.</div></div>
+          </div>
+        </section>
 
         <!-- FLUJO -->
         <section id="p_flujo">
@@ -461,6 +562,8 @@ Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
 
   <script src="js/api.js"></script>
   <script src="js/datos-ejemplo.js"></script>
+  <script src="js/datos-dashboard.js"></script>
+  <script src="js/dashboard.js"></script>
   <script src="js/app.js"></script>
 </body>
 
