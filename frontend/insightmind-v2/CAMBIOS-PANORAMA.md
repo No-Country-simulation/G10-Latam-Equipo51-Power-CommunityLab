@@ -47,8 +47,22 @@ El diff del front contra `main` es de **978 líneas añadidas y 0 borradas**.
 siempre. Cambiarlo es una línea al final de `app.js`, pero no se hizo sin
 consultarlo.
 
-**Las cifras que se ven son simuladas, y la pantalla lo dice.** El panel corre con
-`modoDemo: false`, así que sin el aviso alguien podría creer que son reales.
+**El Panorama pide datos reales y cae a la serie de ejemplo si no los hay.** Al
+abrirlo llama a `GET /dashboard`. Si MongoDB responde, dibuja eso y oculta el aviso
+de "cifras simuladas"; si no hay backend o no hay Mongo, usa la serie de ejemplo y
+muestra el aviso. No se usa `conError()` en esa llamada a propósito: en una
+instalación sin Mongo saltaría un toast de error en cada carga, y eso no es un
+fallo, es el estado esperado.
+
+**Con datos reales el filtro cambia de rango a periodo.** Los documentos no traen
+fecha por mensaje, solo el slug de la semana, así que los botones pasan de
+7 / 30 / 90 días a Semana 04 / Semana 05. Es lo honesto: no se puede ofrecer un
+corte diario que los datos no soportan.
+
+**Lo que el backend todavía no mide se marca con un guion, no se inventa.**
+"Ediciones por pieza" y "tiempo mediano de curaduría" salen como `—` con la nota de
+qué campo falta. Y si `cobertura` dice que no hay temas, el bloque explica qué
+activar en vez de quedarse vacío.
 
 **El botón "Avisar" de miembros en riesgo no duplica lógica.** Marca los tickets
 pendientes de esa persona y delega en `avisar("discord")`, la función que ya
@@ -86,7 +100,7 @@ Las anoto porque alguna llegó al equipo como tarea pendiente y no lo es:
 | Paso | Estado | Quién |
 |---|---|---|
 | `GET /dashboard` con las ocho agregaciones | **Hecho y probado** | — |
-| Que el front consuma el endpoint | Pendiente, ~2 h | Front |
+| Que el front consuma el endpoint | **Hecho** | — |
 | `temas` y `claves` en el análisis | Pendiente, ~1 h | Backend |
 | Versionar la llave de la caché al cambiar el prompt | Pendiente, 1 línea | Backend |
 | Fecha por mensaje (para pulso diario en vez de semanal) | Opcional | Definición de entrada |
