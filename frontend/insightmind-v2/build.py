@@ -4,7 +4,7 @@ import re, pathlib
 raiz = pathlib.Path(__file__).parent
 html = (raiz/"index.html").read_text(encoding="utf-8")
 css  = (raiz/"css/styles.css").read_text(encoding="utf-8")
-js   = "\n".join((raiz/f"js/{f}").read_text(encoding="utf-8") for f in ["api.js","datos-ejemplo.js","app.js"])
+js   = "\n".join((raiz/f"js/{f}").read_text(encoding="utf-8") for f in ["api.js","datos-ejemplo.js","datos-dashboard.js","dashboard.js","app.js"])
 
 html = re.sub(r'<link rel="stylesheet" href="css/styles.css">', f"<style>\n{css}\n</style>", html)
 html = re.sub(r'<script src="js/[^"]+"></script>\s*', "", html)

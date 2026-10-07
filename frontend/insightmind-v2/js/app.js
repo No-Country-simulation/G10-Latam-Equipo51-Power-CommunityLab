@@ -147,8 +147,6 @@ async function redactarConVoz(activos, textoPrevio = {}) {
     texto_previo: textoPrevio[a.id] || null
   }));
 
-  debugger ; 
-
   const r = await conError(API.generar(E.slug, items), "No se pudo generar con IA · se usan plantillas");
   
   if (!r) return false;
@@ -194,6 +192,7 @@ function construir() {
 }
 
 const META = {
+  panorama: ["Panorama de la comunidad", "Qué dice la comunidad y qué produjo Insight Mind con eso."],
   flujo: ["Procesar lote", "Ingesta, análisis y curaduría en un solo flujo."],
   tickets: ["Tickets", "Lo que no se publica: se avisa al equipo."],
   publicaciones: ["Publicaciones", "Qué salió publicado, dónde y cuándo."],
@@ -274,7 +273,7 @@ function actualizarProgreso(pct) {
     elBarra.style.transform = "none";
   }
 
-  const elProg = elBarra ? elBarra.closest(".prog") : null;
+  const elProg = elBarra ? elBarra.closest(".prog") : document.querySelector('.prog[role="progressbar"]');
   if (elProg) {
     elProg.setAttribute("aria-valuenow", p);
   }
@@ -291,11 +290,16 @@ const PASOS = [
   "analizar · sentimiento y temas", 
   "agrupar_preguntas · dudas similares", 
   "router · 4 reglas condicionales", 
-  "consolidar · datos procesados", 
-  "guardar · almacenar datos en OCI Object Storage"
+  "consolidar · paquete oficial", 
+  "guardar · OCI Object Storage"
 ];
 
-// Botón para el ejecutar el procesamiento 
+/***
+ *   "generar · LinkedIn, X, FAQ y newsletter",
+ *   "newsletter_semanal · highlights",
+ */
+
+// Botón para ejecutar el procesamiento 
 btn_procesar.onclick = async () => {
 
   // Cambia a la vista de progreso
@@ -310,20 +314,14 @@ btn_procesar.onclick = async () => {
   PASOS.forEach(p => steps.appendChild(el("div", "step", '<span class="sdot"></span><span>' + p + '</span>')));
   const nodos = [...steps.children]; 
 
-  /*
-  "generar · contenido (LinkedIn, X, FAQ y newsletter", 
-  "procesando contenido"
-  */
-  
   // invoca /procesar
   const peticion = conError(API.procesarLote({}),
     "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
 
   for (let i = 0; i < nodos.length; i++) {
-    debugger ;
     if (E.paso !== 2) return;
     nodos[i].className = "step run";
-    await new Promise(r => setTimeout(r, 600));  //espera de 0.6s entre cada paso
+    await new Promise(r => setTimeout(r, 600));  // espera de 0.6s entre cada paso
     if (E.paso !== 2) return;
     nodos[i].className = "step done";
     const pct = Math.round(((i + 1) / nodos.length) * 100);
@@ -335,12 +333,7 @@ btn_procesar.onclick = async () => {
 };
 
 async function fin(resultado) {
-  
-  if (!resultado) { 
-    irPaso(1); 
-    return; 
-  }   /* conError ya mostró el toast de error */
-
+  if (!resultado) { irPaso(1); return; }   /* conError ya mostró el toast de error */
   E.slug = resultado.slug;
   oci_ruta.textContent = `activos/${E.slug}/paquete-distribucion.json`; oci_linea.hidden = false;
 
@@ -373,8 +366,6 @@ async function fin(resultado) {
   }
   
   const { pendientes, reutilizados } = reconciliar(c, guardado);
-
-  debugger
 
   // invoca /generar
   const conIA = await redactarConVoz(pendientes);   /* reemplaza las plantillas SOLO de los pendientes */
@@ -1164,5 +1155,11 @@ function visualizar() {
 
 visualizarChips(); 
 visualizar(); 
+
+/* El Panorama se dibuja una sola vez: sus cifras son historia ya cerrada en
+   MongoDB y no cambian porque en esta sesión se apruebe o se publique algo.
+   Sus propios filtros lo vuelven a dibujar cuando hace falta. */
+visualizarDashboard(); 
+
 ir("flujo");
 irPaso(1);
