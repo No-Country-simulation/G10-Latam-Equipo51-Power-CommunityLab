@@ -191,6 +191,7 @@ function construir() {
 }
 
 const META = {
+  panorama: ["Panorama de la comunidad", "Qué dice la comunidad y qué produjo Insight Mind con eso."],
   flujo: ["Procesar lote", "Ingesta, análisis y curaduría en un solo flujo."],
   tickets: ["Tickets", "Lo que no se publica: se avisa al equipo."],
   publicaciones: ["Publicaciones", "Qué salió publicado, dónde y cuándo."],
@@ -1112,5 +1113,9 @@ function visualizar() {
 
 visualizarChips(); 
 visualizar(); 
+/* El Panorama se dibuja una sola vez: sus cifras son historia ya cerrada en
+   MongoDB y no cambian porque en esta sesión se apruebe o se publique algo.
+   Sus propios filtros lo vuelven a dibujar cuando hace falta. */
+visualizarDashboard(); 
 ir("flujo");
 irPaso(1);

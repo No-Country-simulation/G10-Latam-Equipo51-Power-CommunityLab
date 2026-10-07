@@ -146,6 +146,36 @@ const API = {
       body: JSON.stringify({ conectado: conectar }),
     });
   },
+
+  /* ---- Panorama (dashboard) ----
+     Todo sale de MongoDB. El backend resuelve las agregaciones y el panel solo
+     dibuja: nunca mandamos miles de documentos al navegador para sumarlos allí.
+     Modelo, pipelines y lo que falta para activarlo: PANORAMA.md */
+
+  /* GET /dashboard?rango=30&canal=todos — el panorama completo en una llamada */
+  async dashboard(rango, canal) {
+    if (this.modoDemo) return null;   // en demo lo calcula dashboard.js sobre la serie simulada
+    const q = new URLSearchParams({ rango, canal });
+    return this._fetch(`/dashboard?${q}`);
+  },
+
+  /* GET /dashboard/claves — palabras que el equipo vigila, con su serie */
+  async claves(rango, canal) {
+    if (this.modoDemo) return null;
+    const q = new URLSearchParams({ rango, canal });
+    return this._fetch(`/dashboard/claves?${q}`);
+  },
+
+  /* POST y DELETE /dashboard/claves/{termino} — agregar o quitar una palabra */
+  async vigilarClave(termino) {
+    if (this.modoDemo) return { status: "exito" };
+    return this._fetch(`/dashboard/claves/${encodeURIComponent(termino)}`, { method: "POST" });
+  },
+  async dejarClave(termino) {
+    if (this.modoDemo) return { status: "exito" };
+    return this._fetch(`/dashboard/claves/${encodeURIComponent(termino)}`, { method: "DELETE" });
+  },
+
 };
 
 /* Muestra el error al usuario en vez de dejar la pantalla congelada.
