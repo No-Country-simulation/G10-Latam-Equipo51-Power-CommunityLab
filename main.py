@@ -259,15 +259,13 @@ class TicketAvisoRequest(BaseModel):
 def avisar_mensaje(aviso: TicketAvisoRequest):
 
     """
-    Envia un mensaje a un destino (slack o discord) 
+    Envia un mensaje a un destino (discord) 
     usando los webhooks configurados.
     """
  
     destino = aviso.destino.lower().strip()
 
-    if destino == "slack":
-        _enviar_slack(aviso.mensaje)
-    elif destino == "discord":
+    if destino == "discord":
         _enviar_discord(aviso.mensaje)
     else:
         raise HTTPException(

@@ -27,7 +27,7 @@ const API = {
     
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
 
-    mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
+   // mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
     try {
       return await this._fetch("/procesar", { 
       method: "POST", body: JSON.stringify(lote) 
@@ -74,18 +74,17 @@ const API = {
     }
   },
 
-  /* PUT /curaduria/{slug} — guarda el estado de todos los activos.
-     meta = { periodo_referencia, origen_comunidad, tickets } (opcional) */
+  /* PUT /curaduria/{slug} — guarda el estado de todos los activos. */
   async guardarCuraduria(slug, activos, meta = {}) {
     if (this.modoDemo) return { status: "exito", guardado_en: `activos/${slug}/curaduria.json` };
     return this._fetch(`/curaduria/${slug}`, { method: "PUT", body: JSON.stringify({ activos, ...meta }) });
   },
 
-  /* POST /generar — redacta con Cohere usando la guía de voz guardada.
-     items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
+  /* POST /generar — redacta con Cohere usando la guía de voz guardada.*/
   async generar(slug, items) {
+    
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
+   // mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
     try {
       return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
     } finally {
@@ -108,7 +107,7 @@ const API = {
     });
   },
 
-  /* POST /tickets/avisar — manda los tickets al webhook de Discord o Slack */
+  /* POST /tickets/avisar — manda los tickets al webhook de Discord */
   async avisarTickets(mensaje, destino) {
     
     if (this.modoDemo) return { status: "exito" };
@@ -184,7 +183,7 @@ async function conError(promesa, mensaje) {
 
 /* Indicador de procesamiento para operaciones asíncronas con IA */
 let peticionesGenerarEnCurso = 0;
-//function mostrarIndicadorProcesando(mostrar, titulo = "Procesando con IA...", sub = "Generando contenido") {
+
 function mostrarIndicadorProcesando(mostrar, titulo, sub) {
   const el = document.getElementById("indicador_procesando");
   if (mostrar) {
@@ -203,6 +202,7 @@ function mostrarIndicadorProcesando(mostrar, titulo, sub) {
     }
   }
 }
+
 if (typeof window !== "undefined") {
   window.mostrarIndicadorProcesando = mostrarIndicadorProcesando;
 }

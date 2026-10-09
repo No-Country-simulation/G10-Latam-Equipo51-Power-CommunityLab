@@ -203,15 +203,7 @@ const PLAT = {
     ini: "DC",
     modo: "Webhook · avisa los tickets",
     on: true,
-  },
-  slack: {
-    nom: "Slack",
-    cuenta: "Sin espacio de trabajo",
-    color: "#611F69",
-    ini: "SL",
-    modo: "Webhook · avisa los tickets",
-    on: false,
-  },
+  }
 };
 const FORMATOS = {
   "Post de LinkedIn": { plat: "linkedin", limite: 3000 },
@@ -219,6 +211,7 @@ const FORMATOS = {
   "Tip / FAQ": { plat: "web", limite: 2500 },
   "Destaque de newsletter": { plat: "newsletter", limite: 4000 },
 };
+
 const TABS = [
   ["linkedin", "LinkedIn"],
   ["x", "X"],

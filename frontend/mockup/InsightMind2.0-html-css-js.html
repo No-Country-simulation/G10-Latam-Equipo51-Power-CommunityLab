@@ -1506,7 +1506,7 @@ const API = {
     
     if (this.modoDemo) return null;   // en demo, app.js arma el resultado con construir()
 
-    mostrarIndicadorProcesando(true,"Procesando", "Procesando registros con IA...");
+    //true,"Procesando", "Procesando registros con IA...");
     try {
       return await this._fetch("/procesar", { 
       method: "POST", body: JSON.stringify(lote) 
@@ -1564,7 +1564,7 @@ const API = {
      items = [{ id, formato, mensaje, mensajes?, texto_previo? }] -> { resultados: {id: texto}, errores: {id: msg} } */
   async generar(slug, items) {
     if (this.modoDemo) return { resultados: {}, errores: {} };   // en demo se quedan las plantillas
-    mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
+    //mostrarIndicadorProcesando(true,"Analizando", "Analizando contenido procesado...");
     try {
       return await this._fetch("/generar", { method: "POST", body: JSON.stringify({ slug, items }) });
     } finally {

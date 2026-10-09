@@ -329,12 +329,13 @@ btn_procesar.onclick = async () => {
     if (E.paso !== 2) return;
     nodos[i].className = "step run";
     
-    await new Promise(r => setTimeout(r, 600));  // espera de 0.6s entre cada paso
+    await new Promise(r => setTimeout(r, 600)); 
     
     if (E.paso !== 2) return;
     nodos[i].className = "step done";
     actualizarProgreso(Math.round(((i + 1) / pasosIniciales) * 70));
   }
+
   actualizarProgreso(70);
 
   // Paso "procesar": done solo cuando responde /procesar (sube a 85%)
@@ -351,7 +352,7 @@ btn_procesar.onclick = async () => {
   if (E.paso !== 2) return;
  
   if (nodoProcesar) nodoProcesar.className = "step done";
-  actualizarProgreso(85); // proceso completado, se aumenta progreso
+  actualizarProgreso(85);
 
   await fin(resultado, nodos[pasosIniciales + 1]);
 
