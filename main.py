@@ -1,6 +1,6 @@
 import json
 
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException, APIRouter
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -19,6 +19,8 @@ from backend import cache_analisis, contexto, db
 from backend.rutas_contenido import router as router_contenido
 from backend.rutas_dashboard import router as router_dashboard
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
+from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
+from backend.gestor_conexiones import obtener_conexiones, cambiar_estado_conexion
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -47,6 +49,7 @@ client = oci.object_storage.ObjectStorageClient(config)
 
 namespace = client.get_namespace().data
 
+router = APIRouter()
 
 @app.get("/files")
 def list_files():
@@ -230,6 +233,7 @@ def procesar_lote(forzar: bool = False):
 
     resultado = consolidar(mensajes)
     resultado["slug"] = contexto.slug_del_lote(mensajes)
+    slug_calculado = f"{hoy.year}-semana-{hoy.isocalendar().week:02d}"
     for m in mensajes:   # slug propio (el del lote solo como respaldo si el periodo no se reconoce)
         m["slug"] = contexto.slug_de_mensaje(m) or resultado["slug"]
     resultado.update(contexto.resumen_contexto(mensajes))
@@ -246,6 +250,14 @@ def procesar_lote(forzar: bool = False):
         "periodos": resultado["periodos"], "origenes_comunidad": resultado["origenes_comunidad"],
         "cache": resultado["cache"],
     })
+
+    # Guardamos en OCI para que aparezca en el historial /semanas
+    try:
+        from backend.oci_storage import guardar_json, PREFIJO_CURADURIA
+        ruta_oci = f"{PREFIJO_CURADURIA}{slug_calculado}/resumen.json"
+        guardar_json(ruta_oci, resultado)
+    except Exception as e:
+        log.warning("No se pudo persistir el resumen en OCI (el endpoint sigue respondiendo normal): %s", str(e))
 
     return resultado
 
@@ -356,6 +368,35 @@ def actualizar_curaduria(
     )
 
 
+@app.get("/semanas")
+async def listar_semanas():
+    """Endpoint para listar el historial de semanas disponibles."""
+    try:
+        semanas = obtener_lista_semanas_oci()
+        return {"semanas": semanas}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/semanas/{slug}")
+async def obtener_detalle_semana(slug: str):
+    """Endpoint para obtener el detalle y métricas de una semana específica."""
+    detalle = obtener_detalle_semana_oci(slug)
+    if not detalle:
+        raise HTTPException(status_code=404, detail="Semana no encontrada en OCI")
+    return detalle
+
+
+@app.get("/conexiones")
+def api_obtener_conexiones():
+    """Retorna el estado de todas las plataformas configuradas."""
+    return obtener_conexiones()
+
+@app.put("/conexiones/{plataforma}")
+def api_cambiar_conexion(plataforma: str, payload: dict):
+    """Endpoint PUT para conectar o desconectar una plataforma."""
+    conectar = payload.get("conectar", payload.get("on", False))
+    resultado = cambiar_estado_conexion(plataforma, conectar)
+    return resultado
 
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
