@@ -80,3 +80,8 @@ uvicorn*.log
 
 
 *.pdf
+
+# Usuarios y sesiones
+data/
+cambios.diff
+logs/

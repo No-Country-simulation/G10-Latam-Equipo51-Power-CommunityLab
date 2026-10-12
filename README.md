@@ -26,7 +26,7 @@ El equipo revisa, edita y publica desde una interfaz web. La voz de marca (tono,
 7. [Configuración (`.env`)](#7-configuración-env)
 8. [Ejecución local](#8-ejecución-local)
 9. [Despliegue en Oracle Linux 9 (OCI)](#9-despliegue-en-oracle-linux-9-oci)
-10. [Separar front y backend con nginx](#10-separar-front-y-backend-con-nginx-propuesto)
+10. [Front y backend con nginx, y login](#10-front-y-backend-separados-con-nginx-y-login)
 11. [Estructura del repositorio](#11-estructura-del-repositorio)
 12. [Pendientes](#12-pendientes)
 
@@ -43,24 +43,26 @@ El equipo revisa, edita y publica desde una interfaz web. La voz de marca (tono,
 | Curaduría guardada por periodo (`activos/<slug>/curaduria.json`) | Listo |
 | Réplica consultable en MongoDB (opcional) | Listo |
 | Avisos de tickets  Discord | Listo |
-| Despliegue en una sola máquina (FastAPI sirve API y front) | Listo |
-| **Separar front y backend (front público, backend interno con nginx)** | **Pendiente: ver sección 10** |
-| Autenticación de usuarios | Pendiente |
+| Despliegue en una sola máquina (nginx sirve el front, FastAPI queda en 127.0.0.1) | Listo |
+| Separar front y backend con nginx en localhost (HTTP, sin dominio) | Listo: ver sección 10 |
+| Login de usuarios (cookie de sesión, sin dominio ni HTTPS) | Listo: ver sección 10 |
 | Publicación real en LinkedIn / X | Pendiente (hoy se prepara el contenido) |
 
 ---
 
 ## 2. Arquitectura
 
-### 2.1 Hoy (todo en un proceso)
+### 2.1 Despliegue (nginx + FastAPI, todo en localhost, HTTP)
 
 ```mermaid
 flowchart LR
-    U["Usuario<br/>(navegador)"] -->|"HTTP :8000"| API
+    U["Usuario<br/>(navegador)"] -->|"HTTP localhost:80"| NGX
 
     subgraph VM["VM Oracle Linux 9 (OCI)"]
-        API["FastAPI + uvicorn<br/>API y front (/ui)"]
-        MDB[("MongoDB<br/>opcional")]
+        NGX["nginx<br/>front estático + proxy /api/"]
+        API["FastAPI + uvicorn<br/>127.0.0.1:8000<br/>login + sesión por cookie"]
+        MDB[("MongoDB<br/>127.0.0.1:27017<br/>opcional")]
+        NGX -->|"/api/ → proxy_pass"| API
         API --> MDB
     end
 
@@ -69,33 +71,12 @@ flowchart LR
     API -->|"webhooks"| SD["Discord"]
 ```
 
-El puerto 8000 está expuesto, el CORS está abierto (`allow_origins=["*"]`) y la API no tiene autenticación.
-
-### 2.2 Objetivo (propuesto)
-
-Solo nginx se publica. El backend escucha únicamente en `127.0.0.1`.
-
-```mermaid
-flowchart LR
-    U["Usuario<br/>(navegador)"] -->|"HTTPS :443"| NGX
-
-    subgraph VM["VM Oracle Linux 9 (OCI)"]
-        NGX["nginx<br/>estáticos del front + proxy /api/"]
-        API["FastAPI + uvicorn<br/>127.0.0.1:8000"]
-        MDB[("MongoDB<br/>127.0.0.1:27017")]
-        NGX -->|"/api/ → proxy_pass"| API
-        API --> MDB
-    end
-
-    API -->|"SDK de OCI"| BKT[("Object Storage")]
-    API -->|"HTTPS"| COH["Cohere API"]
-    API -->|"webhooks"| SD["Discord"]
-```
-
 Reglas de red:
 
-- Entra por Internet **solo 80/443** (más 22 para administración, idealmente restringido a tu IP).
-- **8000** y **27017** no se abren ni en `firewalld` ni en la Security List / NSG de OCI.
+- nginx escucha solo en `127.0.0.1:80`. Sin dominio y sin certificado: es HTTP.
+- uvicorn escucha solo en `127.0.0.1:8000` y MongoDB en `127.0.0.1:27017`. Ninguno se abre en `firewalld` ni en la Security List / NSG de OCI.
+- Para entrar desde tu equipo a la VM sin abrir puertos: `ssh -L 8080:127.0.0.1:80 opc@<ip>` y abre <http://localhost:8080/>.
+- Toda la API exige sesión (cookie) salvo `/auth/*`. Ver sección 10.
 
 ---
 
@@ -269,8 +250,11 @@ Documentación interactiva en `/docs` (Swagger) cuando el backend es accesible.
 | PUT | `/curaduria/{slug}` | Guarda la curaduría de un periodo |
 | POST | `/tickets/avisar` | Envía un aviso a `slack` o `discord` |
 | POST | `/sincronizar` | Replica el bucket a MongoDB |
+| POST | `/auth/login` | Inicia sesión (`{usuario, password}`) y entrega la cookie. Pública |
+| POST | `/auth/logout` | Cierra la sesión. Pública |
+| GET | `/auth/me` | Usuario de la sesión actual, o 401. Pública |
 
-> Seguridad: `DELETE /files`, `/download` y `/sincronizar` no deberían quedar expuestos a Internet. Ver sección 10.
+> Todas las rutas, salvo `/auth/*`, exigen sesión. Además nginx no deja pasar `DELETE`, `/files`, `/download`, `/sincronizar` ni `/docs`. Ver sección 10.
 
 ---
 
@@ -286,6 +270,12 @@ Copia `.env.example` a `.env` (está en `.gitignore`; **nunca lo subas al reposi
 | `MONGO_DB` | No | Base de datos de Mongo (por defecto `insightmind`) |
 | `SLACK_WEBHOOK_URL` | No | Webhook para avisos de tickets |
 | `DISCORD_WEBHOOK_URL` | No | Webhook para avisos de tickets |
+| `AUTH_SECRET` | Sí (lo genera `crear`) | Clave con la que se firman las sesiones. Si cambia, se cierran todas |
+| `AUTH_USERS_FILE` | No | Archivo de usuarios (por defecto `data/usuarios.json`, fuera de git) |
+| `AUTH_SESSION_HOURS` | No | Duración de la sesión (por defecto 12) |
+| `AUTH_COOKIE_SECURE` | No | `false` con HTTP (por defecto). `true` solo si algún día hay HTTPS |
+| `CORS_ORIGINS` | No | Vacío por defecto (mismo origen vía nginx). Solo para desarrollo con otro puerto |
+| `SERVIR_UI` | No | `1` para que FastAPI sirva el front en `/ui` (desarrollo sin nginx) |
 
 Credenciales de OCI: el SDK lee `~/.oci/config` (`oci.config.from_file()`) del usuario que ejecuta la app. Si cambia el usuario, cambia el archivo.
 
@@ -303,17 +293,20 @@ pip install -r requirements.txt
 cp .env.example .env        # completa COHERE_API_KEY y BUCKET_NAME
 oci setup config            # si aún no tienes ~/.oci/config
 
-uvicorn main:app --host 127.0.0.1 --port 8000
+python -m backend.auth crear <usuario>      # primer usuario (pide contraseña, genera AUTH_SECRET)
+
+SERVIR_UI=1 uvicorn main:app --host 127.0.0.1 --port 8000     # desarrollo sin nginx
 ```
 
-- Interfaz: <http://127.0.0.1:8000/ui/>
-- Swagger: <http://127.0.0.1:8000/docs>
+- Interfaz (sin nginx): <http://127.0.0.1:8000/ui/> (pide login)
+- Con nginx: <http://localhost/> (sección 10)
+- Swagger: <http://127.0.0.1:8000/docs> (requiere haber iniciado sesión en ese mismo host)
 
 ---
 
 ## 9. Despliegue en Oracle Linux 9 (OCI)
 
-Ejemplo sobre una VM Oracle Linux 9 (sirve igual en x86_64 o ARM64 / Ampere A1), con el usuario `opc`. Estos pasos describen el despliegue **actual** (un proceso); la separación con nginx está en la sección 10.
+Ejemplo sobre una VM Oracle Linux 9 (sirve igual en x86_64 o ARM64 / Ampere A1), con el usuario `opc`. Estos pasos dejan el backend corriendo; el front y el login con nginx están en la sección 10, que es el despliegue recomendado.
 
 ### 9.1 Paquetes y código
 
@@ -419,136 +412,69 @@ La app lee el `.env` con `python-dotenv` desde el `WorkingDirectory`, por eso la
 
 ### 9.5 Red
 
-```bash
-sudo firewall-cmd --permanent --add-service=http --add-service=https
-sudo firewall-cmd --reload
-```
-
-En OCI (Security List o NSG de la subred/VNIC): ingreso TCP **80 y 443** desde `0.0.0.0/0`, y **22** solo desde tu IP. No abras 8000 ni 27017.
+Como todo queda en localhost, **no abras 80, 443, 8000 ni 27017** en `firewalld` ni en OCI. Deja solo **22** (SSH), idealmente restringido a tu IP, y entra con un túnel (sección 2.1).
 
 ---
 
-## 10. Separar front y backend con nginx (propuesto)
+## 10. Front y backend separados con nginx, y login
 
-> **Esta sección es una propuesta.** La configuración de nginx no se ha probado en la VM. Valida con `nginx -t` y la lista de comprobación del final.
+Todo en la misma máquina, en `http://localhost`, sin dominio ni HTTPS.
 
-### 10.1 Idea
-
-| Pieza | Quién la sirve | Visible desde Internet |
+| Pieza | Quién la sirve | Dónde escucha |
 |---|---|---|
-| Front (`index.html`, `css/`, `js/`) | nginx, desde `/var/www/insightmind` | Sí |
-| API FastAPI | uvicorn en `127.0.0.1:8000` | **No directamente** |
-| API vía proxy | nginx, bajo `/api/` | Solo las rutas permitidas |
-| MongoDB | `127.0.0.1:27017` | No |
+| Front (`index.html`, `css/`, `js/`) | nginx, desde `/var/www/insightmind` | `127.0.0.1:80` |
+| API FastAPI | uvicorn | `127.0.0.1:8000` (solo vía nginx en `/api/`) |
+| MongoDB | `mongod` | `127.0.0.1:27017` |
 
-El navegador siempre necesita llegar a la API, porque el front corre en el navegador del usuario. "Backend interno" significa que **no tiene puerto público** y que **todo pasa por nginx**, que decide qué ruta se permite y quién entra (ver 10.5).
+### 10.1 Qué cambió en el código
 
-### 10.2 Cambios en el código
+- **`frontend/.../js/api.js`**: la base de la API es `origin + "/api"` (en `/ui`, sin prefijo). Ante un `401` pide login encima de la pantalla actual, sin perder el estado.
+- **`frontend/.../js/auth.js`** (nuevo): puerta de acceso. Pregunta `GET /auth/me`; sin sesión muestra el login y, solo con sesión, carga `datos-ejemplo.js`, `datos-dashboard.js`, `dashboard.js` y `app.js`. Botón "Cerrar sesión" en el pie del menú.
+- **`backend/auth.py`** (nuevo): usuarios en `data/usuarios.json` (hash PBKDF2-SHA256), sesión en cookie firmada con HMAC (`HttpOnly`, `SameSite=Strict`, 12 h), bloqueo de 60 s tras 5 intentos fallidos por IP+usuario, y un middleware que exige sesión en **toda** la API salvo `/auth/*`. Sin dependencias nuevas.
+- **`main.py`**: registra el middleware y el router `/auth`; el CORS `*` desaparece (solo existe si defines `CORS_ORIGINS`); `/ui` solo se monta con `SERVIR_UI=1`; se corrigió `hoy` sin definir en `/procesar` (lanzaba `NameError`).
+- **`deploy/`**: `nginx/insightmind.conf`, `systemd/insightmind.service` y `desplegar.sh`.
 
-**1. Backend: escuchar solo en localhost** (ya está así en la unidad systemd de 9.4: `--host 127.0.0.1`).
-
-**2. Front: llamar a la API bajo `/api`.** Hoy `js/api.js` usa `window.location.origin`. Cámbialo para que funcione tanto en local (`/ui`) como detrás de nginx (`/api`):
-
-```javascript
-// js/api.js
-base: window.location.pathname.startsWith("/ui")
-  ? window.location.origin                 // desarrollo: FastAPI sirve el front en /ui
-  : window.location.origin + "/api",       // producción: nginx proxy en /api/
-```
-
-**3. Backend: cerrar el CORS.** Con el mismo origen (nginx) ya no hace falta `allow_origins=["*"]`. En `main.py`, reemplaza el comodín por tu dominio, o quita el middleware si el front y la API comparten origen.
-
-**4. (Opcional) Quitar `app.mount("/ui", ...)`** al final de `main.py` cuando ya no lo necesites en desarrollo.
-
-### 10.3 Instalar nginx y publicar el front
+### 10.2 Instalación (Oracle Linux 9)
 
 ```bash
-sudo dnf install -y nginx
+cd /opt/insightmind && source venv/bin/activate
 
-sudo mkdir -p /var/www/insightmind
-sudo cp -r /opt/insightmind/frontend/insightmind-v2/{index.html,css,js} /var/www/insightmind/
-sudo restorecon -Rv /var/www/insightmind          # etiqueta SELinux para servir estáticos
+# 1) Primer usuario (pide contraseña de 8+ caracteres y genera AUTH_SECRET en .env)
+python -m backend.auth crear <usuario>
 
-# SELinux (enforcing por defecto en Oracle Linux): permite que nginx haga proxy a uvicorn
-sudo setsebool -P httpd_can_network_connect 1
+# 2) nginx + front + SELinux (+ unidad systemd del backend)
+./deploy/desplegar.sh --systemd
 ```
 
-### 10.4 Configuración de nginx
+Abre <http://localhost/>. Cada vez que cambies el front, vuelve a ejecutar `./deploy/desplegar.sh`.
 
-`/etc/nginx/conf.d/insightmind.conf`:
+Administrar usuarios: `python -m backend.auth listar | crear <u> | borrar <u>`. `crear` sobre un usuario existente cambia su contraseña. Borrar un usuario invalida su sesión de inmediato.
 
-```nginx
-server {
-    listen 80;
-    server_name _;                      # reemplaza por tu dominio
+### 10.3 Qué hace nginx
 
-    root  /var/www/insightmind;
-    index index.html;
-    client_max_body_size 20m;           # subida de mensajes
+- `/` sirve el front estático (solo contiene la pantalla de login y el JS; los datos viven detrás del login).
+- `/api/` quita el prefijo y hace proxy a `127.0.0.1:8000`; admite `GET`, `POST` y `PUT` (sin `DELETE`).
+- `/api/auth/login` tiene límite de peticiones (10/min por IP, ráfaga 5), además del bloqueo de la API.
+- Responde `404` en `/api/docs`, `/api/redoc`, `/api/openapi.json`, `/api/sincronizar`, `/api/download*` y `/api/files*`: el front no los usa.
 
-    # Front estático
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Rutas del backend que NO deben salir a Internet
-    location ~ ^/api/(docs|redoc|openapi\.json|sincronizar|download) {
-        return 404;
-    }
-
-    # API interna, solo a través del proxy
-    location /api/ {
-        limit_except GET POST PUT { deny all; }     # bloquea DELETE /files
-
-        # auth_basic           "InsightMind";                 # ver 10.5
-        # auth_basic_user_file /etc/nginx/.htpasswd;
-
-        proxy_pass         http://127.0.0.1:8000/;          # la "/" final quita el prefijo /api
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Real-IP         $remote_addr;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;                            # /procesar y /generar llaman a Cohere
-    }
-}
-```
+### 10.4 Comprobaciones
 
 ```bash
-sudo nginx -t
-sudo systemctl enable --now nginx
-sudo systemctl reload nginx
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost/                       # 200: front
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/config/voz         # 401: sin sesión
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/docs               # 404: bloqueado
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' \
+     -d '{"usuario":"<u>","password":"<p>"}' http://localhost/api/auth/login      # 200: login
+sudo ss -tlnp | grep -E ':(80|8000|27017)\b'                                      # todo en 127.0.0.1
 ```
 
-Para HTTPS, con un dominio apuntando a la VM: `sudo dnf install -y certbot python3-certbot-nginx && sudo certbot --nginx -d <tu-dominio>`.
+### 10.5 Límites a tener presentes
 
-### 10.5 Seguridad: lo que esta separación **no** resuelve
-
-La API no tiene autenticación. Con nginx delante, cualquiera que llegue al front puede llamar a las rutas permitidas, incluido `/api/procesar` (que consume créditos de Cohere) y `/api/generar`. Antes de publicar a Internet, elige al menos una:
-
-- **Basic auth en nginx** (rápido):
-  ```bash
-  sudo dnf install -y httpd-tools
-  sudo htpasswd -c /etc/nginx/.htpasswd equipo
-  # y descomenta auth_basic y auth_basic_user_file en el bloque /api/ (y en / si quieres proteger también el front)
-  ```
-- **Restringir por IP o VPN** en nginx (`allow` / `deny`) o directamente en la NSG de OCI.
-- **Autenticación real** (OIDC / OAuth) delante de nginx, como evolución.
-
-Además:
-
-- Revisa qué rutas usa realmente el front y deja solo esas: `grep -nE 'fetch\(|_fetch\(' frontend/insightmind-v2/js/api.js`.
-- Si el front permite borrar objetos desde la UI, ajusta `limit_except` en consecuencia.
+- **HTTP no cifra**: contraseña y cookie viajan en claro. Es aceptable en `localhost` o por túnel SSH; si abres nginx a una red (`listen 80;`), pon HTTPS (`AUTH_COOKIE_SECURE=true`).
+- Hay un solo nivel de acceso: cualquier usuario con login puede usar todas las rutas permitidas, incluidas `/procesar` y `/generar` (consumen créditos de Cohere).
+- Las sesiones son cookies sin estado en servidor: no hay "cerrar sesión en todos lados" salvo cambiar `AUTH_SECRET` o borrar al usuario.
+- El límite de intentos de la API es en memoria: se reinicia al reiniciar el servicio.
 - Rota cualquier clave que haya viajado por chat, correo o repositorio.
-
-### 10.6 Comprobaciones
-
-```bash
-curl -I  http://<ip-o-dominio>/                  # 200: front
-curl -s  http://<ip-o-dominio>/api/config/voz    # 200 (o 401 si activaste auth)
-curl -I  http://<ip-o-dominio>/api/docs          # 404: bloqueado
-curl -I  http://<ip-o-dominio>:8000/             # sin respuesta: puerto cerrado desde fuera
-sudo ss -tlnp | grep -E ':(8000|27017)'          # deben escuchar solo en 127.0.0.1
-```
 
 ---
 
@@ -556,11 +482,16 @@ sudo ss -tlnp | grep -E ':(8000|27017)'          # deben escuchar solo en 127.0.
 
 ```text
 .
-├── main.py                      # FastAPI: archivos, /procesar, tickets, curaduría; monta /ui
+├── main.py                      # FastAPI: archivos, /procesar, tickets, curaduría, /auth; /ui solo con SERVIR_UI=1
 ├── requirements.txt
 ├── .env.example
 ├── input_examples/              # mensajes JSON de ejemplo
+├── deploy/
+│   ├── desplegar.sh               # front + nginx + SELinux (+ systemd con --systemd)
+│   ├── nginx/insightmind.conf     # localhost:80, front estático + proxy /api/
+│   └── systemd/insightmind.service
 ├── backend/
+│   ├── auth.py                    # login, sesión por cookie, middleware, CLI de usuarios
 │   ├── analizador_sentimiento.py  # Cohere + calcular_ruta() + umbrales
 │   ├── cache_analisis.py          # caché del análisis (etag + modelo)
 │   ├── generador_contenido.py     # prompts por formato + reglas de estilo
@@ -574,7 +505,8 @@ sudo ss -tlnp | grep -E ':(8000|27017)'          # deben escuchar solo en 127.0.
     ├── index.html
     ├── css/
     ├── js/
-    │   ├── api.js                 # cliente HTTP (fetch)
+    │   ├── api.js                 # cliente HTTP (fetch, base /api)
+    │   ├── auth.js                # pantalla de login y carga del panel
     │   ├── app.js                 # estado, flujo, huellas, reconciliación
     │   └── datos-ejemplo.js       # modo demo sin backend
     └── build.py                   # empaqueta el front en un solo HTML para compartir
@@ -584,8 +516,10 @@ sudo ss -tlnp | grep -E ':(8000|27017)'          # deben escuchar solo en 127.0.
 
 ## 12. Pendientes
 
-- [ ] Separar front y backend con nginx (sección 10) y cerrar el CORS.
-- [ ] Autenticación de usuarios (o, como mínimo, auth en nginx).
+- [x] Separar front y backend con nginx y cerrar el CORS (sección 10).
+- [x] Autenticación de usuarios.
+- [ ] Roles (hoy todo usuario con login puede usar todas las rutas permitidas).
+- [ ] HTTPS si algún día se expone fuera de localhost.
 - [ ] Usar *instance principals* de OCI en lugar de `~/.oci/config` en la VM.
 - [ ] Usuario de sistema dedicado para el servicio (hoy `opc`).
 - [ ] Publicación real en LinkedIn / X desde la aplicación.

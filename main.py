@@ -15,7 +15,7 @@ from backend.curaduria import cargar_curaduria, guardar_curaduria
 from backend.analizador_sentimiento import (
     COHERE_MODEL, analizar_interaccion, consolidar, mensaje_con_error,
 )
-from backend import cache_analisis, contexto, db
+from backend import auth, cache_analisis, contexto, db
 from backend.rutas_contenido import router as router_contenido
 from backend.rutas_dashboard import router as router_dashboard
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
@@ -33,15 +33,23 @@ app = FastAPI(
     title="OCI Object Storage API"
 )
 
-# Necesario para que el frontend (InsightMind-gradioV1.html) pueda hacer
-# fetch() a esta API desde otro origen. En producción, cambia allow_origins
-# por la URL exacta donde sirvas el frontend en vez de "*".
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Front y API comparten origen (nginx en http://localhost, la API bajo /api/),
+# así que CORS no hace falta. Solo se activa si defines CORS_ORIGINS
+# (lista separada por comas, p. ej. otro puerto en desarrollo). Con cookies de
+# sesión no puede ser "*".
+_cors_origenes = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors_origenes:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origenes,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+# Toda la API exige sesión salvo /auth/* (login, logout, me). Ver backend/auth.py.
+# Se registra después de CORS para que sea la capa más externa.
+app.middleware("http")(auth.middleware_sesion)
 
 config = oci.config.from_file()
 
@@ -233,6 +241,7 @@ def procesar_lote(forzar: bool = False):
 
     resultado = consolidar(mensajes)
     resultado["slug"] = contexto.slug_del_lote(mensajes)
+    hoy = datetime.now()
     slug_calculado = f"{hoy.year}-semana-{hoy.isocalendar().week:02d}"
     for m in mensajes:   # slug propio (el del lote solo como respaldo si el periodo no se reconoce)
         m["slug"] = contexto.slug_de_mensaje(m) or resultado["slug"]
@@ -400,9 +409,13 @@ def api_cambiar_conexion(plataforma: str, payload: dict):
 
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
+app.include_router(auth.router)         # /auth/login, /auth/logout, /auth/me
 
 
-# Sirve el frontend (InsightMind-gradioV1.html renombrado a index.html) desde
-# la misma instancia, en el mismo puerto que la API: http://<tu-ip>:8000/ui/
-# Va al final para no pisar las rutas /files, /upload, /download definidas arriba.
-app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")
+# En producción el front lo sirve nginx (ver deploy/nginx/insightmind.conf).
+# Para desarrollo sin nginx: SERVIR_UI=1 uvicorn main:app  ->  http://127.0.0.1:8000/ui/
+# Va al final para no pisar las rutas definidas arriba. /ui es público (solo estáticos);
+# lo que protege la sesión es la API.
+if os.getenv("SERVIR_UI", "").strip().lower() in ("1", "true", "yes"):
+    auth.RUTAS_PUBLICAS.append("/ui")
+    app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")

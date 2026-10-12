@@ -133,6 +133,7 @@
         <button class="themebtn" id="tema"><svg class="ico" id="tema_ico">
             <use href="#i-sistema" />
           </svg><span id="tema_txt">Tema: sistema</span></button>
+        <button class="themebtn" id="btn_salir" hidden>Cerrar sesión · <span id="usr_txt"></span></button>
       </div>
     </div>
 
@@ -563,11 +564,22 @@ Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
     <div class="modal" id="dlg_cont"></div>
   </dialog>
 
+  <!-- Puerta de acceso: pide login y, solo con sesión válida, carga el resto de los scripts
+       (datos-ejemplo, datos-dashboard, dashboard y app; lista y orden en js/auth.js). -->
+  <div class="login" id="login" hidden>
+    <form class="login-card" id="login_form">
+      <div class="login-brand"><span class="mk">IM</span><div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div></div>
+      <label for="login_user">Usuario</label>
+      <input type="text" id="login_user" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <label for="login_pass">Contraseña</label>
+      <input type="password" id="login_pass" name="password" autocomplete="current-password" required>
+      <div class="login-err" id="login_err" role="alert" hidden></div>
+      <button class="btn primary" id="login_btn" type="submit">Entrar</button>
+    </form>
+  </div>
+
   <script src="js/api.js"></script>
-  <script src="js/datos-ejemplo.js"></script>
-  <script src="js/datos-dashboard.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
 </body>
 
 </html>

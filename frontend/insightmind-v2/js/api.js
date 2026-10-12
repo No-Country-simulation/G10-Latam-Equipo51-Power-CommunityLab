@@ -3,9 +3,12 @@
    Así el front avanza con datos falsos mientras la API se construye. */
 
 const API = {
-  /* FastAPI sirve el frontend en /ui y la API en el mismo puerto, así que
-     tomamos el origen real de la página en vez de fijar "localhost". */
-  base: window.location.origin,
+  /* Detrás de nginx (http://localhost) la API vive bajo /api/ en el mismo origen:
+     nginx quita el prefijo y reenvía a uvicorn en 127.0.0.1:8000.
+     En desarrollo sin nginx (SERVIR_UI=1, front en /ui) FastAPI responde en el mismo origen, sin prefijo. */
+  base: window.location.pathname.startsWith("/ui")
+    ? window.location.origin
+    : window.location.origin + "/api",
 
   /* Con true, el panel usa los datos de datos-ejemplo.js y no llama al servidor.
      En false, /procesar llama de verdad a FastAPI (main.py), que a su vez
@@ -17,6 +20,7 @@ const API = {
       headers: { "Content-Type": "application/json" },
       ...opciones,
     });
+    if (r.status === 401 && typeof Auth !== "undefined") Auth.sesionExpirada();
     if (!r.ok) throw new Error(`${r.status} ${r.statusText} en ${ruta}`);
     return r.json();
   },
@@ -46,6 +50,7 @@ const API = {
     const fd = new FormData();
     fd.append("file", archivo);
     const r = await fetch(this.base + "/upload", { method: "POST", body: fd });
+    if (r.status === 401 && typeof Auth !== "undefined") Auth.sesionExpirada();
     if (!r.ok) throw new Error(`${r.status} ${r.statusText} en /upload`);
     return r.json();
   },
