@@ -21,7 +21,13 @@ const API = {
       ...opciones,
     });
     if (r.status === 401 && typeof Auth !== "undefined") Auth.sesionExpirada();
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText} en ${ruta}`);
+    if (!r.ok) {
+      /* FastAPI explica el motivo en {"detail": ...}; se anexa para que el mensaje sea útil.
+         El prefijo "<status> <texto> en <ruta>" no cambia: curaduria() lo usa para detectar 404. */
+      let detalle = "";
+      try { const j = await r.json(); detalle = typeof j.detail === "string" ? j.detail : ""; } catch (e) { }
+      throw new Error(`${r.status} ${r.statusText} en ${ruta}` + (detalle ? ` · ${detalle}` : ""));
+    }
     return r.json();
   },
 

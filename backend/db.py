@@ -53,8 +53,9 @@ def get_db():
     from pymongo import MongoClient
 
     cliente = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-    _db = cliente[MONGO_DB]
-    _crear_indices(_db)
+    base = cliente[MONGO_DB]
+    _crear_indices(base)      # fuerza la conexión: si Mongo no responde, lanza y NO se cachea
+    _db = base
     return _db
 
 
@@ -87,6 +88,12 @@ def seguro(fn):
 
 
 # ------------------------------------------------------------------ escritura
+
+@seguro
+def analisis_vacio(db) -> bool:
+    """True si Mongo está conectado pero sin análisis (instalación nueva o recién configurada)."""
+    return db.analisis.estimated_document_count() == 0
+
 
 @seguro
 def guardar_entrada(db, archivo: str, etag: str, contenido: dict, contexto: dict) -> None:

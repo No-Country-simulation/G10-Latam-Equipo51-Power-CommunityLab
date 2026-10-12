@@ -191,6 +191,10 @@ def procesar_lote(forzar: bool = False):
     ]
     en_cache = set() if forzar else cache_analisis.nombres_en_cache()
 
+    # Mongo recién configurado y vacío: se rellena también con lo que ya estaba en la caché del bucket
+    # (sin esto, solo se replicaría lo analizado en esta llamada y el Panorama daría 404).
+    mongo_vacio = db.analisis_vacio() is True
+
     mensajes, procesados = [], []     # procesados: (objeto, mensaje) NUEVOS, para replicar en MongoDB
     reutilizados = nuevos = omitidos = 0
 
@@ -209,6 +213,8 @@ def procesar_lote(forzar: bool = False):
                     except ValueError:
                         cacheado["archivo"] = obj.name
                     procesados.append((obj, dict(cacheado)))   # solo los completados se re-sincronizan
+                elif mongo_vacio:
+                    procesados.append((obj, dict(cacheado)))
                 # nuevo=False / etag viajan solo en la respuesta (no se escriben en analisis/)
                 mensajes.append({**cacheado, "etag": obj.etag, "nuevo": False})
                 reutilizados += 1
@@ -250,9 +256,12 @@ def procesar_lote(forzar: bool = False):
 
     # 3) replica en MongoDB (si está configurado; nunca rompe el flujo)
     for obj, m in procesados:
-        db.guardar_analisis(obj.name, obj.etag, COHERE_MODEL, resultado["slug"], m)
+        # El slug es el del PROPIO mensaje: un lote con Semana_01..Semana_05 debe quedar en
+        # cinco periodos y no en uno solo (el Panorama compara semana contra semana).
+        slug_m = contexto.slug_de_mensaje(m) or resultado["slug"]
+        db.guardar_analisis(obj.name, obj.etag, COHERE_MODEL, slug_m, m)
         if m.get("ruta") == "ticket":
-            db.guardar_ticket(resultado["slug"], m)
+            db.guardar_ticket(slug_m, m)
     db.guardar_lote(resultado["slug"], {
         "total": resultado["total"], "positivo": resultado["positivo"],
         "neutral": resultado["neutral"], "negativo": resultado["negativo"],

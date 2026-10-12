@@ -161,11 +161,18 @@ async function visualizarDashboard(){
      existe, se dibuja la serie simulada: el Panorama nunca se queda en blanco.
      No se usa conError() a propósito: en una instalación sin Mongo saltaría un
      toast de error en cada carga, y eso no es un fallo, es el estado esperado. */
+  let motivo="";
   try{ PANO = await API.dashboard(DASH.slug, DASH.canal); }
-  catch(e){ PANO = null; console.info("Panorama sin backend, se usa la serie de ejemplo:", e.message); }
+  catch(e){ PANO = null; motivo=e.message; console.info("Panorama sin backend, se usa la serie de ejemplo:", e.message); }
 
+  /* El aviso dice POR QUÉ se ven cifras simuladas (sin Mongo, sin datos, sin sesión...). */
   const aviso=document.getElementById("panorama_simulado");
-  if(aviso)aviso.hidden=!!PANO;
+  if(aviso){
+    aviso.hidden=!!PANO;
+    const m=document.getElementById("panorama_motivo");
+    if(m)m.textContent=API.modoDemo?"Modo demo activo (api.js)."
+      :motivo?`No se pudo leer MongoDB: ${motivo}`:"";
+  }
   if(PANO&&PANO.periodo)DASH.slug=PANO.periodo.actual;
 
   const v=ventana();

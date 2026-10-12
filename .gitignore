@@ -83,5 +83,3 @@ uvicorn*.log
 
 # Usuarios y sesiones
 data/
-cambios.diff
-logs/

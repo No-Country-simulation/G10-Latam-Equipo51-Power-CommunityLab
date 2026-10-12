@@ -211,6 +211,9 @@ function ir(p) {
   acciones.innerHTML = "";
   if (p === "flujo" && E.procesado) acciones.appendChild(el("span", "mini", `Lote ${E.slug} · ${DATOS.length} mensajes`));
   window.scrollTo({ top: 0, behavior: "smooth" });
+  /* Cada vez que se abre el Panorama se vuelve a consultar GET /dashboard (MongoDB):
+     así refleja lo procesado o sincronizado desde la última vez, sin recargar la página. */
+  if (p === "panorama" && typeof visualizarDashboard === "function") visualizarDashboard();
 }
 
 document.querySelectorAll(".nav").forEach(b => b.onclick = () => ir(b.dataset.p));
@@ -1354,9 +1357,8 @@ function visualizar() {
 visualizarChips(); 
 visualizar(); 
 
-/* El Panorama se dibuja una sola vez: sus cifras son historia ya cerrada en
-   MongoDB y no cambian porque en esta sesión se apruebe o se publique algo.
-   Sus propios filtros lo vuelven a dibujar cuando hace falta. */
+/* Primera carga del Panorama al arrancar; después se vuelve a consultar cada vez que se abre
+   la pestaña (ver ir()) y cuando cambian sus filtros. */
 visualizarDashboard(); 
 
 ir("flujo");

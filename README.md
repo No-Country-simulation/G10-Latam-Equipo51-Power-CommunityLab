@@ -231,6 +231,15 @@ Los tickets se crean como `Abierto` solo la primera vez; un nuevo procesamiento 
 
 `POST /sincronizar` carga a Mongo lo que ya está en el bucket (entradas, análisis, curadurías y voz). Es idempotente.
 
+**Panorama con cifras simuladas.** `GET /dashboard` lee solo de MongoDB y, si no puede, el front dibuja una serie de ejemplo. El aviso amarillo del Panorama indica el motivo exacto:
+
+| Motivo en el aviso | Causa | Qué hacer |
+|---|---|---|
+| `MONGO_URI no está configurada` | Falta la variable (ojo: en `.env.example` la línea trae un `###` que la deja vacía) | Definir `MONGO_URI=mongodb://usuario:clave@127.0.0.1:27017/` y reiniciar |
+| `No se pudo conectar a MongoDB` | `mongod` caído, credenciales o puerto erróneos | `systemctl status mongod`; probar la URI con `mongosh` |
+| `MongoDB no tiene análisis todavía` | Mongo vacío: `/procesar` solo replica lo que analiza en ese momento; lo que ya estaba en caché del bucket no se replica | `./deploy/sincronizar_mongo.sh` |
+| `No hay datos del periodo …` | El periodo pedido no existe en Mongo | Elegir otra semana en el selector |
+
 ---
 
 ## 6. API
@@ -356,7 +365,7 @@ sudo dnf install -y mongodb-org
 sudo systemctl enable --now mongod
 ```
 
-Crea un usuario y activa la autenticación:
+Si dejas Mongo **sin autenticación**, es válido solo con `bindIp: 127.0.0.1` (nunca abierto a la red) y `MONGO_URI=mongodb://127.0.0.1:27017/`; salta el resto de este apartado. Para activar autenticación, crea un usuario:
 
 ```javascript
 // mongosh
@@ -378,7 +387,7 @@ sudo systemctl restart mongod
 # MONGO_URI=mongodb://insightmind:<PASSWORD>@127.0.0.1:27017/insightmind
 ```
 
-Luego, una sola vez, con la API arriba: `curl -X POST http://127.0.0.1:8000/sincronizar`.
+Luego, una sola vez, con la API arriba: `./deploy/sincronizar_mongo.sh` (equivale a `python -m backend.sync_mongo`: sincroniza directo, sin login, y muestra los periodos que verá el Panorama). Un `curl` a `/sincronizar` ya no sirve: la API exige sesión.
 
 ### 9.4 Servicio systemd
 

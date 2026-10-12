@@ -50,7 +50,10 @@ def _base() -> "object":
     """Conexión a MongoDB o 503. Nunca propaga un error de driver al front."""
     if not db.habilitado():
         raise HTTPException(503, "MONGO_URI no está configurada: el Panorama no tiene de dónde leer")
-    base = db.get_db()
+    try:
+        base = db.get_db()
+    except Exception as e:
+        raise HTTPException(503, f"No se pudo conectar a MongoDB ({type(e).__name__}): revisa MONGO_URI y que mongod esté arriba")
     if base is None:
         raise HTTPException(503, "No se pudo conectar a MongoDB")
     return base

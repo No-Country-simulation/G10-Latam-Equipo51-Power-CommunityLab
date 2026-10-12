@@ -1,9 +1,10 @@
 # Panorama · el dashboard sobre MongoDB
 
 > Para el frente de Data Analysis.
-> **El endpoint ya está escrito y probado:** `GET /dashboard`, en
-> `backend/rutas_dashboard.py`. Lo que todavía se ve en pantalla son cifras
-> simuladas, porque falta que el front consuma el endpoint (último apartado).
+> **El endpoint y el front ya están conectados:** `GET /dashboard`
+> (`backend/rutas_dashboard.py`) y `API.dashboard()` en `js/api.js`. El Panorama
+> solo muestra cifras simuladas cuando MongoDB no responde o está vacío; el aviso
+> de la pantalla dice el motivo. Ver README, sección 5.2.
 
 ## Qué agrega esta rama
 
