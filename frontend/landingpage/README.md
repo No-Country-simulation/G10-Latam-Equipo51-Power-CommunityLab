@@ -34,7 +34,9 @@ flowchart LR
 
 ### Las conexiones "Web" y "Newsletter" del panel
 
-En `backend/gestor_conexiones.py`, **Web de la comunidad** (FAQs) y **Newsletter** vienen conectadas por defecto y apuntan a la landing: no piden credenciales. Si en el servidor ya existe `backend/conexiones_config.json` de antes, ese archivo manda: actívalas una vez en **Conexiones** del panel, o borra el archivo para que tome los valores nuevos.
+En `backend/gestor_conexiones.py`, **Web de la comunidad** (Tip / FAQ → `/publico/faqs`) y **Newsletter** (Destaque de newsletter → `/publico/newsletter`) son destinos **de la landing**: no piden credenciales y vienen **siempre conectados**. Sus datos (nombre, cuenta, modo y enlace `/landing/#faqs` · `/landing/#newsletter`) salen del código, así que un `backend/conexiones_config.json` viejo en el servidor ya no los deja apagados. Solo se respeta el archivo si alguien las desvincula a mano desde **Conexiones** (queda `"manual": true`); volver a conectarlas las deja de nuevo en la landing.
+
+En **Curaduría**, las pestañas Web y Newsletter muestran el enlace "Ver en la landing" junto al destino.
 
 ### Respaldo local
 

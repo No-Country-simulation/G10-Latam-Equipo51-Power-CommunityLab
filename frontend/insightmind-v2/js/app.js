@@ -554,7 +554,7 @@ function visualizarCuraduria() {
   const card = el("div", "plat");
   
   card.innerHTML = `<div class="plat-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
-    <div style="flex:1;min-width:160px"><b>${p.nom}</b><div class="mini">${conn ? p.cuenta + " · " + p.modo : "sin vincular"}</div></div>
+    <div style="flex:1;min-width:160px"><b>${p.nom}</b><div class="mini">${conn ? p.cuenta + " · " + p.modo : "sin vincular"}${conn && p.url ? ` · <a href="${p.url}" target="_blank" rel="noopener">Ver en la landing</a>` : ""}</div></div>
     <div class="plat-filtros">
       ${ESTADOS.map(e => {
     const n = e === "Todos" ? todos.length : todos.filter(a => a.estado === e).length;
@@ -1243,8 +1243,10 @@ async function visualizarConex() {
         PLAT[k].color = data[k].color;
         PLAT[k].ini = data[k].ini;
         PLAT[k].modo = data[k].tipo || data[k].modo;
+        PLAT[k].url = data[k].url;   /* destinos de la landing: enlace al sitio publicado */
         E.conex[k] = data[k].on;
       });
+      visualizarCuraduria();   /* el estado real del servidor decide si se puede publicar y muestra el enlace a la landing */
     }
   } catch (err) {
     console.error("Error al obtener conexiones del servidor:", err);

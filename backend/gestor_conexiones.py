@@ -1,5 +1,6 @@
 import os
 import json
+import copy
 import requests
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
@@ -12,9 +13,15 @@ ESTADOS_INICIALES = {
     "slack": {"nombre": "Slack Oficial", "on": False, "tipo": "Chat / Soporte", "cuenta": "InsightMind G10", "color": "#4A154B", "ini": "SL", "modo": "Desconectado"},
     "linkedin": {"nombre": "LinkedIn Page", "on": False, "tipo": "Publicación Automática", "cuenta": "InsightMind G10", "color": "#0A66C2", "ini": "LI", "modo": "Desconectado"},
     "x": {"nombre": "X (Twitter)", "on": False, "tipo": "Publicación Corta", "cuenta": "@insightmindg10", "color": "#000000", "ini": "X", "modo": "Desconectado"},
-    "web": {"nombre": "Web de la comunidad", "on": True, "tipo": "Landing · sección FAQs", "cuenta": "Landing de Insight Mind", "color": "#20b2aa", "ini": "WEB", "modo": "Conectado a la landing"},
-    "newsletter": {"nombre": "Newsletter", "on": True, "tipo": "Landing · sección Newsletter", "cuenta": "Landing de Insight Mind", "color": "#ff8c00", "ini": "NL", "modo": "Conectado a la landing"}
+    "web": {"nombre": "Web de la comunidad", "on": True, "tipo": "Landing · sección FAQs", "cuenta": "Landing de Insight Mind", "color": "#20b2aa", "ini": "WEB", "modo": "Conectado a la landing", "url": "/landing/#faqs"},
+    "newsletter": {"nombre": "Newsletter", "on": True, "tipo": "Landing · sección Newsletter", "cuenta": "Landing de Insight Mind", "color": "#ff8c00", "ini": "NL", "modo": "Conectado a la landing", "url": "/landing/#newsletter"}
 }
+
+# Destinos que publican en la landing del propio proyecto (/publico/faqs y /publico/newsletter):
+# no usan credenciales, así que vienen conectados siempre. Sus datos (nombre, cuenta, modo, url) salen
+# de este archivo y NO del conexiones_config.json: un archivo viejo en el servidor no los desconecta.
+# Solo se respeta el estado del archivo si alguien los desvinculó a mano desde Conexiones ("manual": true).
+DESTINOS_LANDING = ("web", "newsletter")
 
 # Creamos el archivo conexiones_config.json si no existe, con los estados iniciales
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -144,14 +151,23 @@ def verificar_conexion_linkedin() -> bool:
 
 
 def obtener_conexiones():
-    conexiones = ESTADOS_INICIALES
+    conexiones = copy.deepcopy(ESTADOS_INICIALES)   # copia: nunca se muta el diccionario base
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                conexiones = json.load(f)
+                guardadas = json.load(f)
+            for k, v in guardadas.items():
+                if k in DESTINOS_LANDING:
+                    # datos de la landing desde el código; del archivo, solo el desvinculado manual
+                    if v.get("manual"):
+                        conexiones[k]["on"] = bool(v.get("on"))
+                        conexiones[k]["manual"] = True
+                        conexiones[k]["modo"] = "Conectado a la landing" if conexiones[k]["on"] else "Desconectado"
+                else:
+                    conexiones[k] = v
         except Exception:
             pass
-            
+
     return conexiones
 
 
@@ -190,7 +206,11 @@ def cambiar_estado_conexion(plataforma: str, conectar: bool):
 
     # Si pasa las validaciones (o si es una plataforma que solo se activa sin validación estricta)
     conexiones[plataforma]["on"] = conectar
-    conexiones[plataforma]["modo"] = "Conectado vía API" if conectar else "Desconectado"
+    if plataforma in DESTINOS_LANDING:
+        conexiones[plataforma]["manual"] = True   # decisión del equipo: el archivo manda desde ahora
+        conexiones[plataforma]["modo"] = "Conectado a la landing" if conectar else "Desconectado"
+    else:
+        conexiones[plataforma]["modo"] = "Conectado vía API" if conectar else "Desconectado"
     
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
