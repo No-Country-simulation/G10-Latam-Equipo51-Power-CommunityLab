@@ -8,7 +8,6 @@ from fastapi.responses import StreamingResponse
 import requests
 import oci
 import io
-from pydantic import BaseModel
 import logging
 
 from backend.curaduria import cargar_curaduria, guardar_curaduria
