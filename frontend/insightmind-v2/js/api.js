@@ -153,7 +153,7 @@ const API = {
     if (this.modoDemo) return { status: "exito" };
     return this._fetch(`/conexiones/${plataforma}`, {
       method: "PUT",
-      body: JSON.stringify({ conectado: conectar }),
+      body: JSON.stringify({ conectar }),
     });
   },
 

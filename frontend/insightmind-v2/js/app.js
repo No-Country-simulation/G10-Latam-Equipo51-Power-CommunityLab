@@ -1210,7 +1210,7 @@ async function cargarYRenderizarDetalle(slug) {
 /* ---------- CONEXIONES ---------- */
 async function visualizarConex() {
   try {
-    const res = await fetch('/conexiones');
+    const res = await fetch(API.base + '/conexiones');
     if (res.ok) {
       const data = await res.json();
 
@@ -1254,7 +1254,7 @@ async function alternar(k) {
   // Todas las conexiones (reales y simuladas) se van por el endpoint PUT del backend.
   // El backend maneja el éxito inmediato para las simuladas (web, newsletter) y valida tokens para las reales.
   try {
-    const res = await fetch(`/conexiones/${k}`, {
+    const res = await fetch(`${API.base}/conexiones/${k}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ conectar: nuevoEstado })
@@ -1272,7 +1272,7 @@ async function alternar(k) {
     }
   } catch (err) {
     console.error("Error al conectar con el servidor:", err);
-    alert("Error de red al intentar actualizar la conexión.");
+    alert("Error de red al intentar actualizar la conexión." + err.message);
   }
 }
 
