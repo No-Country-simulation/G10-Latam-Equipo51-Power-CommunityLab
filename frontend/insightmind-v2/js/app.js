@@ -1048,7 +1048,7 @@ async function visualizarHistorial() {
   listaSemanasCache = [];
 
   try {
-    const res = await fetch('/semanas', {
+    const res = await fetch(API.base + '/semanas',{
       method: "GET",
       headers: { "Accept": "application/json" }
     });
@@ -1112,22 +1112,34 @@ async function cargarYRenderizarDetalle(slug) {
   if (!d && typeof detalle_semana !== 'undefined' && detalle_semana) {
     detalle_semana.innerHTML = `<div class="mini" style="padding:24px; text-align:center;">Cargando características de ${slug}...</div>`;
   }
-
+  // DESPUÉS
+  let motivo = "";
   if (!d) {
     try {
-      const res = await fetch(`/semanas/${slug}`);
+      const res = await fetch(`${API.base}/semanas/${encodeURIComponent(slug)}`);
       if (res.ok) {
         d = await res.json();
         detalleSemanaCache[slug] = d;
+      } else {
+        let det = "";
+        try { det = (await res.json()).detail || ""; } catch (e) { }
+        motivo = `${res.status} ${res.statusText}` + (det ? ` · ${det}` : "");
       }
     } catch (err) {
-      console.warn(`No se pudo obtener el detalle remoto para ${slug}`);
+      motivo = err.message;
+      console.warn(`No se pudo obtener el detalle remoto para ${slug}`, err);
     }
   }
 
-  // Red de seguridad por si el JSON viene vacío o falla
+  // Sin detalle: se dice por qué, en vez de dibujar una semana vacía que parece real
   if (!d) {
-    d = { total: 0, positivo: 0, neutral: 0, negativo: 0, mensajes: [] };
+    if (typeof detalle_semana !== 'undefined' && detalle_semana) {
+      detalle_semana.innerHTML = `<div class="note"><b>No hay detalle guardado para ${slug}.</b>
+        ${motivo ? `<div class="mini" style="margin-top:4px">${motivo}</div>` : ""}
+        <div class="mini" style="margin-top:4px">El detalle sale de <code>activos/${slug}/resumen.json</code>, que se crea al pulsar
+        «Procesar» con mensajes de ese periodo.</div></div>`;
+    }
+    return;
   }
 
   const total = d.total || (d.mensajes ? d.mensajes.length : 0);

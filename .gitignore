@@ -83,3 +83,4 @@ uvicorn*.log
 
 # Usuarios y sesiones
 data/
+logs/

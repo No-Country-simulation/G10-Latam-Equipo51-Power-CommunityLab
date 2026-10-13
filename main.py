@@ -247,8 +247,6 @@ def procesar_lote(forzar: bool = False):
 
     resultado = consolidar(mensajes)
     resultado["slug"] = contexto.slug_del_lote(mensajes)
-    hoy = datetime.now()
-    slug_calculado = f"{hoy.year}-semana-{hoy.isocalendar().week:02d}"
     for m in mensajes:   # slug propio (el del lote solo como respaldo si el periodo no se reconoce)
         m["slug"] = contexto.slug_de_mensaje(m) or resultado["slug"]
     resultado.update(contexto.resumen_contexto(mensajes))
@@ -268,14 +266,25 @@ def procesar_lote(forzar: bool = False):
         "periodos": resultado["periodos"], "origenes_comunidad": resultado["origenes_comunidad"],
         "cache": resultado["cache"],
     })
-
-    # Guardamos en OCI para que aparezca en el historial /semanas
+    
+    # Historial (/semanas/{slug}): un resumen.json POR PERIODO en activos/{slug}/
     try:
         from backend.oci_storage import guardar_json, PREFIJO_CURADURIA
-        ruta_oci = f"{PREFIJO_CURADURIA}{slug_calculado}/resumen.json"
-        guardar_json(ruta_oci, resultado)
+        por_periodo: dict[str, list] = {}
+        for m in mensajes:
+            por_periodo.setdefault(m["slug"], []).append(m)
+        for slug_p, msgs in por_periodo.items():
+            parcial = consolidar(msgs)
+            parcial["slug"] = slug_p
+            parcial.update(contexto.resumen_contexto(msgs))
+            guardar_json(f"{PREFIJO_CURADURIA}{slug_p}/resumen.json", parcial)
     except Exception as e:
-        log.warning("No se pudo persistir el resumen en OCI (el endpoint sigue respondiendo normal): %s", str(e))
+        log.warning(
+            "No se pudo guardar resumen por periodo: %s",
+            str(e)
+        )
+
+
 
     return resultado
 
