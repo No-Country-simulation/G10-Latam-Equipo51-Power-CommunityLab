@@ -14,6 +14,10 @@ command -v nginx >/dev/null || sudo dnf install -y nginx
 sudo mkdir -p "$WEB"
 sudo rm -rf "$WEB"/index.html "$WEB"/css "$WEB"/js
 sudo cp -r "$REPO"/frontend/insightmind-v2/{index.html,css,js} "$WEB/"
+# Landing pública (FAQs y newsletter publicados): http://localhost/landing/
+sudo rm -rf "$WEB"/landing
+sudo mkdir -p "$WEB"/landing
+sudo cp -r "$REPO"/frontend/landingpage/{index.html,css,js,datos,img} "$WEB/landing/"
 sudo restorecon -R "$WEB" 2>/dev/null || true
 
 # SELinux: permite que nginx haga proxy a uvicorn
@@ -36,4 +40,5 @@ fi
 
 echo
 echo "Listo: http://localhost/   (API interna: 127.0.0.1:8000, solo vía nginx en /api/)"
+echo "Landing: http://localhost/landing/   (lee /api/publico/faqs y /api/publico/newsletter)"
 echo "Primer usuario:  cd $REPO && source venv/bin/activate && python -m backend.auth crear <usuario>"

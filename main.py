@@ -17,6 +17,7 @@ from backend.analizador_sentimiento import (
 from backend import auth, cache_analisis, contexto, db
 from backend.rutas_contenido import router as router_contenido
 from backend.rutas_dashboard import router as router_dashboard
+from backend.rutas_publico import invalidar_cache as invalidar_cache_publico, router as router_publico
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
 from backend.gestor_conexiones import obtener_conexiones, cambiar_estado_conexion
@@ -385,13 +386,15 @@ def actualizar_curaduria(
     request: CuraduriaRequest
 ):
 
-    return guardar_curaduria(
+    resultado = guardar_curaduria(
         slug,
         request.activos,
         periodo_referencia=request.periodo_referencia,
         origen_comunidad=request.origen_comunidad,
         tickets=request.tickets,
     )
+    invalidar_cache_publico()   # la landing ve lo recién publicado sin esperar la caché
+    return resultado
 
 
 @app.get("/semanas")
@@ -427,6 +430,11 @@ def api_cambiar_conexion(plataforma: str, payload: dict):
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
 app.include_router(auth.router)         # /auth/login, /auth/logout, /auth/me
+app.include_router(router_publico)      # /publico/faqs, /publico/newsletter (landing, solo lectura)
+
+# La landing (frontend/landingpage) es pública: lee lo publicado sin sesión.
+# Solo GET, y solo devuelve activos "Publicado" sin datos de autores (ver backend/rutas_publico.py).
+auth.RUTAS_PUBLICAS.append("/publico")
 
 
 # En producción el front lo sirve nginx (ver deploy/nginx/insightmind.conf).
@@ -436,3 +444,5 @@ app.include_router(auth.router)         # /auth/login, /auth/logout, /auth/me
 if os.getenv("SERVIR_UI", "").strip().lower() in ("1", "true", "yes"):
     auth.RUTAS_PUBLICAS.append("/ui")
     app.mount("/ui", StaticFiles(directory="frontend/insightmind-v2", html=True), name="ui")
+    auth.RUTAS_PUBLICAS.append("/landing")
+    app.mount("/landing", StaticFiles(directory="frontend/landingpage", html=True), name="landing")

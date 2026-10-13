@@ -46,6 +46,7 @@ El equipo revisa, edita y publica desde una interfaz web. La voz de marca (tono,
 | Despliegue en una sola máquina (nginx sirve el front, FastAPI queda en 127.0.0.1) | Listo |
 | Separar front y backend con nginx en localhost (HTTP, sin dominio) | Listo: ver sección 10 |
 | Login de usuarios (cookie de sesión, sin dominio ni HTTPS) | Listo: ver sección 10 |
+| Landing pública conectada a la curaduría (FAQs y newsletter publicados) | Listo: ver `frontend/landingpage/README.md` |
 | Publicación real en LinkedIn / X | Pendiente (hoy se prepara el contenido) |
 
 ---
@@ -262,8 +263,10 @@ Documentación interactiva en `/docs` (Swagger) cuando el backend es accesible.
 | POST | `/auth/login` | Inicia sesión (`{usuario, password}`) y entrega la cookie. Pública |
 | POST | `/auth/logout` | Cierra la sesión. Pública |
 | GET | `/auth/me` | Usuario de la sesión actual, o 401. Pública |
+| GET | `/publico/faqs` | Landing: activos "Tip / FAQ" con estado `Publicado` de todas las curadurías, sin tickets ni datos de autores. Pública |
+| GET | `/publico/newsletter` | Landing: activos "Destaque de newsletter" con estado `Publicado`, misma forma. Pública |
 
-> Todas las rutas, salvo `/auth/*`, exigen sesión. Además nginx no deja pasar `DELETE`, `/files`, `/download`, `/sincronizar` ni `/docs`. Ver sección 10.
+> Todas las rutas, salvo `/auth/*` y `/publico/*`, exigen sesión. Además nginx no deja pasar `DELETE`, `/files`, `/download`, `/sincronizar` ni `/docs`. Ver sección 10.
 
 ---
 
@@ -509,7 +512,9 @@ sudo ss -tlnp | grep -E ':(80|8000|27017)\b'                                    
 │   ├── curaduria.py               # lee/escribe activos/<slug>/curaduria.json
 │   ├── db.py                      # MongoDB (opcional, tolerante a fallos)
 │   ├── oci_storage.py             # cliente único de Object Storage y prefijos
-│   └── rutas_contenido.py         # /generar, /config/voz, /sincronizar
+│   ├── rutas_contenido.py         # /generar, /config/voz, /sincronizar
+│   └── rutas_publico.py           # /publico/faqs y /publico/newsletter (landing, sin sesión)
+├── frontend/landingpage/          # landing pública: info, planes, FAQs y newsletter (ver su README)
 └── frontend/insightmind-v2/
     ├── index.html
     ├── css/

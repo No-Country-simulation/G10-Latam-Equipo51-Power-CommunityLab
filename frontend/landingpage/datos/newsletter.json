@@ -1,0 +1,48 @@
+[
+  {
+    "slug": "2026-semana-39",
+    "periodo_referencia": "Semana_39",
+    "activos": [
+      {
+        "id": "A11",
+        "formato": "Destaque de newsletter",
+        "estado": "Publicado",
+        "publicado": "2026-09-26",
+        "texto": "## Community Highlights · Semana 39\n\n**🏆 Logro de la semana**\nUna persona del grupo de análisis de datos terminó su primer tablero en Power BI con datos abiertos de transporte y lo presentó en la llamada del viernes.\n\n**❓ Pregunta de la semana**\n¿Por qué mi consulta SQL devuelve filas duplicadas después de un JOIN? La respuesta ya está en las FAQs.\n\n**📈 Tema en tendencia**\nEntornos virtuales en Python: muchas dudas al instalar librerías en proyectos distintos.\n\n**Para la próxima semana**\nSesión abierta de repaso de SQL el miércoles. Trae tus consultas que no funcionan."
+      }
+    ]
+  },
+  {
+    "slug": "2026-semana-40",
+    "periodo_referencia": "Semana_40",
+    "activos": [
+      {
+        "id": "A12",
+        "formato": "Destaque de newsletter",
+        "estado": "Publicado",
+        "publicado": "2026-10-03",
+        "texto": "## Community Highlights · Semana 40\n\n**🏆 Logro de la semana**\nTres personas de la comunidad consiguieron su primer empleo en tecnología este mes: dos como analistas de datos y una como desarrolladora backend junior.\n\n**❓ Pregunta de la semana**\n¿Qué pongo en mi portafolio si todavía no tengo experiencia? Juntamos las mejores respuestas en una guía corta.\n\n**📈 Tema en tendencia**\nPandas con archivos grandes: leer por bloques y guardar en Parquet.\n\n**Para la próxima semana**\nRevisión de portafolios entre pares. Inscríbete en el canal #primer-empleo."
+      }
+    ]
+  },
+  {
+    "slug": "2026-semana-41",
+    "periodo_referencia": "Semana_41",
+    "activos": [
+      {
+        "id": "A13",
+        "formato": "Destaque de newsletter",
+        "estado": "Publicado",
+        "publicado": "2026-10-10",
+        "texto": "## Community Highlights · Semana 41\n\n**🏆 Logro de la semana**\nEl grupo de estudio de Git cerró su primer proyecto colaborativo: una pequeña API de recetas con pull requests revisados entre todos.\n\n**❓ Pregunta de la semana**\nConflictos al hacer merge. No es un error: es Git pidiéndote que decidas. Te dejamos los pasos en las FAQs.\n\n**📈 Tema en tendencia**\nEntrevistas técnicas: cómo explicar tu razonamiento en voz alta.\n\n**Para la próxima semana**\nSimulacro de entrevista en vivo el jueves. Cupo limitado; avísanos en el canal #primer-empleo."
+      },
+      {
+        "id": "A14",
+        "formato": "Destaque de newsletter",
+        "estado": "Rechazado",
+        "publicado": null,
+        "texto": "## Versión descartada\n\nEste activo fue rechazado en la curaduría: el sitio no debe mostrarlo."
+      }
+    ]
+  }
+]

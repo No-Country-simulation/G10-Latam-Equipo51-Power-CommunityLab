@@ -1,0 +1,54 @@
+{
+  "_nota": "Precios y contenido PROVISIONALES. Edita este archivo cuando el equipo defina los valores reales. 'provisional: true' muestra el aviso en el sitio. TODO: cuando haya canal de ventas, el botón de Organización debe llevar a contacto en vez de al panel.",
+  "provisional": true,
+  "moneda": "USD",
+  "planes": [
+    {
+      "id": "comunidad",
+      "nombre": "Comunidad",
+      "precio": "0",
+      "periodo": "para siempre",
+      "para_quien": "Para comunidades pequeñas que quieren probar el flujo completo.",
+      "incluye": [
+        "Hasta 500 mensajes al mes",
+        "Una fuente: Discord, foro o formulario",
+        "Tips de FAQ y newsletter semanal",
+        "Una persona en la curaduría"
+      ],
+      "boton": "Empezar gratis",
+      "destacado": false
+    },
+    {
+      "id": "equipo",
+      "nombre": "Equipo",
+      "precio": "29",
+      "periodo": "al mes",
+      "para_quien": "Para equipos de comunidad que publican cada semana.",
+      "incluye": [
+        "Hasta 10 000 mensajes al mes",
+        "Todas las fuentes conectadas",
+        "Posts de LinkedIn, hilos de X, FAQs y newsletter",
+        "Tickets de apoyo para mensajes urgentes",
+        "Panorama semanal de la comunidad",
+        "Hasta 5 personas en la curaduría"
+      ],
+      "boton": "Elegir Equipo",
+      "destacado": true
+    },
+    {
+      "id": "organizacion",
+      "nombre": "Organización",
+      "precio": null,
+      "periodo": "a medida",
+      "para_quien": "Para instituciones con varias comunidades o programas.",
+      "incluye": [
+        "Volumen de mensajes a medida",
+        "Varias comunidades en un solo lugar",
+        "Voz de marca por comunidad",
+        "Acompañamiento en la puesta en marcha"
+      ],
+      "boton": "Conocer el panel",
+      "destacado": false
+    }
+  ]
+}

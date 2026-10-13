@@ -1,0 +1,83 @@
+[
+  {
+    "slug": "2026-semana-39",
+    "periodo_referencia": "Semana_39",
+    "activos": [
+      {
+        "id": "A3",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-09-29",
+        "texto": "**¿Cómo configuro el entorno de Python sin romper otros proyectos?**\n\nUsa un entorno virtual por proyecto.\n\n1. En la carpeta del proyecto, ejecuta `python3 -m venv .venv`.\n2. Actívalo con `source .venv/bin/activate` (en Windows, `.venv\\Scripts\\activate`).\n3. Instala lo que necesites con `pip install`.\n4. Guarda las dependencias con `pip freeze > requirements.txt`."
+      },
+      {
+        "id": "A4",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-09-29",
+        "texto": "**¿Por qué mi consulta SQL devuelve filas duplicadas después de un JOIN?**\n\nCasi siempre es una relación de uno a muchos que no esperabas.\n\n1. Revisa si la tabla de la derecha tiene más de una fila por clave.\n2. Cuenta con `GROUP BY` sobre la clave para confirmarlo.\n3. Agrega antes de unir, o filtra con una condición más precisa en el `ON`.\n4. Evita usar `DISTINCT` para esconder el problema."
+      },
+      {
+        "id": "A6",
+        "formato": "Post de LinkedIn",
+        "estado": "Publicado",
+        "publicado": "2026-09-30",
+        "texto": "Este activo no es una FAQ: el sitio no debe mostrarlo."
+      }
+    ]
+  },
+  {
+    "slug": "2026-semana-40",
+    "periodo_referencia": "Semana_40",
+    "activos": [
+      {
+        "id": "A2",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-06",
+        "texto": "**¿Cómo leo un archivo CSV grande en pandas sin quedarme sin memoria?**\n\nLéelo por partes y quédate solo con lo que usas.\n\n1. Indica las columnas con `usecols=[...]`.\n2. Define tipos pequeños con `dtype`, por ejemplo `category` para textos repetidos.\n3. Procesa por bloques con `chunksize=100_000`.\n4. Si lo vas a releer, guárdalo en Parquet."
+      },
+      {
+        "id": "A5",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-06",
+        "texto": "**¿Qué pongo en mi portafolio si todavía no tengo experiencia laboral?**\n\nTres proyectos pequeños y terminados valen más que uno grande a medias.\n\n1. Elige problemas reales: un análisis de datos públicos, una API sencilla, una automatización.\n2. Escribe un README que explique el problema, la solución y cómo correrlo.\n3. Muestra el proceso, no solo el resultado: decisiones, errores y qué cambiarías.\n4. Fija esos tres repositorios en tu perfil de GitHub."
+      },
+      {
+        "id": "A8",
+        "formato": "Tip / FAQ",
+        "estado": "Pendiente",
+        "publicado": null,
+        "texto": "**Borrador sin aprobar**\n\nEste activo sigue en curaduría: el sitio no debe mostrarlo."
+      }
+    ]
+  },
+  {
+    "slug": "2026-semana-41",
+    "periodo_referencia": "Semana_41",
+    "activos": [
+      {
+        "id": "A7",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-10",
+        "texto": "**Git me dice que hay conflictos al hacer merge. ¿Qué hago?**\n\nNo es un error: Git te pide que decidas.\n\n1. Ejecuta `git status` para ver los archivos en conflicto.\n2. Abre cada archivo y busca las marcas `<<<<<<<`, `=======` y `>>>>>>>`.\n3. Deja el código que quieres conservar y borra las marcas.\n4. Termina con `git add` y `git commit`."
+      },
+      {
+        "id": "A9",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-10",
+        "texto": "**¿Cuál es la diferencia entre WHERE y HAVING?**\n\n`WHERE` filtra filas; `HAVING` filtra grupos.\n\n1. `WHERE` se aplica antes de agrupar y no puede usar funciones de agregación.\n2. `HAVING` se aplica después del `GROUP BY` y sí puede: `HAVING COUNT(*) > 5`.\n3. Si puedes filtrar con `WHERE`, hazlo: la consulta procesa menos filas.\n\n⚠️ Nota interna para el equipo: no se muestra en el sitio."
+      },
+      {
+        "id": "A10",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-10",
+        "texto": "**¿Cómo me preparo para mi primera entrevista técnica?**\n\nPractica en voz alta, no solo en el editor.\n\n1. Resuelve un ejercicio al día explicando tu razonamiento mientras escribes.\n2. Prepara una historia corta de cada proyecto de tu portafolio.\n3. Repasa lo básico de tu stack: estructuras de datos, SQL y Git.\n4. Al final, pregunta algo sobre el equipo: también tú estás evaluando."
+      }
+    ]
+  }
+]

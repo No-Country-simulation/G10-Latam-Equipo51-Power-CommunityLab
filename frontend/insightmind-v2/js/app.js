@@ -581,7 +581,7 @@ function visualizarCuraduria() {
         <div class="row" style="justify-content:space-between;margin-top:9px">
           <span class="mini mono" id="c_${a.id}"></span>
           <div class="acciones-activo">${a.estado === "Publicado"
-          ? `<span class="mini">Publicado el ${a.publicado}</span>`
+          ? `<span class="mini">Publicado el ${fechaLegible(a.publicado)}</span>`
           : `<button class="btn primary sm" data-ac="publicar" data-id="${a.id}" ${conn ? "" : "disabled"}>Publicar en ${p.nom}</button>
               <button class="btn sm" data-ac="listo" data-id="${a.id}" ${a.estado === "Listo" ? "disabled" : ""}>${a.estado === "Listo" ? ic("check") + "En cola" : "Guardar para después"}</button>
               <span class="sep2"></span>
@@ -653,15 +653,29 @@ function confirmarPublicacion(id) {
   setTimeout(() => dlg_si.focus(), 50);
 }
 
+/* Fecha de publicación: se guarda en ISO (la lee la landing) y se muestra legible.
+   Los registros antiguos con texto libre ("23 sep, 10:42") se muestran tal cual. */
+const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function fechaLegible(v) {
+  const d = /^\d{4}-\d{2}-\d{2}/.test(v || "") ? new Date(v) : null;
+  if (!d || isNaN(d)) return v || "";
+  return `${d.getDate()} ${MESES_CORTOS[d.getMonth()]}, ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 function publicar(id) {
   const a = E.activos.find(x => x.id === id), p = PLAT[FORMATOS[a.formato].plat];
   const previo = a.estado;
-  a.estado = "Publicado"; a.publicado = "23 sep, 10:4" + Math.floor(Math.random() * 9);
-  const pub = { fecha: a.publicado, plat: FORMATOS[a.formato].plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
+  a.estado = "Publicado"; a.publicado = new Date().toISOString();
+  const pub = { fecha: fechaLegible(a.publicado), plat: FORMATOS[a.formato].plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
   E.pubs.unshift(pub); save(); visualizar();
-  toast("Publicado en " + p.nom, p.cuenta, true, () => {
-    a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar();
-    toast("Publicación revertida", "El contenido volvió a " + previo);
+  const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar(); };
+  /* Queda en activos/<slug>/curaduria.json: de ahí lo lee la landing (FAQs y newsletter) */
+  guardarCuraduriaEnOCI().then(ok => {
+    if (!ok) return revertir();   /* no quedó en el bucket: no se da por publicado */
+    toast("Publicado en " + p.nom, p.cuenta, true, () => {
+      revertir();
+      guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));
+    });
   });
 }
 
@@ -732,16 +746,24 @@ function publicarLote(plat) {
     dlg.close();
     const previos = lista.map(a => ({ a, estado: a.estado })), nuevas = [];
     lista.forEach(a => {
-      a.estado = "Publicado"; a.publicado = "23 sep, 10:4" + Math.floor(Math.random() * 9);
-      const pub = { fecha: a.publicado, plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
+      a.estado = "Publicado"; a.publicado = new Date().toISOString();
+      const pub = { fecha: fechaLegible(a.publicado), plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
       nuevas.push(pub); E.pubs.unshift(pub);
     });
 
     save(); 
     visualizar();
-    toast(lista.length + " publicados en " + p.nom, p.cuenta, true, () => {
+    const revertir = () => {
       previos.forEach(x => { x.a.estado = x.estado; delete x.a.publicado; });
-      E.pubs = E.pubs.filter(x => !nuevas.includes(x)); save(); visualizar(); toast("Publicaciones revertidas", "Todo volvió a la cola");
+      E.pubs = E.pubs.filter(x => !nuevas.includes(x)); save(); visualizar();
+    };
+    /* Queda en activos/<slug>/curaduria.json: de ahí lo lee la landing (FAQs y newsletter) */
+    guardarCuraduriaEnOCI().then(ok => {
+      if (!ok) return revertir();
+      toast(lista.length + " publicados en " + p.nom, p.cuenta, true, () => {
+        revertir();
+        guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicaciones revertidas", "Todo volvió a la cola"));
+      });
     });
   };
 }
