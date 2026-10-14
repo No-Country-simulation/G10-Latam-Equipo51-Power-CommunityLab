@@ -571,7 +571,20 @@ let tabFmt = "linkedin", fEstado = {};
 const ESTADOS = ["Todos", "Pendiente", "Listo", "Publicado"];
 const pendientesDe = k => E.activos.filter(a => FORMATOS[a.formato].plat === k && a.estado === "Pendiente").length;
 
-function visualizarCuraduria() {
+async function visualizarCuraduria() {
+  try {
+    const res = await fetch('/conexiones');
+    if (res.ok) {
+      const data = await res.json();
+      Object.keys(data).forEach(k => {
+        if (!PLAT[k]) PLAT[k] = {};
+        E.conex[k] = data[k].on;
+      });
+    }
+  } catch (err) {
+    console.error("Error al sincronizar conexiones en curaduría:", err);
+  }
+
   if (!E.procesado) {
     tabs_formato.innerHTML = "";
     curaduria.innerHTML = '<div class="block empty">Procesa un lote para ver el contenido generado.</div>'; return;
@@ -709,22 +722,81 @@ function fechaLegible(v) {
   return `${d.getDate()} ${MESES_CORTOS[d.getMonth()]}, ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function publicar(id) {
-  const a = E.activos.find(x => x.id === id), p = PLAT[FORMATOS[a.formato].plat];
-  const previo = a.estado;
-  a.estado = "Publicado"; a.publicado = new Date().toISOString();
-  const pub = { fecha: fechaLegible(a.publicado), plat: FORMATOS[a.formato].plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
-  E.pubs.unshift(pub); save(); visualizar();
-  const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar(); };
-  /* Queda en activos/<slug>/curaduria.json: de ahí lo lee la landing (FAQs y newsletter) */
-  guardarCuraduriaEnOCI().then(ok => {
-    if (!ok) return revertir();   /* no quedó en el bucket: no se da por publicado */
-    toast("Publicado en " + p.nom, p.cuenta, true, () => {
-      revertir();
-      guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));
+// function publicar(id) {
+//   const a = E.activos.find(x => x.id === id), p = PLAT[FORMATOS[a.formato].plat];
+//   const previo = a.estado;
+//   a.estado = "Publicado"; a.publicado = new Date().toISOString();
+//   const pub = { fecha: fechaLegible(a.publicado), plat: FORMATOS[a.formato].plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
+//   E.pubs.unshift(pub); save(); visualizar();
+//   const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar(); };
+//   /* Queda en activos/<slug>/curaduria.json: de ahí lo lee la landing (FAQs y newsletter) */
+//   guardarCuraduriaEnOCI().then(ok => {
+//     if (!ok) return revertir();   /* no quedó en el bucket: no se da por publicado */
+//     toast("Publicado en " + p.nom, p.cuenta, true, () => {
+//       revertir();
+//       guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));
+//     });
+//   });
+// }
+
+async function publicar(id) {
+  const a = E.activos.find(x => x.id === id);
+  const cfg = FORMATOS[a.formato];
+  const plataformaKey = cfg.plat; // Asegura que sea "linkedin" o "x"
+  const p = PLAT[plataformaKey];
+
+  toast("Enviando a " + p.nom + "...", "Conectando con la API oficial");
+
+  try {
+    const response = await fetch('/publicar-redes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        texto: a.texto,
+        plataforma: plataformaKey,
+        formato: a.formato
+      })
     });
-  });
+
+    const resultado = await response.json();
+
+    console.log("--> [FRONTEND] Respuesta recibida del servidor:", resultado);
+
+    if (resultado.success) {
+
+      // Si la plataforma requiere apertura de ventana asistida (como X por restricción de API)
+      if (resultado.modo_asistido && resultado.url_destino) {
+        window.open(resultado.url_destino, '_blank');
+      }
+      
+      const previo = a.estado;
+      a.estado = "Publicado"; 
+      a.publicado = new Date().toLocaleDateString() + ", " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      const pub = { fecha: a.publicado, plat: plataformaKey, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
+      E.pubs.unshift(pub); 
+      save(); 
+      
+      //  LLAMAMOS EXPLÍCITAMENTE A VISUALIZAR CURADURÍA AQUÍ
+      visualizarCuraduria(); 
+
+      toast("¡Publicado con éxito en " + p.nom + "!", p.cuenta, true, () => {
+        a.estado = previo; 
+        delete a.publicado; 
+        E.pubs = E.pubs.filter(x => x !== pub); 
+        save(); 
+        visualizarCuraduria(); // <-- Y aquí también al revertir
+        toast("Publicación revertida", "El contenido volvió a " + previo);
+      });
+    } else {
+      toast("Error al publicar", resultado.error || "Verifica tus credenciales en Conexiones", false);
+    }
+  } catch (err) {
+    console.error("Error de red al publicar en redes:", err);
+    toast("Error de conexión", "No se pudo comunicar con el backend", false);
+  }
 }
+
 
 const GANCHOS = [
   "Nada nos da más orgullo que ver a nuestros talentos conquistando el mercado tech 🚀",

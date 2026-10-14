@@ -6,9 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 import requests
+from requests_oauthlib import OAuth1
 import oci
 import io
 import logging
+import httpx
 
 from backend.curaduria import cargar_curaduria, guardar_curaduria
 from backend.analizador_sentimiento import (
@@ -21,6 +23,7 @@ from backend.rutas_publico import invalidar_cache as invalidar_cache_publico, ro
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
 from backend.gestor_conexiones import obtener_conexiones, cambiar_estado_conexion
+from backend.gestor_publicaciones import publicar_en_redes
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -58,6 +61,12 @@ client = oci.object_storage.ObjectStorageClient(config)
 namespace = client.get_namespace().data
 
 router = APIRouter()
+
+class PublicacionRedesRequest(BaseModel):
+    texto: str
+    plataforma: str  # "linkedin" o "x"
+    formato: str
+
 
 @app.get("/files")
 def list_files():
@@ -245,6 +254,8 @@ def procesar_lote(forzar: bool = False):
         procesados.append((obj, mensaje))
         nuevos += 1
 
+    hoy = datetime.now()
+
     resultado = consolidar(mensajes)
     resultado["slug"] = contexto.slug_del_lote(mensajes)
     for m in mensajes:   # slug propio (el del lote solo como respaldo si el periodo no se reconoce)
@@ -426,6 +437,11 @@ def api_cambiar_conexion(plataforma: str, payload: dict):
     conectar = payload.get("conectar", payload.get("on", False))
     resultado = cambiar_estado_conexion(plataforma, conectar)
     return resultado
+
+@app.post("/publicar-redes")
+async def api_publicar_redes(req: PublicacionRedesRequest):
+    """Endpoint POST para enviar contenido directamente a LinkedIn o en modo asistido a X."""
+    return await publicar_en_redes(req.texto, req.plataforma)
 
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
