@@ -259,7 +259,7 @@ h2{font-size:clamp(2rem,1.4rem + 2.2vw,3rem);line-height:1.08;font-weight:650;le
 /* ============================================================
    Cabecera
    ============================================================ */
-.cabecera{position:sticky;top:0;z-index:20;background:var(--bg);
+.cabecera{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 95%,transparent);
   padding-top:env(safe-area-inset-top);
   border-bottom:1px solid transparent;transition:border-color var(--t-estado) ease,background-color var(--t-estado) ease}
 .cabecera[data-scroll="si"]{border-bottom-color:var(--border)}
@@ -290,30 +290,51 @@ h2{font-size:clamp(2rem,1.4rem + 2.2vw,3rem);line-height:1.08;font-weight:650;le
 
 /* ============================================================
    Hero
+   La foto vive detrás del texto (escritorio) o encima de él (una columna).
+   Hay dos fotos, clara y oscura, con la misma medida y la hoja y la mano alineadas
+   al píxel: al cambiar de tema se funden una en la otra, sin saltos.
    ============================================================ */
-.hero{padding-block:clamp(48px,8vw,112px) clamp(72px,9vw,128px)}
-.hero_rejilla{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:clamp(40px,6vw,88px);align-items:center}
+.hero{position:relative;overflow:clip;padding-block:clamp(72px,10vw,150px)}
+.hero_rejilla{display:grid;grid-template-columns:minmax(0,1fr);position:relative}
+.hero_texto{position:relative;z-index:1;max-width:620px}
 .hero_texto h1{max-width:13ch}
 .hero_apoyo{margin-top:24px;font-size:clamp(1.0625rem,1rem + .4vw,1.25rem);line-height:1.55;color:var(--ink-2);max-width:44ch;text-wrap:pretty}
 .hero_acciones{display:flex;flex-wrap:wrap;gap:12px;margin-top:36px}
 
-/* Aparición del hero al cargar: la única coreografía del sitio */
+/* Texto sobre la foto. La transparencia va en el color (no en la opacidad del elemento),
+   así el cambio de tema no reinicia la animación de entrada.
+   Oscuro: 95 %, la foto se asoma apenas. Claro: sólido, con un halo del color del fondo que lo
+   separa de las burbujas. El halo entra solo cuando el fondo ya es claro (fuera de
+   .cambiando-tema); si apareciera durante el cambio, sobre un fondo aún oscuro, brillaría. */
+.hero_texto h1{color:color-mix(in srgb,var(--ink) 95%,transparent)}
+.hero_apoyo{color:color-mix(in srgb,var(--ink-2) 95%,transparent)}
+.hero_texto h1,.hero_apoyo{transition:text-shadow 400ms ease}
+:root[data-tema-efectivo="light"] .hero_texto h1{color:var(--ink)}
+:root[data-tema-efectivo="light"] .hero_apoyo{color:var(--ink-2)}
+:root[data-tema-efectivo="light"]:not(.cambiando-tema) .hero_texto h1{text-shadow:0 0 2px var(--bg),0 0 14px var(--bg),0 0 30px var(--bg)}
+:root[data-tema-efectivo="light"]:not(.cambiando-tema) .hero_apoyo{text-shadow:0 0 2px var(--bg),0 0 12px var(--bg)}
+
+/* Aparición del hero al cargar: el texto sube apenas; la foto solo se funde, sin moverse */
 @keyframes aparecer{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fundir{from{opacity:0}to{opacity:1}}
 .hero_texto>*{animation:aparecer 560ms var(--ease-out) both}
 .hero_texto>:nth-child(2){animation-delay:60ms}
 .hero_texto>:nth-child(3){animation-delay:120ms}
-.ilustracion{animation:aparecer 640ms var(--ease-out) 160ms both}
 
-/* ---- Ilustración de cabecera (unDraw, recoloreada con tokens) ---- */
-.ilustracion{position:relative}
-.ilustracion_svg{width:100%;height:auto}
-.u_acento{fill:var(--primary)}
-.u_claro{fill:var(--raised)}
-.u_linea{fill:var(--border-2)}
-.u_planta{fill:var(--primary-soft)}
-.u_suelo{fill:var(--border-2)}
-.u_oscuro{fill:var(--ink-2)}
-.u_medio{fill:var(--primary-ink)}
+/* ---- Foto del hero ---- */
+.foto_hero{position:absolute;z-index:0;pointer-events:none;display:grid;
+  top:50%;translate:0 -50%;right:calc(-1 * max(var(--gutter), (100vw - var(--ancho)) / 2));
+  width:min(1180px,78vw);animation:fundir 1100ms var(--ease-out) 200ms both}
+.foto{display:block;width:100%;height:auto;grid-area:1 / 1;transition:opacity 700ms var(--ease-in-out);
+  /* Bordes fundidos con el fondo: entra suave por la izquierda, detrás del texto */
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 30%,#000 96%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 12%,#000 86%,transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 0,#000 30%,#000 96%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 12%,#000 86%,transparent 100%);
+  mask-composite:intersect}
+.foto_hero picture{display:contents}   /* la <img> es la que ocupa la celda */
+.foto_oscuro{opacity:0}
+:root[data-tema-efectivo="dark"] .foto_claro{opacity:0}
+:root[data-tema-efectivo="dark"] .foto_oscuro{opacity:1}
 
 /* ============================================================
    Secciones
@@ -388,7 +409,7 @@ h2{font-size:clamp(2rem,1.4rem + 2.2vw,3rem);line-height:1.08;font-weight:650;le
 @supports (interpolate-size:allow-keywords){
   .faqs{interpolate-size:allow-keywords}
   .faq::details-content{block-size:0;overflow:clip;opacity:0;
-    transition:block-size var(--t-estado) var(--ease-out),opacity var(--t-estado) ease,content-visibility var(--t-estado) allow-discrete}
+    transition:block-size 420ms var(--ease-out),opacity 320ms ease,content-visibility 420ms allow-discrete}
   .faq[open]::details-content{block-size:auto;opacity:1}
 }
 
@@ -455,14 +476,33 @@ h2{font-size:clamp(2rem,1.4rem + 2.2vw,3rem);line-height:1.08;font-weight:650;le
   background:var(--panel);color:var(--ink);border:1px solid var(--border);border-radius:var(--radius-lg);
   box-shadow:var(--shadow),inset 0 0 0 1px var(--hairline);
   overscroll-behavior:contain;
-  opacity:1;transform:none;
-  transition:opacity var(--t-estado) var(--ease-out),transform var(--t-estado) var(--ease-out),
-    overlay var(--t-estado) allow-discrete,display var(--t-estado) allow-discrete}
-.edicion:not([open]){opacity:0;transform:translateY(8px) scale(.98)}
-@starting-style{ .edicion[open]{opacity:0;transform:translateY(8px) scale(.98)} }
-.edicion::backdrop{background:color-mix(in srgb,var(--bg) 72%,transparent);
-  transition:background-color var(--t-estado) ease,overlay var(--t-estado) allow-discrete,display var(--t-estado) allow-discrete}
-@starting-style{ .edicion[open]::backdrop{background:transparent} }
+  opacity:1;transform:none;filter:none;
+  /* Entrada: sube, se enfoca y aparece. La salida (abajo) es más corta: lo que se va no hace esperar */
+  transition:opacity 420ms var(--ease-out),transform 560ms var(--ease-out),filter 420ms var(--ease-out),
+    overlay 560ms allow-discrete,display 560ms allow-discrete}
+.edicion:not([open]){opacity:0;transform:translateY(10px) scale(.985);filter:blur(4px);
+  transition-duration:220ms,220ms,220ms,220ms,220ms;transition-timing-function:ease-in}
+@starting-style{ .edicion[open]{opacity:0;transform:translateY(18px) scale(.965);filter:blur(6px)} }
+/* El contenido de la edición llega escalonado detrás de la ventana */
+@keyframes edicion_entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.edicion[open] .edicion_cabeza,.edicion[open] .edicion_fecha,.edicion[open] .edicion_cuerpo h2,
+.edicion[open] .edicion_cuerpo .prosa>*{animation:edicion_entra 620ms var(--ease-out) both}
+.edicion[open] .edicion_cabeza{animation-delay:60ms}
+.edicion[open] .edicion_fecha{animation-delay:140ms}
+.edicion[open] .edicion_cuerpo h2{animation-delay:190ms}
+.edicion[open] .edicion_cuerpo .prosa>*:nth-child(1){animation-delay:250ms}
+.edicion[open] .edicion_cuerpo .prosa>*:nth-child(2){animation-delay:290ms}
+.edicion[open] .edicion_cuerpo .prosa>*:nth-child(3){animation-delay:330ms}
+.edicion[open] .edicion_cuerpo .prosa>*:nth-child(4){animation-delay:370ms}
+.edicion[open] .edicion_cuerpo .prosa>*:nth-child(5){animation-delay:410ms}
+.edicion[open] .edicion_cuerpo .prosa>*:nth-child(n+6){animation-delay:450ms}
+/* El fondo se aquieta: se tiñe y se desenfoca un poco, para que la lectura sea lo único en foco */
+.edicion::backdrop{background:color-mix(in srgb,var(--bg) 64%,transparent);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  transition:background-color 480ms ease,backdrop-filter 480ms ease,-webkit-backdrop-filter 480ms ease,
+    overlay 480ms allow-discrete,display 480ms allow-discrete}
+.edicion:not([open])::backdrop{background:transparent;-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);transition-duration:220ms}
+@starting-style{ .edicion[open]::backdrop{background:transparent;-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0)} }
 .edicion_cabeza{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:12px 12px 12px 24px;background:var(--panel);border-bottom:1px solid var(--border)}
 .edicion_masthead{display:inline-flex;align-items:center;gap:10px;font-size:.875rem;font-weight:600;color:var(--ink-2)}
@@ -491,8 +531,15 @@ body:has(.edicion[open]){overflow:hidden}
    Responsive
    ============================================================ */
 @media (max-width:1000px){
-  .hero_rejilla{grid-template-columns:minmax(0,1fr);gap:48px}
-  .ilustracion{max-width:560px}
+  /* Una columna: la foto arriba, a todo el ancho, y el texto sube sobre su mitad inferior
+     (ya difuminada), para que las dos piezas se lean como una portada */
+  .hero{padding-top:8px}
+  .foto_hero{position:relative;order:-1;top:auto;translate:none;right:auto;width:auto;
+    /* El texto cubre el 50 % inferior de la foto: alto = ancho × 1116/2000 */
+    margin:0 calc(-1 * var(--gutter)) calc(-0.5 * 100vw * 1116 / 2000)}
+  .foto{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 8%,#000 46%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 8%,#000 46%,transparent 100%)}
+  .hero_texto{max-width:none}
   .decide{grid-template-columns:auto minmax(0,1fr)}
   .no_es{grid-column:1 / -1}
   .faqs_rejilla{grid-template-columns:minmax(0,1fr)}
@@ -544,10 +591,6 @@ body:has(.edicion[open]){overflow:hidden}
   transition:opacity 900ms var(--ease-out) 150ms,transform 900ms var(--ease-out) 150ms}
 .anim .decide.visible .decide_marca{opacity:1;transform:none}
 
-/* La ilustración del hero respira: un vaivén muy lento */
-@keyframes flotar{from{transform:translateY(0)}to{transform:translateY(-8px)}}
-.anim .ilustracion_svg{animation:flotar 6.5s ease-in-out 900ms infinite alternate}
-
 /* Planes: un leve levantamiento al pasar el cursor */
 /* (usa `translate`, independiente del `transform` del revelado, para no pisarlo) */
 .plan{transition:translate 260ms var(--ease-out),border-color 260ms ease}
@@ -559,6 +602,28 @@ body:has(.edicion[open]){overflow:hidden}
   .plan[data-destacado="true"]:hover{border-color:var(--primary)}
 }
 
+/* Cambio de tema: todo se funde a la vez y con la misma curva (ver conTransicion en sitio.js) */
+.cambiando-tema *,.cambiando-tema *::before,.cambiando-tema *::after,.cambiando-tema body{
+  transition:background-color 700ms var(--ease-in-out),color 700ms var(--ease-in-out),
+    border-color 700ms var(--ease-in-out),fill 700ms var(--ease-in-out),stroke 700ms var(--ease-in-out),
+    box-shadow 700ms var(--ease-in-out),opacity 700ms var(--ease-in-out)!important}
+
+/* FAQ: la respuesta entra con un fundido y un leve enfoque al desplegar */
+@keyframes faq_abre{from{opacity:0;transform:translateY(-6px);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
+.faq[open] .faq_respuesta{animation:faq_abre 460ms var(--ease-out) both}
+
+/* Cambio de página: fundido con un leve desenfoque (View Transitions entre documentos).
+   Funciona entre páginas del mismo origen que también lo declaren; donde no hay soporte, navega normal. */
+@view-transition{navigation:auto}
+@keyframes vista_sale{to{opacity:0;filter:blur(4px)}}
+@keyframes vista_entra{from{opacity:0;filter:blur(4px)}}
+::view-transition-old(root){animation:vista_sale 280ms ease-in both}
+::view-transition-new(root){animation:vista_entra 520ms var(--ease-out) both}
+
+/* Estela del cursor: un lienzo encima del contenido, sin recibir clics (ver estela en sitio.js) */
+.rastro{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:15;
+  filter:blur(7px)}   /* difusa, como un rastro de luz y no un trazo */
+
 /* ============================================================
    Movimiento reducido: sin desplazamientos, solo cambios de color
    ============================================================ */
@@ -566,4 +631,6 @@ body:has(.edicion[open]){overflow:hidden}
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:1ms!important;animation-delay:0ms!important;transition-duration:1ms!important}
   .boton:active,.boton_icono:active{transform:none}
+  ::view-transition-old(root),::view-transition-new(root){animation:none}
+  .rastro{display:none}
 }

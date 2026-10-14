@@ -42,6 +42,16 @@ En **Curaduría**, las pestañas Web y Newsletter muestran el enlace "Ver en la 
 
 Si la API no responde en 4 segundos, la landing usa `datos/faqs.json` y `datos/newsletter.json`, que tienen la misma forma. Así nunca queda vacía en una demo sin backend. En la consola aparece `[Insight Mind] …: uso el respaldo local`, y `Datos.procedencia` dice de dónde salió cada bloque (`plataforma`, `respaldo local` o `local`).
 
+### Contenido fijado
+
+`datos/fijados.json` tiene 3 FAQs y 1 edición del newsletter que la landing muestra **siempre**, aunque la plataforma todavía no haya publicado nada. Así esas secciones nunca se ven vacías. Usa la misma forma que `curaduria.json`.
+
+- **FAQs:** las fijadas van primero y debajo todo lo publicado desde la curaduría.
+- **Newsletter:** se muestran las 3 ediciones más recientes, y la fijada siempre está entre ellas.
+- **Sin duplicados:** si la plataforma publica una pieza con el mismo título que una fijada, se ve una sola vez.
+
+Para cambiar lo fijo, edita ese archivo. Si no carga, la landing sigue mostrando lo publicado.
+
 Los planes viven solo en `datos/planes.json`. Los precios son **provisionales**: edita ese archivo cuando estén los definitivos (`"provisional": false` quita el aviso).
 
 ---
@@ -98,22 +108,76 @@ frontend/landingpage/
 ├── css/sitio.css     # tokens del panel (claro/oscuro) + estilos de la landing
 ├── js/datos.js       # TODA la lectura de datos: API, respaldo, markdown mínimo
 ├── js/sitio.js       # tema, anclas, planes, acordeón de FAQs, ediciones, formulario, animaciones
-├── datos/            # respaldo local con la forma de curaduria.json + planes
-├── img/isotipo.svg   # favicon
+├── datos/            # respaldo local (forma de curaduria.json), fijados.json y planes.json
+├── img/
+│   ├── hero-claro.*  # foto del hero, tema claro: .avif y .jpg, en 2000 y 1000 px
+│   ├── hero-oscuro.* # foto del hero, tema oscuro (alineada con la clara, ver sección 5)
+│   └── isotipo.svg   # favicon
 └── servidor.js       # servidor estático mínimo (puerto 5600)
 ```
 
 ## 5. Diseño y animaciones
 
-- **Sistema visual del panel:** mismos tokens de color (claro, oscuro por sistema y elegido a mano), Schibsted Grotesk e IBM Plex Mono, radios de 9 y 13 px, y un solo acento.
-- **Animaciones** (todas se apagan con `prefers-reduced-motion`, y sin JS todo se ve igual):
-  - entrada del hero;
-  - revelado escalonado de bloques al hacer scroll;
-  - la línea de "Cómo funciona" se dibuja paso a paso;
-  - el isotipo entra con escala suave;
-  - la ilustración del hero flota lentamente;
-  - los planes se elevan al pasar el cursor.
-- **Ilustración del hero:** "Public discussion" de [unDraw](https://undraw.co) (Katerina Limpitsouni), con licencia libre y recoloreada con los tokens. Es de relleno: se puede cambiar por una propia.
+- **Sistema visual del panel:**
+  - Mismos tokens de color: claro, oscuro por sistema y oscuro o claro elegido a mano.
+  - Schibsted Grotesk e IBM Plex Mono.
+  - Radios de 9 y 13 px y un solo acento.
+
+### Hero
+
+- **Imagen:** una escultura de papel. Las burbujas de la comunidad fluyen hacia una hoja que una mano sostiene: de ruido a señal, y tu equipo decide. Es una imagen generada con IA.
+- **Composición:**
+  - En escritorio la foto vive detrás del texto, con el borde izquierdo difuminado.
+  - En una columna va arriba, a todo el ancho, y el titular se empalma sobre su mitad inferior, como una portada.
+- **Dos fotos, una por tema, alineadas al píxel:**
+  - La oscura se reescaló y desplazó para que la hoja y la mano caigan exactamente sobre las de la clara: la hoja ocupa 1464,330 → 1781,783 en las dos.
+  - Al cambiar de tema se funden una en la otra sin saltos.
+  - Si se reemplazan, hay que mantener esa alineación y el lienzo de 2000 × 1116.
+- **Texto sobre la foto:**
+  - En claro va sólido, con un halo del color del fondo que lo separa de las burbujas.
+  - En oscuro va al 95 %.
+  - El halo solo aparece cuando el fondo ya es claro, para que no "brille" durante el cambio de tema.
+- **Formatos:** AVIF (unos 32 KB en 2000 px y 12 KB en 1000 px), con JPEG de respaldo para navegadores sin AVIF. `<picture>` y `srcset` hacen que cada pantalla descargue solo el tamaño que necesita.
+
+### Animaciones
+
+Todas se apagan con `prefers-reduced-motion`, y sin JavaScript todo se ve igual.
+
+- **Entrada:** el texto del hero sube apenas y la foto solo se funde, sin moverse.
+- **Cambio de tema:**
+  - Toda la página se funde a la vez en 700 ms: colores, bordes y foto.
+  - Las transiciones solo se activan durante el cambio (clase `.cambiando-tema`), para no frenar el resto de la interfaz.
+- **Scroll:**
+  - Los bloques se revelan escalonados.
+  - La línea de "Cómo funciona" se dibuja paso a paso.
+  - El isotipo entra con escala suave.
+- **FAQs:** la respuesta entra con un fundido y un leve desenfoque al desplegarse.
+- **Modal del boletín:**
+  - El fondo se tiñe y se desenfoca.
+  - La ventana sube, se enfoca y aparece.
+  - Su contenido llega escalonado.
+  - Al cerrar todo es más rápido.
+- **Cambio de página:** fundido con desenfoque (View Transitions entre documentos).
+  - Funciona entre páginas del mismo origen que declaren `@view-transition`.
+  - En navegadores sin soporte, navega normal.
+- **Estela del cursor:**
+  - Una estela morada muy tenue y difusa (desenfoque de 7 px) que sigue el trayecto del ratón.
+  - Mide lo que el cursor en la punta y se afila hacia la cola; un trazo largo deja una estela más larga.
+  - Cada tramo se apaga en 1 s.
+  - Solo con ratón: no aparece en pantallas táctiles.
+  - El bucle de dibujo se detiene en reposo.
+  - Se ajusta con `ANCHO` y `ALFA` en `js/sitio.js` y con el `blur` de `.rastro` en `css/sitio.css`.
+- **Planes:** se elevan un poco al pasar el cursor.
+
+### Rendimiento (medido en local, escritorio)
+
+| Métrica | Valor |
+|---|---|
+| Peso total de la página | ~161 KB, sin las fuentes de Google |
+| Fotos del hero | 64 KB las dos en escritorio; ~25 KB en móvil |
+| Carga completa | ~270 ms |
+| CLS (saltos de diseño) | 0 |
+| Tareas largas | 0 |
 
 ## 6. Pendientes
 

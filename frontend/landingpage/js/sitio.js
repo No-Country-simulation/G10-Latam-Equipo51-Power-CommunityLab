@@ -29,13 +29,24 @@
     document.querySelectorAll('meta[name="theme-color"]').forEach(m =>
       m.setAttribute("content", t === "dark" ? "#121317" : "#F1F2F4"));
   }
-  botonTema.addEventListener("click", () => {
+  /* El cambio de tema se funde en toda la página: la clase activa transiciones de color
+     solo mientras dura el cambio, para no ralentizar hovers ni el resto de la interfaz */
+  const DURACION_TEMA = 700;
+  let finTema = 0;
+  function conTransicion(cambio) {
+    raiz.classList.add("cambiando-tema");
+    void raiz.offsetWidth;   // fija el estado inicial antes de cambiar los tokens
+    cambio();
+    clearTimeout(finTema);
+    finTema = setTimeout(() => raiz.classList.remove("cambiando-tema"), DURACION_TEMA + 80);
+  }
+  botonTema.addEventListener("click", () => conTransicion(() => {
     const nuevo = temaEfectivo() === "dark" ? "light" : "dark";
     raiz.dataset.theme = nuevo;
     try { localStorage.setItem(CLAVE_TEMA, nuevo); } catch (e) {}
     pintarTema();
-  });
-  oscuroSistema.addEventListener("change", pintarTema);
+  }));
+  oscuroSistema.addEventListener("change", () => conTransicion(pintarTema));
   pintarTema();
 
   /* ---------- Enlace a la aplicación ---------- */
@@ -58,6 +69,81 @@
     });
   }, { rootMargin: "-45% 0px -50% 0px" });
   ["producto", "planes", "faqs", "newsletter"].forEach(id => observador.observe(document.getElementById(id)));
+
+  /* ---------- Estela del cursor ----------
+     Una estela morada muy tenue que sigue el trayecto del ratón: en la punta mide lo que el
+     cursor y se afila hasta desaparecer en la cola. Como sigue el recorrido real del último
+     segundo, un trazo largo deja una estela más larga. Cada tramo se apaga en un segundo.
+     Solo con ratón y sin movimiento reducido; el bucle se detiene cuando no queda estela. */
+  (function estela() {
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const lienzo = document.createElement("canvas");
+    lienzo.className = "rastro";
+    lienzo.setAttribute("aria-hidden", "true");
+    document.body.appendChild(lienzo);
+    const ctx = lienzo.getContext("2d");
+    const VIDA = 1000;     // ms que tarda en apagarse cada tramo
+    const ANCHO = 14;      // px en la punta (el desenfoque lo suaviza hasta el tamaño del cursor)
+    const ALFA = .2;       // opacidad máxima en la punta, antes del desenfoque
+    const PASO = 4;        // px mínimos entre puntos registrados
+    let puntos = [], rgb = "91,99,168", anim = 0, dpr = 1;
+
+    const leerColor = () => {
+      const hex = getComputedStyle(raiz).getPropertyValue("--primary").trim().replace("#", "");
+      if (/^[0-9a-f]{6}$/i.test(hex)) rgb = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)).join(",");
+    };
+    const medir = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      lienzo.width = innerWidth * dpr; lienzo.height = innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    function dibujar(ahora) {
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      puntos = puntos.filter(p => ahora - p.t < VIDA);
+      const n = puntos.length;
+      if (n > 1) {
+        /* Bordes de la estela: en cada punto, un ancho que crece de la cola (0) a la punta
+           (ANCHO) y que además se encoge con la edad del punto */
+        const izq = [], der = [];
+        for (let i = 0; i < n; i++) {
+          const p = puntos[i], q = puntos[Math.min(i + 1, n - 1)], o = puntos[Math.max(i - 1, 0)];
+          let dx = q.x - o.x, dy = q.y - o.y;
+          const largo = Math.hypot(dx, dy) || 1; dx /= largo; dy /= largo;
+          const vida = 1 - (ahora - p.t) / VIDA;
+          const w = (ANCHO / 2) * (i / (n - 1)) * vida;
+          izq.push([p.x - dy * w, p.y + dx * w]);
+          der.push([p.x + dy * w, p.y - dx * w]);
+        }
+        const cola = puntos[0], punta = puntos[n - 1];
+        const vidaPunta = 1 - (ahora - punta.t) / VIDA;
+        const g = ctx.createLinearGradient(cola.x, cola.y, punta.x, punta.y);
+        g.addColorStop(0, `rgba(${rgb},0)`);
+        g.addColorStop(1, `rgba(${rgb},${ALFA * vidaPunta})`);
+        ctx.beginPath();
+        ctx.moveTo(izq[0][0], izq[0][1]);
+        for (let i = 1; i < n; i++) ctx.lineTo(izq[i][0], izq[i][1]);
+        for (let i = n - 1; i >= 0; i--) ctx.lineTo(der[i][0], der[i][1]);
+        ctx.closePath();
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      anim = n ? requestAnimationFrame(dibujar) : 0;
+    }
+
+    let ultimo = null;
+    addEventListener("pointermove", e => {
+      if (e.pointerType !== "mouse") return;
+      if (ultimo && Math.hypot(e.clientX - ultimo.x, e.clientY - ultimo.y) < PASO) return;
+      ultimo = { x: e.clientX, y: e.clientY, t: performance.now() };
+      puntos.push(ultimo);
+      if (!anim) anim = requestAnimationFrame(dibujar);
+    }, { passive: true });
+    addEventListener("resize", medir, { passive: true });
+    new MutationObserver(leerColor).observe(raiz, { attributes: true, attributeFilter: ["data-tema-efectivo"] });
+    medir(); leerColor();
+  })();
 
   /* ---------- Revelado al hacer scroll ---------- */
   const revelador = raiz.classList.contains("anim")
@@ -153,12 +239,16 @@
   let disparador = null;
 
   cargar(listaEdiciones, 3, "las ediciones", async () => {
-    ediciones = await Datos.ediciones();
+    /* Las tres más recientes, asegurando que la fijada esté entre ellas */
+    const todas = (await Datos.ediciones()).sort((a, b) => String(b.publicado || "").localeCompare(String(a.publicado || "")));
+    const fija = todas.find(e => e.fijado);
+    ediciones = todas.slice(0, 3);
+    if (fija && !ediciones.includes(fija)) ediciones = [...todas.filter(e => e !== fija).slice(0, 2), fija];
     if (!ediciones.length) {
       listaEdiciones.innerHTML = `<li class="vacio">Todavía no hay ediciones publicadas. La primera llega este viernes.</li>`;
       return;
     }
-    listaEdiciones.innerHTML = ediciones.slice(0, 3).map((e, i) => `<li>
+    listaEdiciones.innerHTML = ediciones.map((e, i) => `<li>
         <button class="edicion_fila" type="button" data-i="${i}" aria-haspopup="dialog">
           <time datetime="${escapar(e.publicado || "")}">${fecha(e.publicado)}</time>
           <span><b>${escapar(e.titulo)}</b><span class="extracto">${escapar(e.extracto)}</span></span>

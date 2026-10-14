@@ -928,3 +928,12 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
 .login-card .btn:disabled{opacity:.6;cursor:wait}
 .login-err{font-size:.85rem;color:var(--alert);background:var(--alert-soft);border-radius:var(--radius);padding:8px 10px;margin-top:6px}
 .login-err[hidden]{display:none}
+
+/* Transición suave al entrar desde la landing (frontend/landingpage), que declara lo mismo.
+   View Transitions entre documentos: donde no hay soporte, se navega normal. */
+@view-transition{navigation:auto}
+@keyframes vista_sale{to{opacity:0;filter:blur(4px)}}
+@keyframes vista_entra{from{opacity:0;filter:blur(4px)}}
+::view-transition-old(root){animation:vista_sale 280ms ease-in both}
+::view-transition-new(root){animation:vista_entra 520ms cubic-bezier(.23,1,.32,1) both}
+@media (prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}

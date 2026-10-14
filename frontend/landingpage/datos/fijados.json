@@ -1,0 +1,37 @@
+[
+  {
+    "slug": "fijados",
+    "periodo_referencia": "Fijados",
+    "_nota": "Contenido que la landing muestra SIEMPRE, aunque la plataforma no haya publicado nada. Mismo formato que activos/<slug>/curaduria.json. Las FAQs fijadas van primero; la edición fijada siempre está entre las tres que se muestran.",
+    "activos": [
+      {
+        "id": "F1",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-09-29",
+        "texto": "**¿Cómo configuro el entorno de Python sin romper otros proyectos?**\n\nUsa un entorno virtual por proyecto.\n\n1. En la carpeta del proyecto, ejecuta `python3 -m venv .venv`.\n2. Actívalo con `source .venv/bin/activate` (en Windows, `.venv\\Scripts\\activate`).\n3. Instala lo que necesites con `pip install`.\n4. Guarda las dependencias con `pip freeze > requirements.txt`."
+      },
+      {
+        "id": "F2",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-06",
+        "texto": "**¿Qué pongo en mi portafolio si todavía no tengo experiencia laboral?**\n\nTres proyectos pequeños y terminados valen más que uno grande a medias.\n\n1. Elige problemas reales: un análisis de datos públicos, una API sencilla, una automatización.\n2. Escribe un README que explique el problema, la solución y cómo correrlo.\n3. Muestra el proceso, no solo el resultado: decisiones, errores y qué cambiarías.\n4. Fija esos tres repositorios en tu perfil de GitHub."
+      },
+      {
+        "id": "F3",
+        "formato": "Tip / FAQ",
+        "estado": "Publicado",
+        "publicado": "2026-10-10",
+        "texto": "**¿Cómo me preparo para mi primera entrevista técnica?**\n\nPractica en voz alta, no solo en el editor.\n\n1. Resuelve un ejercicio al día explicando tu razonamiento mientras escribes.\n2. Prepara una historia corta de cada proyecto de tu portafolio.\n3. Repasa lo básico de tu stack: estructuras de datos, SQL y Git.\n4. Al final, pregunta algo sobre el equipo: también tú estás evaluando."
+      },
+      {
+        "id": "F4",
+        "formato": "Destaque de newsletter",
+        "estado": "Publicado",
+        "publicado": "2026-10-10",
+        "texto": "## Community Highlights · Semana 41\n\n**🏆 Logro de la semana**\nEl grupo de estudio de Git cerró su primer proyecto colaborativo: una pequeña API de recetas con pull requests revisados entre todos.\n\n**❓ Pregunta de la semana**\nConflictos al hacer merge. No es un error: es Git pidiéndote que decidas. Te dejamos los pasos en las FAQs.\n\n**📈 Tema en tendencia**\nEntrevistas técnicas: cómo explicar tu razonamiento en voz alta.\n\n**Para la próxima semana**\nSimulacro de entrevista en vivo el jueves. Cupo limitado; avísanos en el canal #primer-empleo."
+      }
+    ]
+  }
+]

@@ -30,7 +30,8 @@ const ORIGEN = ENTORNO.api;
 const RUTAS = {
   faqs: { api: "/publico/faqs", local: "datos/faqs.json" },
   newsletter: { api: "/publico/newsletter", local: "datos/newsletter.json" },
-  planes: { api: null, local: "datos/planes.json" }
+  planes: { api: null, local: "datos/planes.json" },
+  fijados: { api: null, local: "datos/fijados.json" }   // siempre visibles (ver fusionar)
 };
 const ESPERA_MS = 4000;   // sin respuesta en este tiempo, se usa el respaldo local
 
@@ -76,6 +77,25 @@ function activosPublicados(curadurias, formato) {
     .flatMap(c => (c.activos || []).map(a => ({ ...a, slug: c.slug, periodo: c.periodo_referencia })))
     .filter(a => a.estado === "Publicado" && a.formato === formato && a.texto)
     .sort((a, b) => String(b.publicado || "").localeCompare(String(a.publicado || "")));
+}
+
+/* ---------- Contenido fijado ----------
+   datos/fijados.json: lo que la landing muestra siempre, aunque la plataforma aún no
+   haya publicado nada. Si no carga, se sigue solo con lo publicado. */
+async function fijados(formato) {
+  try {
+    return activosPublicados(await leer("fijados"), formato).map(a => ({ ...a, fijado: true }));
+  } catch (e) {
+    console.info(`[Insight Mind] No se pudieron leer los fijados (${e.message}).`);
+    return [];
+  }
+}
+
+/* Une fijados + publicados sin repetir: la primera línea del texto identifica la pieza */
+const clave = a => a.texto.split("\n")[0].replace(/[*#\s]+/g, " ").trim().toLowerCase();
+function fusionar(fijas, publicadas) {
+  const vistas = new Set(fijas.map(clave));
+  return [...fijas, ...publicadas.filter(a => !vistas.has(clave(a)))];
 }
 
 /* ---------- Markdown mínimo, a mano y con HTML escapado ---------- */
@@ -125,6 +145,7 @@ function aFaq(a) {
   const pregunta = m ? m[1] : cabeza.trim();
   return {
     id: a.id,
+    fijado: !!a.fijado,
     publicado: a.publicado,
     pregunta: sinEmoji(pregunta),
     respuestaHtml: markdown(m ? resto.join("\n") : a.texto)
@@ -146,6 +167,7 @@ function aEdicion(a) {
     .find(Boolean) || "";
   return {
     id: a.id,
+    fijado: !!a.fijado,
     slug: a.slug,
     publicado: a.publicado,
     titulo: tituloEdicion(titulo),
@@ -156,8 +178,16 @@ function aEdicion(a) {
 
 const Datos = {
   URL_APP,
-  async faqs() { return activosPublicados(await leer("faqs"), FORMATO.faq).map(aFaq); },
-  async ediciones() { return activosPublicados(await leer("newsletter"), FORMATO.newsletter).map(aEdicion); },
+  /* FAQs: las fijadas primero, luego lo publicado en la plataforma */
+  async faqs() {
+    const [fijas, publicadas] = await Promise.all([fijados(FORMATO.faq), leer("faqs")]);
+    return fusionar(fijas, activosPublicados(publicadas, FORMATO.faq)).map(aFaq);
+  },
+  /* Ediciones: por fecha, y la fijada siempre entre las que se muestran (ver sitio.js) */
+  async ediciones() {
+    const [fijas, publicadas] = await Promise.all([fijados(FORMATO.newsletter), leer("newsletter")]);
+    return fusionar(fijas, activosPublicados(publicadas, FORMATO.newsletter)).map(aEdicion);
+  },
   async planes() { return leer("planes"); },
   procedencia,
   ORIGEN,
