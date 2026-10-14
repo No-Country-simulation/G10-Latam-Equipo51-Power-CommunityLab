@@ -573,7 +573,7 @@ const pendientesDe = k => E.activos.filter(a => FORMATOS[a.formato].plat === k &
 
 async function visualizarCuraduria() {
   try {
-    const res = await fetch('/conexiones');
+    const res = await fetch(API.base + '/conexiones');
     if (res.ok) {
       const data = await res.json();
       Object.keys(data).forEach(k => {
@@ -748,7 +748,7 @@ async function publicar(id) {
   toast("Enviando a " + p.nom + "...", "Conectando con la API oficial");
 
   try {
-    const response = await fetch('/publicar-redes', {
+    const response = await fetch(API.base + '/publicar-redes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
