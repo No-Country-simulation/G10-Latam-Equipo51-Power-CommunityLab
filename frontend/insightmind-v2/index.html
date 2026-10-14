@@ -267,32 +267,16 @@
                   <div class="row" style="justify-content:center;margin-top:11px">
                     <button class="btn sm" id="btn_file">Subir archivo</button>
                     <button class="btn primary sm" id="btn_ejemplo">Usar lote de ejemplo</button>
-                  </div><input type="file" id="file" accept=".json,.csv" hidden>
+                  </div><input type="file" id="file" accept=".json,.csv" multiple hidden>
+                </div>
+                <div id="archivos_subidos" class="archivos" hidden>
+                  <div class="archivos-head">
+                    <span class="label" style="margin:0">Archivos subidos</span>
+                    <span class="mini" id="archivos_total">0 archivos</span>
+                  </div>
+                  <ul class="archivos-lista" id="archivos_lista" aria-live="polite"></ul>
                 </div>
                 <div id="validacion" hidden style="margin-top:14px">
-                  <span class="label">Reporte de validación</span>
-                  <div class="df">
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td class="muted">Interacciones válidas</td>
-                          <td class="mono"><b>12</b></td>
-                        </tr>
-                        <tr>
-                          <td class="muted">Inválidas (faltan campos)</td>
-                          <td class="mono">2</td>
-                        </tr>
-                        <tr>
-                          <td class="muted">Duplicadas eliminadas</td>
-                          <td class="mono">1</td>
-                        </tr>
-                        <tr>
-                          <td class="muted">Datos personales enmascarados</td>
-                          <td class="mono">3 · 2 correos, 1 teléfono</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
                   <div class="row" style="margin-top:13px"><button class="btn primary" id="btn_procesar"><svg
                         class="ico">
                         <use href="#i-play" />

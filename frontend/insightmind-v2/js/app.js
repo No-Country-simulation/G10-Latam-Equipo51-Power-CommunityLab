@@ -247,22 +247,69 @@ function irPaso(n) {
   [1, 2, 3].forEach(i => $("#paso_" + i).hidden = (i !== n));
 }
 
-btn_file.onclick = () => file.click(); file.onchange = subirYValidar; btn_ejemplo.onclick = validar;
+btn_file.onclick = () => file.click(); 
+file.onchange = subirYValidar; 
+btn_ejemplo.onclick = validar;
+
 drop.addEventListener("dragover", e => { e.preventDefault(); drop.style.borderColor = "var(--primary)"; });
 drop.addEventListener("dragleave", () => drop.style.borderColor = "");
 drop.addEventListener("drop", e => {
   e.preventDefault(); drop.style.borderColor = "";
-  if (e.dataTransfer.files[0]) { file.files = e.dataTransfer.files; subirYValidar(); }
+  if (e.dataTransfer.files[0]) { 
+    file.files = e.dataTransfer.files; 
+    subirYValidar(); }
 });
 
 function validar() { validacion.hidden = false; toast("Archivo cargado", "12 interacciones válidas · 1 duplicada eliminada"); }
 
+/* ---------- LISTA DE ARCHIVOS SUBIDOS (referencia) ---------- */
+E.archivos = [];   /* { nombre, tamano, hora, estado: "subiendo" | "subido" | "error" } */
+
+const fmtTamano = b => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ESTADO_ARCHIVO = { subiendo: ["Subiendo…", "warn"], subido: ["Subido a OCI", "ok"], error: ["Error", "alert"] };
+const MAX_ARCHIVOS = 20;   /* tope de archivos por sesión; los que fallan no cuentan */
+const archivosOcupados = () => E.archivos.filter(a => a.estado !== "error").length;
+
+function renderArchivos() {
+  const lista = E.archivos;
+  archivos_subidos.hidden = !lista.length;
+  const ok = lista.filter(a => a.estado === "subido").length;
+  archivos_total.textContent = `${archivosOcupados()}/${MAX_ARCHIVOS} archivos · ${ok} subido${ok === 1 ? "" : "s"}`;
+  archivos_lista.innerHTML = "";
+  /* el más reciente primero */
+  [...lista].reverse().forEach(a => {
+    const [txt, cls] = ESTADO_ARCHIVO[a.estado];
+    const ext = (a.nombre.split(".").pop() || "").toUpperCase();
+    archivos_lista.appendChild(el("li", "archivo " + a.estado,
+      `<span class="archivo-ext">${escHtml(ext)}</span>
+       <span class="archivo-info"><b title="${escHtml(a.nombre)}">${escHtml(a.nombre)}</b>
+         <span class="mini mono">${fmtTamano(a.tamano)} · ${a.hora}</span></span>
+       <span class="archivo-estado ${cls}">${txt}</span>`));
+  });
+}
+
 async function subirYValidar() {
-  const archivo = file.files[0]; if (!archivo) return;
-  const r = await conError(API.subirArchivo(archivo), "No se pudo subir el archivo a OCI");
-  if (!r) return;
-  validacion.hidden = false;
-  toast("Archivo subido a OCI", archivo.name, true);
+  const seleccion = [...(file.files || [])]; if (!seleccion.length) return;
+  file.value = "";   /* permite volver a seleccionar el mismo archivo */
+  const libres = Math.max(0, MAX_ARCHIVOS - archivosOcupados());
+  if (!libres) return toast("Límite alcanzado", `Solo se permiten ${MAX_ARCHIVOS} archivos por lote.`, false);
+  const archivos = seleccion.slice(0, libres);
+  if (seleccion.length > libres)
+    toast("Límite de archivos superado",
+      `Máximo ${MAX_ARCHIVOS} archivos. Se subirán ${libres} y se omitirán ${seleccion.length - libres}.`, false);
+  /* se registran todos antes de subir: reserva los cupos aunque se elija otro lote mientras tanto */
+  const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const regs = archivos.map(a => ({ archivo: a, nombre: a.name, tamano: a.size, estado: "subiendo", hora }));
+  E.archivos.push(...regs); renderArchivos();
+  for (const reg of regs) {
+    const archivo = reg.archivo; delete reg.archivo;
+    const r = await conError(API.subirArchivo(archivo), "No se pudo subir el archivo a OCI");
+    reg.estado = r ? "subido" : "error"; renderArchivos();
+    if (!r) continue;
+    validacion.hidden = false;
+    toast("Archivo subido a OCI", archivo.name, true);
+  }
 }
 
 /* ---------- PROCESAMIENTO DE MENSAJES ---------- */
