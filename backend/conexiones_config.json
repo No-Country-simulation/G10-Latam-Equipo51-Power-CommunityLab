@@ -10,12 +10,12 @@
     },
     "slack": {
         "nombre": "Slack Oficial",
-        "on": true,
+        "on": false,
         "tipo": "Chat / Soporte",
         "cuenta": "InsightMind G10",
         "color": "#4A154B",
         "ini": "SL",
-        "modo": "Conectado vía API"
+        "modo": "Desconectado"
     },
     "linkedin": {
         "nombre": "LinkedIn Page",
@@ -28,12 +28,12 @@
     },
     "x": {
         "nombre": "X (Twitter)",
-        "on": true,
+        "on": false,
         "tipo": "Publicación Corta",
         "cuenta": "@insightmindg10",
         "color": "#000000",
         "ini": "X",
-        "modo": "Conectado vía API"
+        "modo": "Desconectado"
     },
     "web": {
         "nombre": "Web de la comunidad",
@@ -43,7 +43,8 @@
         "color": "#20b2aa",
         "ini": "WEB",
         "modo": "Conectado a la landing",
-        "url": "/landing/#faqs"
+        "url": "/landing/#faqs",
+        "manual": true
     },
     "newsletter": {
         "nombre": "Newsletter",
