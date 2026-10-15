@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from backend.analizador_sentimiento import _llamar_cohere
 from backend.config_voz import aplicar_chips, reglas_de_estilo, voz_como_prompt
 
-LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 280, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
+LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 255, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
 SEPARADOR_HILO = "\n\n———\n\n"
 
 INSTRUCCIONES = {
@@ -18,7 +18,7 @@ INSTRUCCIONES = {
         "salvo que la guía de voz o las reglas de estilo indiquen lo contrario."
     ),
     "Hilo de X": (
-        f"Escribe un hilo de X de 4 posts. CADA post debe tener máximo 280 caracteres. "
+        f"Escribe un hilo de X de 4 posts numerados (1/4, 2/4, 3/4, 4/4). CADA post individual debe tener máximo 255 caracteres. "
         f"Separa los posts con una línea que contenga exactamente: {SEPARADOR_HILO.strip()}"
     ),
     "Tip / FAQ": (
@@ -53,7 +53,7 @@ def _ajustar(formato: str, texto: str, voz: dict | None = None) -> str:
         texto = aplicar_chips(texto, voz)   # Sin hashtags / Sin emojis, garantizado
     if formato == "Hilo de X":
         posts = [p.strip() for p in re.split(r"\n\s*[—–-]{3,}\s*\n", texto) if p.strip()]
-        posts = [p if len(p) <= 280 else p[:277].rstrip() + "…" for p in posts]
+        posts = [p if len(p) <= 255 else p[:252].rstrip() + "…" for p in posts]
         return SEPARADOR_HILO.join(posts)
     limite = LIMITES.get(formato, 3000)
     return texto if len(texto) <= limite else texto[: limite - 1].rstrip() + "…"

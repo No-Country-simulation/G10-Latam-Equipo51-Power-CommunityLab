@@ -207,7 +207,7 @@ const PLAT = {
 };
 const FORMATOS = {
   "Post de LinkedIn": { plat: "linkedin", limite: 3000 },
-  "Hilo de X": { plat: "x", limite: 280, porPost: true },
+  "Hilo de X": { plat: "x", limite: 255, porPost: true },
   "Tip / FAQ": { plat: "web", limite: 2500 },
   "Destaque de newsletter": { plat: "newsletter", limite: 4000 },
 };
@@ -267,7 +267,10 @@ const hiloTxt = (m) => {
     `"${citaDe(m)}"\n\nNo fue un curso suelto: fue un proyecto real, publicado y defendido en entrevista.`,
     `La receta que repiten quienes lo logran:\n\n• un proyecto terminado > diez tutoriales\n• publicarlo aunque no sea perfecto\n• pedir revisión en comunidad`,
     `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`,
-  ].join("\n\n———\n\n");
+  ].map((parte, indice) => {
+    const numerada = `${indice + 1}/4 ${parte}`;
+    return numerada.length <= 255 ? numerada : numerada.slice(0, 252).trimEnd() + "…";
+  }).join("\n\n———\n\n");
 };
 /* faq1/faq2/newsTxt quedan como muestra fija del modo demo.
    faqGenerico/newsletterGenerico arman el contenido a partir de los mensajes

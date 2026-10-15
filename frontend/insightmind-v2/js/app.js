@@ -654,8 +654,8 @@ async function visualizarCuraduria() {
       const ta = it.querySelector("textarea"), c = it.querySelector("#c_" + a.id);
       const cuenta = () => {
         if (cfg.porPost) {
-          const ps = ta.value.split("———"), mx = Math.max(...ps.map(x => x.trim().length));
-          c.textContent = `${ps.length} posts · máx ${mx}/280`; c.style.color = mx > 280 ? "var(--alert)" : "";
+          const ps = ta.value.split("———").map(x => x.trim()).filter(Boolean), mx = Math.max(0, ...ps.map(x => x.length));
+          c.textContent = `${ps.length} posts · máx ${mx}/255`; c.style.color = mx > 280 ? "var(--alert)" : mx > 255 ? "var(--warn)" : "";
         }
         else { c.textContent = `${ta.value.length}/${cfg.limite} caracteres`; c.style.color = ta.value.length > cfg.limite ? "var(--alert)" : ""; }
       };
@@ -691,22 +691,45 @@ function aprobarPendientes(plat) {
 /* modal de confirmación antes de publicar */
 function confirmarPublicacion(id) {
   const a = E.activos.find(x => x.id === id), cfg = FORMATOS[a.formato], p = PLAT[cfg.plat], m = msg(a.fuente);
+  const partesHilo = cfg.porPost ? a.texto.split("———").map(x => x.trim()).filter(Boolean) : [];
+  const excedeLimite = cfg.plat === "x" && partesHilo.some(parte => parte.length > 280);
   const largo = cfg.porPost
-    ? a.texto.split("———").length + " posts · máximo " + Math.max(...a.texto.split("———").map(x => x.trim().length)) + "/280 caracteres"
+    ? partesHilo.length + " posts · máximo " + Math.max(0, ...partesHilo.map(parte => parte.length)) + "/255 caracteres"
     : a.texto.length + "/" + cfg.limite + " caracteres";
+  const vistaPrevia = partesHilo.length > 1
+    ? partesHilo.map((parte, indice) => `<div class="modal-prev">
+        <div class="row" style="justify-content:space-between"><b>Post ${indice + 1}/${partesHilo.length}</b><span class="mini mono">${parte.length}/255 caracteres</span></div>
+        <div>${escHtml(parte)}</div>
+        <div class="row"><button type="button" class="btn sm" data-copy-idx="${indice}">Copiar post ${indice + 1}</button>
+          ${parte.length <= 280 ? `<a class="btn sm" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(parte)}" target="_blank" rel="noopener">Abrir en X ↗</a>` : '<span class="mini">Acorta este post a 280 caracteres para abrirlo en X.</span>'}</div>
+      </div>`).join("")
+    : `<div class="modal-prev">${escHtml(a.texto)}</div>`;
   dlg_cont.innerHTML = `
     <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
       <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
     <div class="modal-body">
       <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
         <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
-      <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g, "&lt;")}</div></div>
+      <div><span class="label">Así se va a publicar</span>${vistaPrevia}</div>
+      ${cfg.plat === "x" && partesHilo.length > 1 ? '<div class="mini">Publica el primer post y añade los siguientes como respuestas en X para formar el hilo. Abrir el compositor no confirma su publicación.</div>' : ""}
+      ${excedeLimite ? '<div class="mini" style="color:var(--alert)">Acorta los posts que superan 280 caracteres antes de publicar.</div>' : ""}
       <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
     </div>
     <div class="modal-foot">
       <button class="btn" id="dlg_no">Cancelar</button>
-      <button class="btn primary" id="dlg_si">Publicar ahora</button>
+      <button class="btn primary" id="dlg_si" ${excedeLimite ? "disabled" : ""}>${cfg.plat === "x" && partesHilo.length > 1 ? `Abrir 1/${partesHilo.length} en X y marcar Publicado` : "Publicar ahora"}</button>
     </div>`;
+  dlg_cont.querySelectorAll("[data-copy-idx]").forEach(boton => {
+    boton.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(partesHilo[Number(boton.dataset.copyIdx)]);
+        boton.textContent = "¡Copiado!";
+        setTimeout(() => { boton.textContent = "Copiar post " + (Number(boton.dataset.copyIdx) + 1); }, 1500);
+      } catch (error) {
+        toast("No se pudo copiar el post", "Selecciona el texto y cópialo manualmente", false);
+      }
+    };
+  });
   dlg.showModal();
   dlg_no.onclick = () => dlg.close();
   dlg_si.onclick = () => { dlg.close(); publicar(id); };
@@ -742,18 +765,18 @@ function fechaLegible(v) {
 async function publicar(id) {
   const a = E.activos.find(x => x.id === id);
   const cfg = FORMATOS[a.formato];
-  const plataformaKey = cfg.plat; // Asegura que sea "linkedin" o "x"
-  const p = PLAT[plataformaKey];
+  const plataformaClave = cfg.plat; // Asegura que sea "linkedin" o "x"
+  const p = PLAT[plataformaClave];
 
   /* Web (FAQs) y Newsletter son destinos de la LANDING: no hay API externa a la que llamar.
      Publicar = marcar el activo como Publicado (fecha ISO) y guardar la curaduría en OCI;
      la landing lo lee de /publico/faqs y /publico/newsletter. */
-  if (plataformaKey === "web" || plataformaKey === "newsletter") {
+  if (plataformaClave === "web" || plataformaClave === "newsletter") {
     const previo = a.estado;
     a.estado = "Publicado"; a.publicado = new Date().toISOString();
-    const pub = { fecha: fechaLegible(a.publicado), plat: plataformaKey, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
-    E.pubs.unshift(pub); save(); visualizarCuraduria();
-    const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizarCuraduria(); };
+    const pub = { fecha: fechaLegible(a.publicado), plat: plataformaClave, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
+    E.pubs.unshift(pub); save(); visualizar();
+    const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar(); };
     const ok = await guardarCuraduriaEnOCI();
     if (!ok) { revertir(); return; }   /* no quedó en el bucket: no se da por publicado (conError ya mostró el aviso) */
     toast("Publicado en " + p.nom, p.cuenta, true, () => {
@@ -766,17 +789,17 @@ async function publicar(id) {
   toast("Enviando a " + p.nom + "...", "Conectando con la API oficial");
 
   try {
-    const response = await fetch(API.base + '/publicar-redes', {
+    const respuesta = await fetch(API.base + '/publicar-redes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         texto: a.texto,
-        plataforma: plataformaKey,
+        plataforma: plataformaClave,
         formato: a.formato
       })
     });
 
-    const resultado = await response.json();
+    const resultado = await respuesta.json();
 
     console.log("--> [FRONTEND] Respuesta recibida del servidor:", resultado);
 
@@ -788,23 +811,34 @@ async function publicar(id) {
       }
       
       const previo = a.estado;
-      a.estado = "Publicado"; 
-      a.publicado = new Date().toLocaleDateString() + ", " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      
-      const pub = { fecha: a.publicado, plat: plataformaKey, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
-      E.pubs.unshift(pub); 
-      save(); 
-      
-      //  LLAMAMOS EXPLÍCITAMENTE A VISUALIZAR CURADURÍA AQUÍ
-      visualizarCuraduria(); 
-
-      toast("¡Publicado con éxito en " + p.nom + "!", p.cuenta, true, () => {
-        a.estado = previo; 
-        delete a.publicado; 
-        E.pubs = E.pubs.filter(x => x !== pub); 
-        save(); 
-        visualizarCuraduria(); // <-- Y aquí también al revertir
-        toast("Publicación revertida", "El contenido volvió a " + previo);
+      a.estado = "Publicado";
+      a.publicado = new Date().toISOString();
+      const pub = {
+        fecha: fechaLegible(a.publicado),
+        plat: plataformaClave,
+        formato: a.formato,
+        extracto: a.texto.slice(0, 64) + "…",
+        fuente: a.fuente
+      };
+      E.pubs.unshift(pub);
+      save();
+      visualizar();
+      const revertir = () => {
+        a.estado = previo;
+        delete a.publicado;
+        E.pubs = E.pubs.filter(x => x !== pub);
+        save();
+        visualizar();
+      };
+      await guardarCuraduriaEnOCI().then(ok => {
+        if (!ok) return revertir();
+        const detalleToast = (resultado.es_hilo && resultado.posts && resultado.posts.length > 1)
+          ? p.cuenta + " · Post 1/" + resultado.posts.length + " abierto en X"
+          : p.cuenta;
+        toast("¡Publicado con éxito en " + p.nom + "!", detalleToast, true, () => {
+          revertir();
+          guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));
+        });
       });
     } else {
       toast("Error al publicar", resultado.error || "Verifica tus credenciales en Conexiones", false);
