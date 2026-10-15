@@ -745,6 +745,24 @@ async function publicar(id) {
   const plataformaKey = cfg.plat; // Asegura que sea "linkedin" o "x"
   const p = PLAT[plataformaKey];
 
+  /* Web (FAQs) y Newsletter son destinos de la LANDING: no hay API externa a la que llamar.
+     Publicar = marcar el activo como Publicado (fecha ISO) y guardar la curaduría en OCI;
+     la landing lo lee de /publico/faqs y /publico/newsletter. */
+  if (plataformaKey === "web" || plataformaKey === "newsletter") {
+    const previo = a.estado;
+    a.estado = "Publicado"; a.publicado = new Date().toISOString();
+    const pub = { fecha: fechaLegible(a.publicado), plat: plataformaKey, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
+    E.pubs.unshift(pub); save(); visualizarCuraduria();
+    const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizarCuraduria(); };
+    const ok = await guardarCuraduriaEnOCI();
+    if (!ok) { revertir(); return; }   /* no quedó en el bucket: no se da por publicado (conError ya mostró el aviso) */
+    toast("Publicado en " + p.nom, p.cuenta, true, () => {
+      revertir();
+      guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));
+    });
+    return;
+  }
+
   toast("Enviando a " + p.nom + "...", "Conectando con la API oficial");
 
   try {
