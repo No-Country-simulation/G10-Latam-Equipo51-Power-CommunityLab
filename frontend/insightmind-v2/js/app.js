@@ -572,6 +572,16 @@ const ESTADOS = ["Todos", "Pendiente", "Listo", "Publicado"];
 const pendientesDe = k => E.activos.filter(a => FORMATOS[a.formato].plat === k && a.estado === "Pendiente").length;
 
 async function visualizarCuraduria() {
+  
+    // Pequeño bloque para reactivar curaduría si se abre un lote antiguo que ya estaba publicado: pasa a Pendiente y se borra la fecha de publicación.
+  // if (E.activos) {
+  //   E.activos.forEach(a => {
+  //     if (a.estado === "Publicado") a.estado = "Pendiente";
+  //     delete a.publicado;
+  //   });
+  //   save();
+  // }
+
   try {
     const res = await fetch(API.base + '/conexiones');
     if (res.ok) {
@@ -688,48 +698,78 @@ function aprobarPendientes(plat) {
   });
 }
 
-/* modal de confirmación antes de publicar */
+// modal de confirmación antes de publicar  
 function confirmarPublicacion(id) {
   const a = E.activos.find(x => x.id === id), cfg = FORMATOS[a.formato], p = PLAT[cfg.plat], m = msg(a.fuente);
-  const partesHilo = cfg.porPost ? a.texto.split("———").map(x => x.trim()).filter(Boolean) : [];
-  const excedeLimite = cfg.plat === "x" && partesHilo.some(parte => parte.length > 280);
-  const largo = cfg.porPost
-    ? partesHilo.length + " posts · máximo " + Math.max(0, ...partesHilo.map(parte => parte.length)) + "/255 caracteres"
-    : a.texto.length + "/" + cfg.limite + " caracteres";
-  const vistaPrevia = partesHilo.length > 1
-    ? partesHilo.map((parte, indice) => `<div class="modal-prev">
-        <div class="row" style="justify-content:space-between"><b>Post ${indice + 1}/${partesHilo.length}</b><span class="mini mono">${parte.length}/255 caracteres</span></div>
-        <div>${escHtml(parte)}</div>
-        <div class="row"><button type="button" class="btn sm" data-copy-idx="${indice}">Copiar post ${indice + 1}</button>
-          ${parte.length <= 280 ? `<a class="btn sm" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(parte)}" target="_blank" rel="noopener">Abrir en X ↗</a>` : '<span class="mini">Acorta este post a 280 caracteres para abrirlo en X.</span>'}</div>
-      </div>`).join("")
-    : `<div class="modal-prev">${escHtml(a.texto)}</div>`;
+  
+  // Si NO es X, mantenemos el modal original 
+  if (cfg.plat !== "x") {
+    const largo = cfg.porPost
+      ? a.texto.split("———").length + " posts · máximo " + Math.max(...a.texto.split("———").map(x => x.trim().length)) + "/255 caracteres"
+      : a.texto.length + "/" + cfg.limite + " caracteres";
+    dlg_cont.innerHTML = `
+      <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
+        <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+      <div class="modal-body">
+        <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
+          <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
+        <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g, "&lt;")}</div></div>
+        <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="dlg_no">Cancelar</button>
+        <button class="btn primary" id="dlg_si">Publicar ahora</button>
+      </div>`;
+    dlg.showModal();
+    dlg_no.onclick = () => dlg.close();
+    dlg_si.onclick = () => { dlg.close(); publicar(id); };
+    setTimeout(() => dlg_si.focus(), 50);
+    return;
+  }
+
+  // --- LÓGICA EXCLUSIVA PARA X (Hilos / Tuits segmentados) ---
+  const partesHilo = cfg.porPost ? a.texto.split("———").map(x => x.trim()).filter(Boolean) : [a.texto];
+  const excedeLimite = partesHilo.some(parte => parte.length > 280);
+  const largo = partesHilo.length + " posts · máximo " + Math.max(0, ...partesHilo.map(parte => parte.length)) + "/255 caracteres";
+
+  const vistaPrevia = partesHilo.map((parte, indice) => `
+    <div class="modal-prev" style="margin-bottom: 10px; padding: 8px; border: 1px solid var(--border, #eee); border-radius: 6px;">
+      <div class="row" style="justify-content:space-between"><b>Post ${indice + 1}/${partesHilo.length}</b><span class="mini mono">${parte.length}/255 caracteres</span></div>
+      <div style="margin: 6px 0;">${escHtml(parte)}</div>
+      <div class="row" style="gap: 8px;">
+        <button type="button" class="btn sm" data-copy-idx="${indice}">Copiar post ${indice + 1}</button>
+        ${parte.length <= 280 ? `<a class="btn sm primary" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(parte)}" target="_blank" rel="noopener">Publicar Post ${indice + 1} en X ↗</a>` : '<span class="mini" style="color:var(--alert)">Supera los 280 caracteres.</span>'}
+      </div>
+    </div>`).join("");
+
   dlg_cont.innerHTML = `
     <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
-      <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+      <div style="flex:1"><b>Gestionar Hilo en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
     <div class="modal-body">
       <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
         <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
-      <div><span class="label">Así se va a publicar</span>${vistaPrevia}</div>
-      ${cfg.plat === "x" && partesHilo.length > 1 ? '<div class="mini">Publica el primer post y añade los siguientes como respuestas en X para formar el hilo. Abrir el compositor no confirma su publicación.</div>' : ""}
+      <div><span class="label">Secuencia de tuits listos para difusión</span>${vistaPrevia}</div>
+      <div class="mini" style="margin-top: 8px;">Puedes abrir cada tuit individualmente en X. Una vez que termines de difundir todo el hilo, puedes marcar el bloque completo como publicado abajo.</div>
       ${excedeLimite ? '<div class="mini" style="color:var(--alert)">Acorta los posts que superan 280 caracteres antes de publicar.</div>' : ""}
-      <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
     </div>
     <div class="modal-foot">
-      <button class="btn" id="dlg_no">Cancelar</button>
-      <button class="btn primary" id="dlg_si" ${excedeLimite ? "disabled" : ""}>${cfg.plat === "x" && partesHilo.length > 1 ? `Abrir 1/${partesHilo.length} en X y marcar Publicado` : "Publicar ahora"}</button>
+      <button class="btn" id="dlg_no">Cerrar ventana</button>
+      <button class="btn primary" id="dlg_si" ${excedeLimite ? "disabled" : ""}>Marcar todo el hilo como Publicado</button>
     </div>`;
+
   dlg_cont.querySelectorAll("[data-copy-idx]").forEach(boton => {
     boton.onclick = async () => {
       try {
         await navigator.clipboard.writeText(partesHilo[Number(boton.dataset.copyIdx)]);
+        const originalText = boton.textContent;
         boton.textContent = "¡Copiado!";
-        setTimeout(() => { boton.textContent = "Copiar post " + (Number(boton.dataset.copyIdx) + 1); }, 1500);
+        setTimeout(() => { boton.textContent = originalText; }, 1500);
       } catch (error) {
         toast("No se pudo copiar el post", "Selecciona el texto y cópialo manualmente", false);
       }
     };
   });
+
   dlg.showModal();
   dlg_no.onclick = () => dlg.close();
   dlg_si.onclick = () => { dlg.close(); publicar(id); };
@@ -744,23 +784,6 @@ function fechaLegible(v) {
   if (!d || isNaN(d)) return v || "";
   return `${d.getDate()} ${MESES_CORTOS[d.getMonth()]}, ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
-
-// function publicar(id) {
-//   const a = E.activos.find(x => x.id === id), p = PLAT[FORMATOS[a.formato].plat];
-//   const previo = a.estado;
-//   a.estado = "Publicado"; a.publicado = new Date().toISOString();
-//   const pub = { fecha: fechaLegible(a.publicado), plat: FORMATOS[a.formato].plat, formato: a.formato, extracto: a.texto.slice(0, 64) + "…", fuente: a.fuente };
-//   E.pubs.unshift(pub); save(); visualizar();
-//   const revertir = () => { a.estado = previo; delete a.publicado; E.pubs = E.pubs.filter(x => x !== pub); save(); visualizar(); };
-//   /* Queda en activos/<slug>/curaduria.json: de ahí lo lee la landing (FAQs y newsletter) */
-//   guardarCuraduriaEnOCI().then(ok => {
-//     if (!ok) return revertir();   /* no quedó en el bucket: no se da por publicado */
-//     toast("Publicado en " + p.nom, p.cuenta, true, () => {
-//       revertir();
-//       guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));
-//     });
-//   });
-// }
 
 async function publicar(id) {
   const a = E.activos.find(x => x.id === id);

@@ -18,8 +18,9 @@ INSTRUCCIONES = {
         "salvo que la guía de voz o las reglas de estilo indiquen lo contrario."
     ),
     "Hilo de X": (
-        f"Escribe un hilo de X de 4 posts numerados (1/4, 2/4, 3/4, 4/4). CADA post individual debe tener máximo 255 caracteres. "
-        f"Separa los posts con una línea que contenga exactamente: {SEPARADOR_HILO.strip()}"
+        "Escribe contenido para X (Twitter). Si el tema es breve, escribe 1 solo tuit. "
+        "Si la información requiere más contexto, escribe una secuencia de tuits (tantos como sean necesarios, sin forzar un número fijo, además no debes numerarlos). "
+        "CADA tuit debe tener máximo 255 caracteres y debes separarlos únicamente con una línea que contenga: \n\n———\n\n"
     ),
     "Tip / FAQ": (
         "Convierte la pregunta en un tip/FAQ para la comunidad: título en negrita (**así**), respuesta breve "
