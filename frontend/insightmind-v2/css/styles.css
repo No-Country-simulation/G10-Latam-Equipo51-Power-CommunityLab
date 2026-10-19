@@ -955,3 +955,31 @@ input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
 ::view-transition-old(root){animation:vista_sale 280ms ease-in both}
 ::view-transition-new(root){animation:vista_entra 520ms cubic-bezier(.23,1,.32,1) both}
 @media (prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
+
+/* ---- Isotipo en lugar de las iniciales «IM» ----
+   El SVG ya trae su cuadro redondeado con el color de marca: se anula el fondo
+   y el texto que .mk le pone a las iniciales. */
+.mk.mk-logo{background:none!important;box-shadow:none!important;padding:0;display:block;flex:none;object-fit:contain;border-radius:0}
+
+/* ---- Panorama · botón de actualizar junto al título ----
+   Link button: sin caja ni relleno, con color de acento, para que no
+   compita con los botones de acción. Una línea fina lo separa del h1.
+   Se muestra solo cuando la sección del Panorama está visible. */
+.titulo-fila{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px}
+.pano-actualizar{display:none;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--border)}
+body:has(#p_panorama:not([hidden])) .pano-actualizar{display:inline-flex}
+.btn-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 4px;margin:-8px 0;
+  border:0;background:none;color:var(--primary-ink);font:inherit;font-size:.88rem;font-weight:600;
+  cursor:pointer;border-radius:var(--radius);text-underline-offset:3px;transition:color .16s ease}
+.btn-link:hover{color:var(--primary);text-decoration:underline}
+.btn-link .ico{width:15px;height:15px;transition:transform .3s ease}
+.btn-link:hover .ico{transform:rotate(-30deg)}
+.btn-link[aria-busy="true"]{cursor:progress;color:var(--muted);text-decoration:none}
+.btn-link[aria-busy="true"] .ico{animation:girar .8s linear infinite}
+#actualizado_txt{font-family:var(--mono);font-size:.76rem;white-space:nowrap}
+/* En móvil el .head se oculta (<=900px): el botón pasa a la barra superior, solo icono. */
+.pano-actualizar-m{display:none;margin-left:auto;width:44px;flex-shrink:0;justify-content:center;padding:0}
+@media(max-width:900px){
+  body:has(#p_panorama:not([hidden])) .pano-actualizar-m{display:inline-flex}
+  .pano-actualizar-m .ico{width:19px;height:19px}
+}

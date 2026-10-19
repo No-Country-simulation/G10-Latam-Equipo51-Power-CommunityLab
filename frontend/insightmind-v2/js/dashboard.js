@@ -178,6 +178,26 @@ async function visualizarDashboard(){
   const v=ventana();
   visualizarFiltros(v);visualizarKpis(v);visualizarPulso(v);visualizarTemas(v);
   visualizarClaves(v);visualizarEmbudo(v);visualizarVoces(v);
+
+  /* Cada dibujo vuelve a pedir /dashboard, así que la hora es la de la última consulta. */
+  actualizado_txt.textContent=(PANO?"Actualizado ":"Datos de ejemplo · ")+
+    new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+}
+
+/* Botón «Actualizar» junto al título (y su versión solo icono en la barra móvil).
+   Gira mientras espera y se sostiene un mínimo de 400 ms: si la respuesta llega
+   en 30 ms, el clic no parece ignorado. */
+async function actualizarPanorama(){
+  const bs=document.querySelectorAll("[data-actualizar]");
+  if(actualizar_pano.getAttribute("aria-busy")==="true")return;
+  bs.forEach(b=>b.setAttribute("aria-busy","true"));actualizar_txt.textContent="Actualizando…";
+  const t0=performance.now();
+  try{ await visualizarDashboard(); }
+  finally{
+    const resto=400-(performance.now()-t0);
+    if(resto>0)await new Promise(r=>setTimeout(r,resto));
+    bs.forEach(b=>b.removeAttribute("aria-busy"));actualizar_txt.textContent="Actualizar";
+  }
 }
 
 /* Qué bloques tienen datos. Sin backend, todos: la serie simulada es completa. */

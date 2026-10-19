@@ -93,13 +93,15 @@
     <button class="hamb" id="hamb" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
       <span></span><span></span><span></span>
     </button>
-    <div class="mtop-brand"><span class="mk">IM</span><b id="mtop_pag">Procesar lote</b></div>
+    <div class="mtop-brand"><img class="mk mk-logo" src="img/isotipo.svg" alt="Insight Mind" width="28" height="28"><b id="mtop_pag">Procesar lote</b></div>
+    <button class="btn-link pano-actualizar-m" type="button" data-actualizar aria-label="Actualizar el Panorama"
+      onclick="actualizarPanorama()"><svg class="ico"><use href="#i-regenerar" /></svg></button>
   </header>
   <div class="scrim" id="scrim" hidden></div>
   <div class="app">
     <div class="sidebar" id="sidebar">
       <div class="sb-title">
-        <div class="mk">IM</div>
+        <img class="mk mk-logo" src="img/isotipo.svg" alt="" width="30" height="30">
         <div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div>
       </div>
       <nav>
@@ -140,7 +142,16 @@
     <main>
       <div class="head">
         <div>
-          <h1 id="titulo">Procesar lote</h1>
+          <div class="titulo-fila">
+            <h1 id="titulo">Procesar lote</h1>
+            <!-- Solo visible en el Panorama (lo decide el CSS con :has, no app.js) -->
+            <span class="pano-actualizar">
+              <button class="btn-link" id="actualizar_pano" type="button" data-actualizar
+                onclick="actualizarPanorama()"><svg class="ico"><use href="#i-regenerar" /></svg><span
+                  id="actualizar_txt">Actualizar</span></button>
+              <span class="mini" id="actualizado_txt" role="status" aria-live="polite"></span>
+            </span>
+          </div>
           <p id="subtitulo">Ingesta, análisis y curaduría en un solo flujo.</p>
         </div>
         <div style="flex:1"></div>
@@ -552,7 +563,7 @@ Palabras prohibidas: "revolucionario", "disruptivo", "sinergia".</textarea>
        (datos-ejemplo, datos-dashboard, dashboard y app; lista y orden en js/auth.js). -->
   <div class="login" id="login" hidden>
     <form class="login-card" id="login_form">
-      <div class="login-brand"><span class="mk">IM</span><div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div></div>
+      <div class="login-brand"><img class="mk mk-logo" src="img/isotipo.svg" alt="" width="34" height="34"><div><b>Insight Mind</b><span>ONE G10 · Equipo 51</span></div></div>
       <label for="login_user">Usuario</label>
       <input type="text" id="login_user" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
       <label for="login_pass">Contraseña</label>
