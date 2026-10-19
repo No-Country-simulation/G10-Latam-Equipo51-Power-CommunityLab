@@ -12,8 +12,8 @@ command -v nginx >/dev/null || sudo dnf install -y nginx
 
 # Front: solo lo que necesita el navegador (sin mockups, README ni build.py)
 sudo mkdir -p "$WEB"
-sudo rm -rf "$WEB"/index.html "$WEB"/css "$WEB"/js
-sudo cp -r "$REPO"/frontend/insightmind-v2/{index.html,css,js} "$WEB/"
+sudo rm -rf "$WEB"/index.html "$WEB"/css "$WEB"/js "$WEB"/img
+sudo cp -r "$REPO"/frontend/insightmind-v2/{index.html,css,js,img} "$WEB/"
 # Landing pública (FAQs y newsletter publicados): http://localhost/landing/
 sudo rm -rf "$WEB"/landing
 sudo mkdir -p "$WEB"/landing
