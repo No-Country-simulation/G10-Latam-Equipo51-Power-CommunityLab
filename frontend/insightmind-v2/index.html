@@ -274,6 +274,15 @@
                 <p class="blk-title">Lote de interacciones</p>
                 <p class="blk-info">Acepta <code>.json</code> y <code>.csv</code>. También puede llegar por webhook
                   desde Discord o un formulario.</p>
+                <div class="uso-cohere" id="cohere_uso" hidden>
+                  <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <span class="label" style="margin:0">Llamadas a Cohere este mes</span>
+                    <span class="mono" id="cohere_txt" style="font-size:.85rem;font-weight:600">–</span>
+                  </div>
+                  <div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                    aria-label="Llamadas a Cohere usadas este mes" id="cohere_prog"><i id="cohere_barra"></i></div>
+                  <p class="mini" id="cohere_nota" style="margin:6px 0 0"></p>
+                </div>
                 <div class="dropzone" id="drop">Arrastra el archivo aquí
                   <div class="row" style="justify-content:center;margin-top:11px">
                     <button class="btn sm" id="btn_file">Subir archivo</button>

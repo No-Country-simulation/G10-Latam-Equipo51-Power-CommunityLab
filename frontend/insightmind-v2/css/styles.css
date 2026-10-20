@@ -983,3 +983,8 @@ body:has(#p_panorama:not([hidden])) .pano-actualizar{display:inline-flex}
   body:has(#p_panorama:not([hidden])) .pano-actualizar-m{display:inline-flex}
   .pano-actualizar-m .ico{width:19px;height:19px}
 }
+
+/* Barra de consumo estimado de Cohere */
+.uso-cohere{margin:0 0 14px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2)}
+.uso-cohere .prog i.alto{background:var(--warn)}
+.uso-cohere .prog i.critico{background:var(--danger,#B3261E)}

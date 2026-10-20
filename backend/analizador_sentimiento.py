@@ -12,6 +12,7 @@ import os
 import re
 import json
 import requests
+from backend import cohere_uso
 from dotenv import load_dotenv
 
 
@@ -86,6 +87,7 @@ def _llamar_cohere(prompt: str, system: str | None = None, temperature: float | 
         },
         timeout=60,
     )
+    cohere_uso.registrar(resp)
     resp.raise_for_status()
     data = resp.json()
     try:

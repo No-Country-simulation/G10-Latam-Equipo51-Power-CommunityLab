@@ -19,6 +19,7 @@ from backend.analizador_sentimiento import (
 from backend import auth, cache_analisis, contexto, db
 from backend.rutas_contenido import router as router_contenido
 from backend.rutas_dashboard import router as router_dashboard
+from backend.cohere_uso import router as router_cohere_uso
 from backend.rutas_publico import invalidar_cache as invalidar_cache_publico, router as router_publico
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
@@ -445,6 +446,7 @@ async def api_publicar_redes(req: PublicacionRedesRequest):
 
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
+app.include_router(router_cohere_uso)  # /cohere/uso (consumo estimado mensual de Cohere)
 app.include_router(auth.router)         # /auth/login, /auth/logout, /auth/me
 app.include_router(router_publico)      # /publico/faqs, /publico/newsletter (landing, solo lectura)
 

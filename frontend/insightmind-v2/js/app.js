@@ -352,9 +352,44 @@ const PASOS = [
  */
 
 async function procesarLote(lote = {}) {
-  return conError(API.procesarLote(lote),
-    "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
+  try {
+    return await conError(API.procesarLote(lote),
+      "No se pudo procesar el lote. Revisa que main.py esté corriendo y COHERE_API_KEY configurada.");
+  } finally {
+    cargarUsoCohere();
+  }
 }
+
+/* Barra de uso estimado de Cohere. Se oculta si el backend no está disponible. */
+async function cargarUsoCohere() {
+  const panel = document.getElementById("cohere_uso");
+  if (!panel) return;
+  try {
+    const u = await API.usoCohere();
+    if (!u) { panel.hidden = true; return; }
+
+    const barra = document.getElementById("cohere_barra");
+    const texto = document.getElementById("cohere_txt");
+    const progreso = document.getElementById("cohere_prog");
+    const nota = document.getElementById("cohere_nota");
+    barra.style.width = `${u.porcentaje}%`;
+    barra.className = u.porcentaje >= 90 ? "critico" : u.porcentaje >= 70 ? "alto" : "";
+    progreso.setAttribute("aria-valuenow", String(u.porcentaje));
+    texto.textContent = `${u.usadas.toLocaleString("es-CL")} / ${u.limite.toLocaleString("es-CL")}`;
+    const reinicia = new Date(`${u.reinicia}T00:00:00Z`).toLocaleDateString("es-CL", {
+      day: "numeric", month: "long", timeZone: "UTC"
+    });
+    nota.textContent = (u.restantes === 0
+      ? `Sin llamadas disponibles según este contador; reinicia el ${reinicia}. `
+      : `Quedan ${u.restantes.toLocaleString("es-CL")} llamadas estimadas · reinicia el ${reinicia}. `)
+      + "Solo cuenta esta aplicación; verifica el total oficial en Cohere.";
+    panel.hidden = false;
+  } catch (_) {
+    panel.hidden = true;
+  }
+}
+
+cargarUsoCohere();
 
 // Botón para ejecutar el procesamiento 
 btn_procesar.onclick = async () => {

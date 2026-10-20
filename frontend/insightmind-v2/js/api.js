@@ -47,6 +47,12 @@ const API = {
     }
   },
 
+  /* GET /cohere/uso — consumo estimado de la cuota mensual de Cohere. */
+  async usoCohere() {
+    if (this.modoDemo) return null;
+    return this._fetch("/cohere/uso");
+  },
+
   /* POST /upload — sube un archivo real al bucket de OCI.
      No usa _fetch porque FormData necesita fijar su propio boundary
      en Content-Type; si lo forzamos a application/json, el backend no
