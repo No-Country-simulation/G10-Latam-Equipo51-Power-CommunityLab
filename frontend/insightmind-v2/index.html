@@ -289,6 +289,19 @@
                     <button class="btn primary sm" id="btn_ejemplo">Usar lote de ejemplo</button>
                   </div><input type="file" id="file" accept=".json,.csv" multiple hidden>
                 </div>
+                <details class="acc pegar" id="pegar_bloque">
+                  <summary>Pegar mensajes en crudo</summary>
+                  <div class="body">
+                    <p class="mini" style="margin:0 0 8px">Tal como se copian de Discord, o una línea por mensaje con
+                      <code>Nombre: mensaje</code>. Sin etiquetas: la IA clasifica cada uno desde cero.</p>
+                    <textarea id="pegar_texto" rows="6" aria-label="Mensajes a pegar"
+                      placeholder="Ana: Conseguí mi primer empleo como dev junior&#10;Martín: Llevo tres días sin poder entrar al laboratorio"></textarea>
+                    <div class="row" style="margin-top:9px;gap:8px">
+                      <input type="text" id="pegar_canal" value="#general" aria-label="Canal de origen" style="max-width:160px">
+                      <button class="btn sm" id="btn_pegar">Agregar al lote</button>
+                    </div>
+                  </div>
+                </details>
                 <div id="archivos_subidos" class="archivos" hidden>
                   <div class="archivos-head">
                     <span class="label" style="margin:0">Archivos subidos</span>

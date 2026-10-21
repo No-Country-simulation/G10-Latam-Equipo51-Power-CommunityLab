@@ -53,6 +53,12 @@ const API = {
     return this._fetch("/cohere/uso");
   },
 
+  /* POST /ingesta/texto — mensajes pegados en crudo; el backend guarda uno por archivo, sin "tipo". */
+  async ingestarTexto(texto, canal) {
+    if (this.modoDemo) return { total: texto.split("\n").filter(l => l.trim()).length, archivos: [] };
+    return this._fetch("/ingesta/texto", { method: "POST", body: JSON.stringify({ texto, canal }) });
+  },
+
   /* POST /upload — sube un archivo real al bucket de OCI.
      No usa _fetch porque FormData necesita fijar su propio boundary
      en Content-Type; si lo forzamos a application/json, el backend no
