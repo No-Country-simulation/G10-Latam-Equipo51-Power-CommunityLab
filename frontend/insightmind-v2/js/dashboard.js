@@ -226,7 +226,7 @@ function visualizarFiltros(v){
   }
   const canales=PANO?PANO.canales:[...new Set(SERIE.inter.map(m=>m.canal))].sort();
   canal_sel.innerHTML=`<option value="todos">Todos los canales</option>`+
-    canales.map(c=>`<option value="${c}">${c}</option>`).join("");
+    canales.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join("");
   canal_sel.value=DASH.canal;
   canal_sel.onchange=()=>{DASH.canal=canal_sel.value;visualizarDashboard();};
 }
@@ -305,7 +305,7 @@ function visualizarTemas(v){
     termo.innerHTML=faltaActivar;return;}
   const t=porTema(v);
   tabla_temas.innerHTML=t.slice().sort((a,b)=>(b.d.n??999)-(a.d.n??999)).slice(0,7).map(x=>`<tr>
-    <td><b>${x.tema}</b>${x.nuevo?' <span class="pill p-pri">nuevo</span>':""}</td>
+    <td><b>${escHtml(x.tema)}</b>${x.nuevo?' <span class="pill p-pri">nuevo</span>':""}</td>
     <td class="mono">${x.n}</td>
     <td class="mono ${x.d.c}">${x.d.t}</td>
     <td>${x.serie?chispa(x.serie,x.sent<-.2?"var(--alert)":"var(--primary)"):'<span class="mini">—</span>'}</td>
@@ -313,7 +313,7 @@ function visualizarTemas(v){
   const paraTermo=PANO?PANO.termometro.map(x=>({tema:x.tema,n:x.n,sent:x.sentimiento})):t;
   termo.innerHTML=paraTermo.slice().sort((a,b)=>a.sent-b.sent).map(x=>{
     const w=Math.min(50,Math.abs(x.sent)*50), neg=x.sent<0;
-    return `<div class="termo-row"><span class="termo-nom">${x.tema}</span>
+    return `<div class="termo-row"><span class="termo-nom">${escHtml(x.tema)}</span>
       <span class="termo-bar"><b></b><i class="${neg?"neg":"pos"}" style="${neg?"right:50%":"left:50%"};width:${w}%"></i></span>
       <span class="mono termo-val" style="color:${tonoSent(x.sent)}">${x.sent>=0?"+":"−"}${Math.abs(x.sent).toFixed(2)}</span>
       <span class="mono termo-n">${x.n}</span></div>`;}).join("");
@@ -326,7 +326,7 @@ function visualizarClaves(v){
      endpoint para vigilar o dejar de vigilar una, así que no se ofrecen chips. */
   if(PANO)DASH.claves=PANO.claves.map(c=>c.termino);
   claves_chips.innerHTML=DASH.claves.map(c=>
-    `<span class="vchip">${c}<button data-q="${c}" aria-label="Dejar de vigilar ${c}">×</button></span>`).join("")
+    `<span class="vchip">${escHtml(c)}<button data-q="${escHtml(c)}" aria-label="Dejar de vigilar ${escHtml(c)}">×</button></span>`).join("")
     ||`<span class="mini">No vigilas ninguna palabra todavía.</span>`;
   if(PANO)claves_chips.querySelectorAll("button").forEach(b=>b.remove());
   else claves_chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
@@ -338,7 +338,7 @@ function visualizarClaves(v){
     DASH.claves=[...DASH.claves,b.dataset.a];visualizarDashboard();
     toast("Palabra en seguimiento",b.dataset.a+" se agregó al panel",true);});
   claves_grid.innerHTML=DASH.claves.map(c=>{const k=serieClave(v,c);
-    return `<div class="kw"><div class="kw-top"><b>${k.termino}</b>
+    return `<div class="kw"><div class="kw-top"><b>${escHtml(k.termino)}</b>
         <span class="pill ${clasePill(k.sent)}">${k.sent>=0?"+":"−"}${Math.abs(k.sent).toFixed(2)}</span></div>
       <div class="kw-n"><span class="v mono">${k.n}</span><span class="mini">menciones</span>
         <span class="mono ${k.d.c} kw-d">${k.d.t}</span></div>
@@ -378,15 +378,15 @@ function visualizarEmbudo(v){
 function visualizarVoces(v){
   const vo=voces(v);
   lista_voces.innerHTML=vo.length?vo.map(x=>`<div class="voz">
-    <span class="av">${x.autor.split(" ").map(s=>s[0]).slice(0,2).join("")}</span>
-    <span class="voz-b"><b>${x.autor}</b><span class="mini">${x.tema}</span></span>
+    <span class="av">${escHtml(x.autor.split(" ").map(s=>s[0]).slice(0,2).join(""))}</span>
+    <span class="voz-b"><b>${escHtml(x.autor)}</b><span class="mini">${escHtml(x.tema)}</span></span>
     <span class="mono voz-n">${x.n}</span></div>`).join("")
     :'<p class="mini">Sin casos de éxito en el periodo.</p>';
   const ri=enRiesgo(v);
   lista_riesgo.innerHTML=ri.length?ri.map(x=>`<div class="voz">
-    <span class="av alerta">${x.autor.split(" ").map(s=>s[0]).slice(0,2).join("")}</span>
-    <span class="voz-b"><b>${x.autor}</b><span class="mini">${[x.n+" mensajes negativos",x.tema,x.canal].filter(Boolean).join(" · ")}</span></span>
-    <button class="btn sm" data-r="${x.autor}">Avisar</button></div>`).join("")
+    <span class="av alerta">${escHtml(x.autor.split(" ").map(s=>s[0]).slice(0,2).join(""))}</span>
+    <span class="voz-b"><b>${escHtml(x.autor)}</b><span class="mini">${escHtml([x.n+" mensajes negativos",x.tema,x.canal].filter(Boolean).join(" · "))}</span></span>
+    <button class="btn sm" data-r="${escHtml(x.autor)}">Avisar</button></div>`).join("")
     :'<p class="mini">Nadie acumula señales de frustración en el periodo. Buena noticia.</p>';
   /* Avisa de verdad: marca los tickets pendientes de esa persona y delega en
      avisar("discord") de app.js, que es la función que ya existe y funciona.
