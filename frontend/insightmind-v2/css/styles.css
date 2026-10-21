@@ -988,3 +988,8 @@ body:has(#p_panorama:not([hidden])) .pano-actualizar{display:inline-flex}
 .uso-cohere{margin:0 0 14px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2)}
 .uso-cohere .prog i.alto{background:var(--warn)}
 .uso-cohere .prog i.critico{background:var(--danger,#B3261E)}
+
+/* Ingesta: mensajes pegados en crudo y marca de tipo corregido por la IA */
+.pegar{margin-top:12px}
+.pegar textarea{width:100%}
+.tipo-pista{color:var(--warn);font-weight:600}

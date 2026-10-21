@@ -250,6 +250,7 @@ function irPaso(n) {
 btn_file.onclick = () => file.click(); 
 file.onchange = subirYValidar; 
 btn_ejemplo.onclick = validar;
+btn_pegar.onclick = pegarMensajes;
 
 drop.addEventListener("dragover", e => { e.preventDefault(); drop.style.borderColor = "var(--primary)"; });
 drop.addEventListener("dragleave", () => drop.style.borderColor = "");
@@ -310,6 +311,27 @@ async function subirYValidar() {
     validacion.hidden = false;
     toast("Archivo subido a OCI", archivo.name, true);
   }
+}
+
+/* Mensajes pegados en crudo: entran al lote como un archivo más, sin etiqueta de tipo. */
+async function pegarMensajes() {
+  const texto = pegar_texto.value.trim();
+  if (!texto) return toast("Nada que agregar", "Pega al menos un mensaje.", false);
+  if (!Math.max(0, MAX_ARCHIVOS - archivosOcupados()))
+    return toast("Límite alcanzado", `Solo se permiten ${MAX_ARCHIVOS} archivos por lote.`, false);
+  const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const reg = { nombre: "mensajes-pegados.txt", tamano: new Blob([texto]).size, estado: "subiendo", hora };
+  E.archivos.push(reg); renderArchivos();
+  btn_pegar.disabled = true;
+  const r = await conError(API.ingestarTexto(texto, pegar_canal.value.trim() || "#general"),
+    "No se pudieron agregar los mensajes");
+  btn_pegar.disabled = false;
+  reg.estado = r ? "subido" : "error";
+  if (r) reg.nombre = `${r.total} mensaje${r.total === 1 ? "" : "s"} pegado${r.total === 1 ? "" : "s"}.txt`;
+  renderArchivos();
+  if (!r) return;
+  pegar_texto.value = ""; validacion.hidden = false;
+  toast("Mensajes agregados al lote", `${r.total} sin etiqueta: la IA clasificará cada uno.`, true);
 }
 
 /* ---------- PROCESAMIENTO DE MENSAJES ---------- */
@@ -457,6 +479,7 @@ async function fin(resultado, nodoGenerar = null) {
   DATOS.length = 0;
   resultado.mensajes.forEach((m, i) => DATOS.push({
     id: "m" + (i + 1), autor: m.autor, canal: m.canal || "general", tipo: m.tipo,
+    tipo_pista: m.tipo_pista || null, tipo_corregido: !!m.tipo_corregido,
     sent: m.sent, score: m.score, idioma: m.idioma || "es", texto: m.texto,
     por_que: m.por_que, temas: [m.tipo],
     apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
@@ -523,6 +546,11 @@ function visualizarAnalisis() {
     `<tr><td>${k} ${nuevos.includes(k) ? '<span class="pill p-pri">nuevo</span>' : ""}</td><td class="mono" style="width:60px">${c}</td></tr>`).join("");
   const nivel = pct(neg) >= 25 ? "err" : pct(neg) >= 15 ? "warn" : "info";
   banner_slot.innerHTML = `<div class="note ${nivel}">${ic("alerta")}<div><b>${nivel === "err" ? "Alerta de sentimiento." : "Resumen del lote."}</b> ${pct(neg)}% de los mensajes analizados fueron negativos, sobre ${DATOS.length} interacciones.</div></div>`;
+  /* La IA clasifica siempre: el tipo que trae cada mensaje es solo una pista que puede corregir. */
+  const conPista = DATOS.filter(m => m.tipo_pista).length, corregidos = DATOS.filter(m => m.tipo_corregido).length;
+  banner_slot.innerHTML += `<div class="note info" style="margin-top:8px">${ic("check")}<div><b>Clasificación de la IA.</b> ${
+    conPista ? `Corrigió ${corregidos} de ${conPista} etiquetas de origen` : "Ningún mensaje traía etiqueta"}${
+    DATOS.length - conPista ? ` · ${DATOS.length - conPista} llegaron sin etiqueta y los clasificó desde cero` : ""}.</div></div>`;
  
   const cuenta = {};
   E.activos.forEach(a => cuenta[a.formato] = (cuenta[a.formato] || 0) + 1);
@@ -577,7 +605,16 @@ function cargarTablaMensajes(mensajes = DATOS) {
       clon.querySelector('[data-campo="autor"]').textContent = m.autor;
       clon.querySelector('[data-campo="texto"]').textContent =
         m.texto.length > 70 ? `${m.texto.slice(0, 70)}…` : m.texto;
-      clon.querySelector('[data-campo="tipo"]').textContent = m.tipo;
+      const tdTipo = clon.querySelector('[data-campo="tipo"]');
+      tdTipo.textContent = m.tipo;
+      if (m.tipo_corregido) {
+        /* la IA no estuvo de acuerdo con la etiqueta que traía el mensaje */
+        const pista = document.createElement("span");
+        pista.className = "mini tipo-pista";
+        pista.textContent = `corregido · venía como ${m.tipo_pista}`;
+        tdTipo.append(document.createElement("br"), pista);
+        tdTipo.title = "La IA corrigió la etiqueta de origen";
+      }
 
       const tdSent = clon.querySelector('[data-campo="sent"]');
       tdSent.textContent = m.sent.toFixed(2);

@@ -14,12 +14,13 @@ import httpx
 
 from backend.curaduria import cargar_curaduria, guardar_curaduria
 from backend.analizador_sentimiento import (
-    COHERE_MODEL, analizar_interaccion, consolidar, mensaje_con_error,
+    MODELO_CACHE, analizar_interaccion, consolidar, mensaje_con_error,
 )
 from backend import auth, cache_analisis, contexto, db
 from backend.rutas_contenido import router as router_contenido
 from backend.rutas_dashboard import router as router_dashboard
 from backend.cohere_uso import router as router_cohere_uso
+from backend.ingesta_texto import router as router_ingesta
 from backend.rutas_publico import invalidar_cache as invalidar_cache_publico, router as router_publico
 from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
@@ -211,14 +212,14 @@ def procesar_lote(forzar: bool = False):
     for obj in entradas:
         # 1) ¿ya analizado?
         if obj.name in en_cache:
-            cacheado = cache_analisis.cargar(obj.name, obj.etag, COHERE_MODEL)
+            cacheado = cache_analisis.cargar(obj.name, obj.etag, MODELO_CACHE)
             if cacheado:
                 if "archivo" not in cacheado:
                     # caché anterior a origen/periodo: se completa leyendo el archivo, sin llamar a Cohere
                     try:
                         contenido = leer_json(obj.name)
                         cacheado.update(_contexto_mensaje(obj.name, contenido))
-                        cache_analisis.guardar(obj.name, obj.etag, COHERE_MODEL, cacheado)
+                        cache_analisis.guardar(obj.name, obj.etag, MODELO_CACHE, cacheado)
                         db.guardar_entrada(obj.name, obj.etag, contenido, contexto.extraer(contenido))
                     except ValueError:
                         cacheado["archivo"] = obj.name
@@ -250,7 +251,7 @@ def procesar_lote(forzar: bool = False):
             mensajes.append({**mensaje_con_error(interaccion, e), **extra, "etag": obj.etag, "nuevo": True})
             continue
 
-        cache_analisis.guardar(obj.name, obj.etag, COHERE_MODEL, mensaje)
+        cache_analisis.guardar(obj.name, obj.etag, MODELO_CACHE, mensaje)
         mensajes.append({**mensaje, "etag": obj.etag, "nuevo": True})
         procesados.append((obj, mensaje))
         nuevos += 1
@@ -269,7 +270,7 @@ def procesar_lote(forzar: bool = False):
         # El slug es el del PROPIO mensaje: un lote con Semana_01..Semana_05 debe quedar en
         # cinco periodos y no en uno solo (el Panorama compara semana contra semana).
         slug_m = contexto.slug_de_mensaje(m) or resultado["slug"]
-        db.guardar_analisis(obj.name, obj.etag, COHERE_MODEL, slug_m, m)
+        db.guardar_analisis(obj.name, obj.etag, MODELO_CACHE, slug_m, m)
         if m.get("ruta") == "ticket":
             db.guardar_ticket(slug_m, m)
     db.guardar_lote(resultado["slug"], {
@@ -447,6 +448,7 @@ async def api_publicar_redes(req: PublicacionRedesRequest):
 app.include_router(router_contenido)   # /config/voz, /generar, /sincronizar
 app.include_router(router_dashboard)    # /dashboard (Panorama, lee de MongoDB)
 app.include_router(router_cohere_uso)  # /cohere/uso (consumo estimado mensual de Cohere)
+app.include_router(router_ingesta)      # /ingesta/texto (mensajes pegados en crudo, sin tipo)
 app.include_router(auth.router)         # /auth/login, /auth/logout, /auth/me
 app.include_router(router_publico)      # /publico/faqs, /publico/newsletter (landing, solo lectura)
 
