@@ -161,8 +161,10 @@ const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
 
+/* Escapa todo lo que viene de la comunidad, del LLM o del servidor antes de meterlo en innerHTML. */
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function toast(titulo, texto, ok, undo) {
-  const t = el("div", "toast" + (ok ? " ok" : ""), `<div><b>${titulo}</b>${texto || ""}</div>`);
+  const t = el("div", "toast" + (ok ? " ok" : ""), `<div><b>${escHtml(titulo)}</b>${escHtml(texto || "")}</div>`);
   if (undo) { const u = el("button", "btn sm undo", "Deshacer"); u.onclick = () => { undo(); t.remove(); }; t.appendChild(u); }
   toasts.appendChild(t); setTimeout(() => t.remove(), undo ? 6500 : 3400);
 }
@@ -267,7 +269,6 @@ function validar() { validacion.hidden = false; toast("Archivo cargado", "12 int
 E.archivos = [];   /* { nombre, tamano, hora, estado: "subiendo" | "subido" | "error" } */
 
 const fmtTamano = b => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
-const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ESTADO_ARCHIVO = { subiendo: ["Subiendo…", "warn"], subido: ["Subido a OCI", "ok"], error: ["Error", "alert"] };
 const MAX_ARCHIVOS = 20;   /* tope de archivos por sesión; los que fallan no cuentan */
 const archivosOcupados = () => E.archivos.filter(a => a.estado !== "error").length;
@@ -543,7 +544,7 @@ function visualizarAnalisis() {
   const t = {}; DATOS.forEach(m => m.temas.forEach(x => t[x] = (t[x] || 0) + 1));
   const nuevos = ["Acceso a laboratorios", "Plataforma / Video"];
   temas.innerHTML = Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, c]) =>
-    `<tr><td>${k} ${nuevos.includes(k) ? '<span class="pill p-pri">nuevo</span>' : ""}</td><td class="mono" style="width:60px">${c}</td></tr>`).join("");
+    `<tr><td>${escHtml(k)} ${nuevos.includes(k) ? '<span class="pill p-pri">nuevo</span>' : ""}</td><td class="mono" style="width:60px">${c}</td></tr>`).join("");
   const nivel = pct(neg) >= 25 ? "err" : pct(neg) >= 15 ? "warn" : "info";
   banner_slot.innerHTML = `<div class="note ${nivel}">${ic("alerta")}<div><b>${nivel === "err" ? "Alerta de sentimiento." : "Resumen del lote."}</b> ${pct(neg)}% de los mensajes analizados fueron negativos, sobre ${DATOS.length} interacciones.</div></div>`;
   /* La IA clasifica siempre: el tipo que trae cada mensaje es solo una pista que puede corregir. */
@@ -565,7 +566,7 @@ function visualizarAnalisis() {
      <b class="mono">${E.tickets.length}</b></div>`;
   
     apoyo.innerHTML = DATOS.filter(m => m.apoyo).map(m =>
-      `<div class="mini" style="border-left:2px solid var(--alert);padding-left:9px"><b>${m.autor}</b> · ${m.canal}<br>${m.texto.slice(0, 72)}…</div>`).join("");
+      `<div class="mini" style="border-left:2px solid var(--alert);padding-left:9px"><b>${escHtml(m.autor)}</b> · ${escHtml(m.canal)}<br>${escHtml(m.texto.slice(0, 72))}…</div>`).join("");
   
     cargarTablaMensajes();
 }
@@ -716,10 +717,10 @@ async function visualizarCuraduria() {
       it.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:9px">
           <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
           <span class="pill ${pillC}">${a.estado}</span></div>
-        <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${m.autor}</summary>
-          <div class="body"><div class="meta">${m.canal} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${m.texto}
-          <div class="meta" style="margin-top:7px">POR QUÉ ESTE SCORE: ${m.por_que}</div></div></details>
-        <textarea rows="${cfg.porPost ? 8 : 6}" id="ta_${a.id}" ${a.estado === "Publicado" ? "readonly" : ""}>${a.texto}</textarea>
+        <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${escHtml(m.autor)}</summary>
+          <div class="body"><div class="meta">${escHtml(m.canal)} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${escHtml(m.texto)}
+          <div class="meta" style="margin-top:7px">POR QUÉ ESTE SCORE: ${escHtml(m.por_que)}</div></div></details>
+        <textarea rows="${cfg.porPost ? 8 : 6}" id="ta_${a.id}" ${a.estado === "Publicado" ? "readonly" : ""}>${escHtml(a.texto)}</textarea>
         <div class="row" style="justify-content:space-between;margin-top:9px">
           <span class="mini mono" id="c_${a.id}"></span>
           <div class="acciones-activo">${a.estado === "Publicado"
@@ -783,9 +784,9 @@ function confirmarPublicacion(id) {
       <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
         <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
       <div class="modal-body">
-        <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
+        <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${escHtml(m.autor)}</b></span>
           <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
-        <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g, "&lt;")}</div></div>
+        <div><span class="label">Así se va a publicar</span><div class="modal-prev">${escHtml(a.texto)}</div></div>
         <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
       </div>
       <div class="modal-foot">
@@ -818,7 +819,7 @@ function confirmarPublicacion(id) {
     <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
       <div style="flex:1"><b>Gestionar Hilo en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
     <div class="modal-body">
-      <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
+      <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${escHtml(m.autor)}</b></span>
         <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
       <div><span class="label">Secuencia de tuits listos para difusión</span>${vistaPrevia}</div>
       <div class="mini" style="margin-top: 8px;">Puedes abrir cada tuit individualmente en X. Una vez que termines de difundir todo el hilo, puedes marcar el bloque completo como publicado abajo.</div>
@@ -1003,7 +1004,7 @@ function publicarLote(plat) {
     <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
       <div style="flex:1"><b>Publicar ${lista.length} contenidos en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
     <div class="modal-body">
-      <div class="modal-prev">${lista.map(a => "• " + a.texto.split("\n")[0].slice(0, 70).replace(/</g, "&lt;") + "…").join("\n\n")}</div>
+      <div class="modal-prev">${lista.map(a => "• " + escHtml(a.texto.split("\n")[0].slice(0, 70)) + "…").join("\n\n")}</div>
       <div class="mini">Se publican en orden y quedan registrados en Publicaciones. Tendrás 6 segundos para deshacer.</div></div>
     <div class="modal-foot"><button class="btn" id="dlg_no">Cancelar</button>
       <button class="btn primary" id="dlg_si">Publicar los ${lista.length}</button></div>`;
@@ -1055,8 +1056,8 @@ function filasTickets() {
     return `<tr>
       <td style="width:40px;text-align:center"><input type="checkbox" class="chk-ticket" data-id="${t.id}" ${chk} ${disabled} aria-label="Seleccionar ticket ${t.id}"></td>
       <td style="width:75px"><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
-      <td style="width:160px"><b>${m.autor}</b></td><td style="width:130px" class="muted">${m.canal}</td>
-      <td style="min-width:260px;max-width:360px;white-space:normal;word-break:break-word">${m.texto}</td>
+      <td style="width:160px"><b>${escHtml(m.autor)}</b></td><td style="width:130px" class="muted">${escHtml(m.canal)}</td>
+      <td style="min-width:260px;max-width:360px;white-space:normal;word-break:break-word">${escHtml(m.texto)}</td>
       <td style="width:110px">${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
       <td style="width:110px"><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
   }).join("");
@@ -1312,7 +1313,7 @@ function visualizarPubs() {
   tabla_pub.innerHTML = E.pubs.length ? E.pubs.map(p => {
     const m = msg(p.fuente); return `<tr>
     <td class="muted">${p.fecha}</td><td><span class="pill p-mute">${PLAT[p.plat].nom}</span></td><td>${p.formato}</td>
-    <td class="muted" style="max-width:300px">${p.extracto}</td><td class="muted">${m.autor}</td>
+    <td class="muted" style="max-width:300px">${escHtml(p.extracto)}</td><td class="muted">${escHtml(m.autor)}</td>
     <td><a href="#" onclick="return false" style="color:var(--link)">ver</a></td></tr>`;
   }).join("")
     : '<tr><td colspan="6" class="empty">Aún no publicas nada esta semana. Publica desde el paso 3 · Curaduría.</td></tr>';
@@ -1472,12 +1473,12 @@ async function cargarYRenderizarDetalle(slug) {
           ${(d.mensajes && d.mensajes.length) ? d.mensajes.map(m => `
             <tr>
               <td>
-                <b>${m.autor || "Anónimo"}</b><br>
-                <span class="mini muted">${m.canal || "general"}</span>
+                <b>${escHtml(m.autor || "Anónimo")}</b><br>
+                <span class="mini muted">${escHtml(m.canal || "general")}</span>
               </td>
-              <td><span class="pill p-mute">${m.tipo || "conversacion"}</span></td>
+              <td><span class="pill p-mute">${escHtml(m.tipo || "conversacion")}</span></td>
               <td class="muted" style="max-width:320px">
-                ${m.texto || ""}
+                ${escHtml(m.texto || "")}
               </td>
               <td>
                 <span class="pill ${m.sentimiento === "positivo" ? "p-ok" : m.sentimiento === "negativo" ? "p-warn" : "p-mute"}">
