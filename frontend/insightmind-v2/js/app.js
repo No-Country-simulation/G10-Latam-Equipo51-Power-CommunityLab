@@ -839,12 +839,20 @@ function confirmarPublicacion(id) {
   dlg_cont.innerHTML = `
     <div class="modal-head" style="flex-shrink: 0;"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
       <div style="flex:1"><b>Gestionar Hilo en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
-    <div class="modal-body" style="overflow-y: auto; flex: 1; min-height: 0; max-height: calc(90vh - 130px); padding: 16px 18px;">
-      <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${escHtml(m.autor)}</b></span>
+    <div class="modal-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; padding: 16px 18px; gap: 8px;">
+      <div class="modal-meta" style="flex-shrink: 0;"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${escHtml(m.autor)}</b></span>
         <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
-      <div><span class="label">Secuencia de tuits listos para difusión</span>${vistaPrevia}</div>
-      <div class="mini" style="margin-top: 8px;">Puedes abrir cada tuit individualmente en X. Una vez que termines de difundir todo el hilo, puedes marcar el bloque completo como publicado abajo.</div>
-      ${excedeLimite ? '<div class="mini" style="color:var(--alert)">Acorta los posts que superan 280 caracteres antes de publicar.</div>' : ""}
+      <div style="flex-shrink: 0;"><span class="label" style="display:block; margin: 4px 0 2px 0;">Secuencia de tuits listos para difusión</span></div>
+      
+      <!-- Componente contenedor agrupado con scroll exclusivo para los posts -->
+      <div class="hilo-scroll" style="overflow-y: auto; flex: 1; min-height: 0; max-height: calc(90vh - 240px); padding-right: 4px;">
+        ${vistaPrevia}
+      </div>
+
+      <div style="flex-shrink: 0; margin-top: 4px;">
+        <div class="mini">Puedes abrir cada tuit individualmente en X. Una vez que termines de difundir todo el hilo, puedes marcar el bloque completo como publicado abajo.</div>
+        ${excedeLimite ? '<div class="mini" style="color:var(--alert); font-weight:600; margin-top: 4px;">Acorta los posts que superan 280 caracteres antes de publicar.</div>' : ""}
+      </div>
     </div>
     <div class="modal-foot" style="flex-shrink: 0;">
       <button class="btn" id="dlg_no">Cancelar</button>
