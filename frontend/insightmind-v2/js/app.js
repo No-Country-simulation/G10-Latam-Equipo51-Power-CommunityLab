@@ -979,114 +979,116 @@ function publicarLote(plat) {
 }
 
 /* ---------- TICKETS ---------- */
-
-// procesa la lista de tickets pendientes
 function filasTickets() {
-
   return E.tickets.map(t => {
     const m = msg(t.fuente); 
-    const esEnviado = t.estado === "Enviado" || t.estado === "Resuelto";
-    const pillEstado = esEnviado
-      ? "p-ok"
-      : t.estado === "Error"
-        ? "p-warn"
-        : "p-mute";
+    
+    if (!t.avisos) t.avisos = t.aviso ? [t.aviso] : [];
+    
+    const enviadoDiscord = t.avisos.includes("discord");
+    const enviadoSlack = t.avisos.includes("slack");
+    const ambosEnviados = enviadoDiscord && enviadoSlack;
 
-    // Si ya está enviado o resuelto, no se puede seleccionar ni individual ni globalmente
-    const chk = (!esEnviado && t.seleccionado) ? "checked" : "";
-    const disabled = esEnviado ? "disabled title='Este ticket ya fue enviado'" : "";
+    const chk = (!ambosEnviados && t.seleccionado) ? "checked" : "";
+    const disabled = ambosEnviados ? "disabled title='Ticket avisado en Discord y Slack'" : "";
+
+    let textoAviso = "sin avisar";
+    if (t.avisos.length > 0) {
+      textoAviso = t.avisos.map(d => PLAT[d] ? PLAT[d].nom : d).join(" y ");
+    }
+
+    const pillEstado = ambosEnviados ? "p-ok" : (t.avisos.length > 0 ? "p-warn" : "p-mute");
+    const labelEstado = ambosEnviados ? "Enviado" : (t.avisos.length > 0 ? "Parcial" : "Pendiente");
 
     return `<tr>
-      <td style="width:40px;text-align:center"><input type="checkbox" class="chk-ticket" data-id="${t.id}" ${chk} ${disabled} aria-label="Seleccionar ticket ${t.id}"></td>
+      <td style="width:40px;text-align:center">
+        <input type="checkbox" class="chk-ticket" data-id="${t.id}" ${chk} ${disabled} aria-label="Seleccionar ticket ${t.id}">
+      </td>
       <td style="width:75px"><span class="pill ${t.sev === "Alta" ? "p-alert" : "p-warn"}">${t.sev}</span></td>
-      <td style="width:160px"><b>${escHtml(m.autor)}</b></td><td style="width:130px" class="muted">${escHtml(m.canal)}</td>
+      <td style="width:160px"><b>${escHtml(m.autor)}</b></td>
+      <td style="width:130px" class="muted">${escHtml(m.canal)}</td>
       <td style="min-width:260px;max-width:360px;white-space:normal;word-break:break-word">${escHtml(m.texto)}</td>
-      <td style="width:110px">${t.aviso ? `<span class="pill p-mute">${PLAT[t.aviso].nom}</span>` : '<span class="mini">sin avisar</span>'}</td>
-      <td style="width:110px"><span class="pill ${pillEstado}">${t.estado}</span></td></tr>`;
+      <td style="width:110px"><span class="pill p-mute">${textoAviso}</span></td>
+      <td style="width:110px"><span class="pill ${pillEstado}">${labelEstado}</span></td>
+    </tr>`;
   }).join("");
-
 }
 
 function actualizarEstadoBotonesAviso() {
- 
   if (avisandoTickets) return;
   
-  const elegiblesSeleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
-  const haySeleccion = elegiblesSeleccionados.length > 0;
+  const seleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Resuelto");
 
+  const elegiblesDiscord = seleccionados.filter(t => {
+    const avisos = t.avisos || (t.aviso ? [t.aviso] : []);
+    return !avisos.includes("discord");
+  });
+
+  const elegiblesSlack = seleccionados.filter(t => {
+    const avisos = t.avisos || (t.aviso ? [t.aviso] : []);
+    return !avisos.includes("slack");
+  });
+
+  // Botones de la sección principal
   const btnDiscord = document.getElementById("btn_discord");
   if (btnDiscord) {
-    btnDiscord.disabled = !haySeleccion;
-    btnDiscord.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+    btnDiscord.disabled = elegiblesDiscord.length === 0;
+    btnDiscord.title = elegiblesDiscord.length > 0 ? "Avisar tickets seleccionados en Discord" : "Ya enviados a Discord";
   }
 
-  const btnAvisar = document.getElementById("btn_avisar");
-  if (btnAvisar) {
-    btnAvisar.disabled = !haySeleccion;
-    btnAvisar.title = haySeleccion ? "Avisar tickets seleccionados en Discord" : "Selecciona al menos un ticket para avisar";
+  const btnSlackPrincipal = document.getElementById("btn_slack_principal");
+  if (btnSlackPrincipal) {
+    btnSlackPrincipal.disabled = elegiblesSlack.length === 0;
+    btnSlackPrincipal.title = elegiblesSlack.length > 0 ? "Avisar tickets seleccionados en Slack" : "Ya enviados a Slack";
+  }
+
+  // Botones de la pestaña en Curaduría
+  const btnAvisarCur = document.getElementById("btn_avisar");
+  if (btnAvisarCur) {
+    btnAvisarCur.disabled = elegiblesDiscord.length === 0;
+    btnAvisarCur.title = elegiblesDiscord.length > 0 ? "Avisar tickets seleccionados en Discord" : "Ya enviados a Discord";
+  }
+
+  const btnSlackCur = document.getElementById("btn_slack");
+  if (btnSlackCur) {
+    btnSlackCur.disabled = elegiblesSlack.length === 0;
+    btnSlackCur.title = elegiblesSlack.length > 0 ? "Avisar tickets seleccionados en Slack" : "Ya enviados a Slack";
   }
 }
 
 function sincronizarChecksTickets() {
-  
   const master = document.getElementById("chk_todos_tickets");
   const masterCur = document.getElementById("chk_todos_tickets_curaduria");
   const checks = document.querySelectorAll(".chk-ticket");
 
   function actualizarMasters() {
-    
-    // tickets que pueden ser seleccionados segun estado
     const elegibles = E.tickets.filter(t => t.estado !== "Enviado" && t.estado !== "Resuelto");
-   
     const totalElegibles = elegibles.length;
 
     if (!totalElegibles) {
-
-      if (master) { 
-        master.checked = false; 
-        master.indeterminate = false; 
-        master.disabled = true; 
-        master.title = "Todos los tickets ya fueron enviados"; 
-      }
-      
-      if (masterCur) { 
-        masterCur.checked = false; 
-        masterCur.indeterminate = false; 
-        masterCur.disabled = true; 
-        masterCur.title = "Todos los tickets ya fueron enviados"; 
-      }
-      
+      if (master) { master.checked = false; master.indeterminate = false; master.disabled = true; }
+      if (masterCur) { masterCur.checked = false; masterCur.indeterminate = false; masterCur.disabled = true; }
       actualizarEstadoBotonesAviso();
-
       return;
     }
 
-    if (master) { master.disabled = false; master.title = "Seleccionar todos los tickets pendientes"; }
-    if (masterCur) { masterCur.disabled = false; masterCur.title = "Seleccionar todos los tickets pendientes"; }
+    if (master) master.disabled = false;
+    if (masterCur) masterCur.disabled = false;
 
     const marcados = elegibles.filter(t => t.seleccionado).length;
     const todos = marcados === totalElegibles;
     const alguno = marcados > 0 && marcados < totalElegibles;
 
-    if (master) {
-      master.checked = todos;
-      master.indeterminate = alguno;
-    }
-
-    if (masterCur) {
-      masterCur.checked = todos;
-      masterCur.indeterminate = alguno;
-    }
+    if (master) { master.checked = todos; master.indeterminate = alguno; }
+    if (masterCur) { masterCur.checked = todos; masterCur.indeterminate = alguno; }
 
     actualizarEstadoBotonesAviso();
-
   }
 
   checks.forEach(chk => {
     chk.onchange = () => {
       const id = chk.dataset.id;
       const t = E.tickets.find(x => x.id === id);
-      // Solo permitir cambio si no es un ticket enviado
       if (t && t.estado !== "Enviado" && t.estado !== "Resuelto") {
         t.seleccionado = chk.checked;
       }
@@ -1099,7 +1101,6 @@ function sincronizarChecksTickets() {
 
   const onMasterChange = (e) => {
     const val = e.target.checked;
-    // Solo seleccionar tickets pendientes o con error, nunca los enviados
     E.tickets.forEach(t => {
       if (t.estado !== "Enviado" && t.estado !== "Resuelto") {
         t.seleccionado = val;
@@ -1110,9 +1111,7 @@ function sincronizarChecksTickets() {
 
     document.querySelectorAll(".chk-ticket:not(:disabled)").forEach(chk => { chk.checked = val; });
     document.querySelectorAll(".chk-ticket:disabled").forEach(chk => { chk.checked = false; });
-
     actualizarMasters();
-    
   };
 
   if (master) master.onchange = onMasterChange;
@@ -1121,21 +1120,46 @@ function sincronizarChecksTickets() {
   actualizarMasters();
 }
 
-// despliega los tickets en el formulario
+// Despliega los tickets en la sección principal del menú 
 function visualizarTickets() {
+  const bTic = document.getElementById("b_tic");
+  if (bTic) bTic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
   
-  b_tic.textContent = E.procesado ? E.tickets.filter(t => t.estado !== "Resuelto" && t.estado !== "Enviado").length : "—";
+  const tablaTickets = document.getElementById("tabla_tickets");
+  if (tablaTickets) {
+    tablaTickets.innerHTML = E.procesado ? filasTickets() : 
+      '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  }
   
-  tabla_tickets.innerHTML = E.procesado ? filasTickets() : 
-    '<tr><td colspan="7" class="empty">Procesa un lote para generar tickets.</td></tr>';
+  const tablaTicketsHist = document.getElementById("tabla_tickets_hist");
+  if (tablaTicketsHist) {
+    tablaTicketsHist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
+      ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
+      ["2026-semana-02", "Certificado no se descarga", "discord", "09 sep", "—", "En curso"]].map(f =>
+      `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
+      <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
+  }
+
   
-  // ToDo actualización de históricos
-  tabla_tickets_hist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
-    ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
-    ["2026-semana-02", "Certificado no se descarga", "discord", "09 sep", "—", "En curso"]].map(f =>
-    `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
-    <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
-  
+  const contenedorBtnDiscord = document.getElementById("btn_discord");
+  if (contenedorBtnDiscord && !document.getElementById("btn_slack_principal")) {
+    const rowBtns = contenedorBtnDiscord.parentElement;
+    if (rowBtns && !rowBtns.querySelector("#btn_slack_principal")) {
+      const btnSlackPrin = document.createElement("button");
+      btnSlackPrin.className = "btn primary sm";
+      btnSlackPrin.id = "btn_slack_principal";
+      btnSlackPrin.style.backgroundColor = "#5b63a8";
+      btnSlackPrin.style.marginLeft = "10px";
+      btnSlackPrin.textContent = "Avisar en Slack · #soporte-equipo";
+      rowBtns.appendChild(btnSlackPrin);
+    }
+  }
+
+  const btnDiscordPrin = document.getElementById("btn_discord");
+  const btnSlackPrin = document.getElementById("btn_slack_principal");
+  if (btnDiscordPrin) btnDiscordPrin.onclick = () => avisar("discord");
+  if (btnSlackPrin) btnSlackPrin.onclick = () => avisar("slack");
+
   sincronizarChecksTickets();
 
   if (tabFmt === "tickets" && E.procesado) {
@@ -1158,9 +1182,17 @@ function visualizarTicketsEn(cont) {
       <th style="width:110px">Estado</th>
     </tr></thead>
       <tbody>${filasTickets()}</tbody></table></div>
-      <div class="row" style="margin-top:12px"><button class="btn primary sm" id="btn_avisar">Avisar en Discord · #soporte-interno</button></div></div>`;
+      <div class="row" style="margin-top:12px; gap:10px;">
+        <button class="btn primary sm" id="btn_avisar" style="background-color:#5865F2;">Avisar en Discord · #soporte-interno</button>
+        <button class="btn primary sm" id="btn_slack" style="background-color:#5b63a8;">Avisar en Slack · #soporte-equipo</button>
+      </div></div>`;
   cont.innerHTML = ""; cont.appendChild(card);
-  $("#btn_avisar").onclick = () => avisar("discord");
+  
+  const btnAvisar = document.getElementById("btn_avisar");
+  const btnSlack = document.getElementById("btn_slack");
+  if (btnAvisar) btnAvisar.onclick = () => avisar("discord");
+  if (btnSlack) btnSlack.onclick = () => avisar("slack");
+  
   sincronizarChecksTickets();
 }
 
@@ -1171,18 +1203,17 @@ function setBloqueoBotonesAviso(bloquear) {
   if (bloquear) {
     const botones = [
       document.getElementById("btn_discord"),
-      document.getElementById("btn_avisar")
+      document.getElementById("btn_slack_principal"),
+      document.getElementById("btn_avisar"),
+      document.getElementById("btn_slack")
     ].filter(Boolean);
 
-    botones.forEach(btn => {
-      btn.disabled = true;
-    });
+    botones.forEach(btn => { btn.disabled = true; });
   } else {
     actualizarEstadoBotonesAviso();
   }
 }
 
-// función para enviar mensajes de los tickets pendientes mediante discord
 async function avisar(dest) {
   if (avisandoTickets) return;
 
@@ -1191,19 +1222,18 @@ async function avisar(dest) {
     return toast("Falta vincular", PLAT[dest].nom + " no está conectado."); 
   }
   
-  const seleccionados = E.tickets.filter(t => t.seleccionado && t.estado !== "Enviado" && t.estado !== "Resuelto");
+  const seleccionados = E.tickets.filter(t => {
+    if (!t.seleccionado || t.estado === "Resuelto") return false;
+    const avisos = t.avisos || (t.aviso ? [t.aviso] : []);
+    return !avisos.includes(dest);
+  });
+
   if (!seleccionados.length) {
-    return toast("Sin selección", "No hay tickets pendientes seleccionados para avisar.");
+    return toast("Sin acción", `Los tickets seleccionados ya habían sido avisados previamente en ${PLAT[dest].nom}.`);
   }
 
   try {
     setBloqueoBotonesAviso(true);
-
-    // Pasamos a "En curso" mientras se envía la petición
-    seleccionados.forEach(t => { 
-      t.estado = "En curso"; 
-    }); 
-    visualizarTickets();
 
     const mensaje = "**Tickets para atención**\n\n" + 
        seleccionados.map(t => {
@@ -1211,41 +1241,50 @@ async function avisar(dest) {
          const detalle = m ? 
           `[**${t.sev}**] ${m.autor} (*${m.canal}*): ${m.texto}` : 
           `[**${t.sev}**] Ticket ${t.id}`;
-         return `- \`${t.id}\` - ${detalle}`;
+         return `- \`${t.id}\`\n${detalle}`;
        }).join("\n");
 
     const r = await conError(API.avisarTickets(mensaje, dest),
-       "No se pudo enviar mensaje de tickets pendientes.");
+        "No se pudo enviar mensaje de tickets pendientes.");
    
     if (!r) {
-      // Si hubo error, cambiar estado a "Error" con pill p-warn y permitir reintento
-      seleccionados.forEach(t => { 
-        t.estado = "Error"; 
-        t.aviso = null; 
-      }); 
-      visualizarTickets();
+      toast("Error al enviar", `No se pudo enviar a ${PLAT[dest].nom}`, false);
       return;
     }
 
-    // Éxito: cambiar de "En curso" a "Enviado" con pill p-ok y desmarcar check
     seleccionados.forEach(t => { 
+      if (!t.avisos) t.avisos = t.aviso ? [t.aviso] : [];
+      if (!t.avisos.includes(dest)) {
+        t.avisos.push(dest);
+      }
       t.aviso = dest; 
-      t.estado = "Enviado"; 
-      t.seleccionado = false;
+
+      if (t.avisos.includes("discord") && t.avisos.includes("slack")) {
+        t.estado = "Enviado";
+        t.seleccionado = false;
+      } else {
+        t.estado = "Parcial";
+      }
     }); 
 
     save();
     visualizarTickets(); 
-    toast(seleccionados.length + " tickets avisados", "Mensaje enviado a " + PLAT[dest].cuenta, true);
+    actualizarEstadoBotonesAviso();
+    toast(seleccionados.length + " ticket(s) avisado(s)", "Mensaje enviado a " + PLAT[dest].cuenta, true);
 
   } finally {
     setBloqueoBotonesAviso(false);
+    actualizarEstadoBotonesAviso();
   }
 }
 
-// botones de aviso rápido en la sección de Tickets
+// Enlazadores rápidos de eventos por si se cargan globalmente
 const btn_discord = document.getElementById("btn_discord");
 if (btn_discord) btn_discord.onclick = () => avisar("discord"); 
+
+const btn_slack = document.getElementById("btn_slack_principal");
+if (btn_slack) btn_slack.onclick = () => avisar("slack");
+
 
 /* ---------- PUBLICACIONES ---------- */
 function visualizarPubs() {

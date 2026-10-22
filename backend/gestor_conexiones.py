@@ -10,7 +10,7 @@ router = APIRouter()
 
 ESTADOS_INICIALES = {
     "discord": {"nombre": "Discord (InsightMind G10)", "on": False, "tipo": "Chat / Ingestión", "cuenta": "Canal #general", "color": "#5865F2", "ini": "DI", "modo": "Desconectado"},
-    "slack": {"nombre": "Slack Oficial", "on": False, "tipo": "Chat / Soporte", "cuenta": "InsightMind G10", "color": "#4A154B", "ini": "SL", "modo": "Desconectado"},
+    "slack": {"nombre": "Slack Oficial", "on": False, "tipo": "Chat / Soporte", "cuenta": "InsightMind G10", "color": "#5b63a8", "ini": "SL", "modo": "Desconectado"},
     "linkedin": {"nombre": "LinkedIn Page", "on": False, "tipo": "Publicación Automática", "cuenta": "InsightMind G10", "color": "#0A66C2", "ini": "LI", "modo": "Desconectado"},
     "x": {"nombre": "X (Twitter)", "on": False, "tipo": "Publicación Corta", "cuenta": "@insightmindg10", "color": "#000000", "ini": "X", "modo": "Desconectado"},
     "web": {"nombre": "Web de la comunidad", "on": True, "tipo": "Landing · sección FAQs", "cuenta": "Landing de Insight Mind", "color": "#20b2aa", "ini": "WEB", "modo": "Conectado a la landing", "url": "/landing/#faqs"},

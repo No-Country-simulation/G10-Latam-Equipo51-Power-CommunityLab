@@ -196,11 +196,11 @@ const PLAT = {
     modo: "Aparece en la landing al publicar",
     on: true,
   },
-  discord: {
-    nom: "Discord",
-    cuenta: "#soporte-interno",
-    color: "#5865F2",
-    ini: "DC",
+  slack: {
+    nom: "Slack",
+    cuenta: "#soporte-equipo",
+    color: "#5b63a8",
+    ini: "SL",
     modo: "Webhook · avisa los tickets",
     on: true,
   }
