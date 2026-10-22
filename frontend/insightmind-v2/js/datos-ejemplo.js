@@ -207,7 +207,7 @@ const PLAT = {
 };
 const FORMATOS = {
   "Post de LinkedIn": { plat: "linkedin", limite: 3000 },
-  "Hilo de X": { plat: "x", limite: 255, porPost: true },
+  "Hilo de X": { plat: "x", limite: 280, porPost: false },
   "Tip / FAQ": { plat: "web", limite: 2500 },
   "Destaque de newsletter": { plat: "newsletter", limite: 4000 },
 };
@@ -269,7 +269,7 @@ const hiloTxt = (m) => {
     `Si te falta el proyecto, este es tu recordatorio.\n\n¡Felicidades, ${n}! 👏`,
   ].map((parte, indice) => {
     const numerada = `${indice + 1}/4 ${parte}`;
-    return numerada.length <= 255 ? numerada : numerada.slice(0, 252).trimEnd() + "…";
+    return numerada.length <= 280 ? numerada : numerada.slice(0, 252).trimEnd() + "…";
   }).join("\n\n———\n\n");
 };
 /* faq1/faq2/newsTxt quedan como muestra fija del modo demo.

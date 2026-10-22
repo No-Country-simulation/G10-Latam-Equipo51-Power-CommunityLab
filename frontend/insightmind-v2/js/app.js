@@ -736,11 +736,8 @@ async function visualizarCuraduria() {
       card.appendChild(it);
       const ta = it.querySelector("textarea"), c = it.querySelector("#c_" + a.id);
       const cuenta = () => {
-        if (cfg.porPost) {
-          const ps = ta.value.split("———").map(x => x.trim()).filter(Boolean), mx = Math.max(0, ...ps.map(x => x.length));
-          c.textContent = `${ps.length} posts · máx ${mx}/255`; c.style.color = mx > 280 ? "var(--alert)" : mx > 255 ? "var(--warn)" : "";
-        }
-        else { c.textContent = `${ta.value.length}/${cfg.limite} caracteres`; c.style.color = ta.value.length > cfg.limite ? "var(--alert)" : ""; }
+        c.textContent = `${ta.value.length}/${cfg.limite} caracteres`; 
+        c.style.color = ta.value.length > cfg.limite ? "var(--alert)" : "";
       };
 
       cuenta(); ta.oninput = () => { 
@@ -775,115 +772,25 @@ function aprobarPendientes(plat) {
 function confirmarPublicacion(id) {
   const a = E.activos.find(x => x.id === id), cfg = FORMATOS[a.formato], p = PLAT[cfg.plat], m = msg(a.fuente);
   
-  // Si NO es X, mantenemos el modal original 
-  if (cfg.plat !== "x") {
-    dlg.style.maxWidth = "";
-    dlg.style.width = "";
-    dlg.style.maxHeight = "";
-    dlg.style.margin = "";
-    dlg_cont.removeAttribute("style");
-    const largo = cfg.porPost
-      ? a.texto.split("———").length + " posts · máximo " + Math.max(...a.texto.split("———").map(x => x.trim().length)) + "/255 caracteres"
-      : a.texto.length + "/" + cfg.limite + " caracteres";
-    dlg_cont.innerHTML = `
-      <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
-        <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
-      <div class="modal-body">
-        <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${escHtml(m.autor)}</b></span>
-          <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
-        <div><span class="label">Así se va a publicar</span><div class="modal-prev">${escHtml(a.texto)}</div></div>
-        <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn" id="dlg_no">Cancelar</button>
-        <button class="btn primary" id="dlg_si">Publicar ahora</button>
-      </div>`;
-    dlg.showModal();
-    dlg_no.onclick = () => dlg.close();
-    dlg_si.onclick = () => { dlg.close(); publicar(id); };
-    setTimeout(() => dlg_si.focus(), 50);
-    return;
-  }
-
-  // --- LÓGICA EXCLUSIVA PARA X (Hilos / Tuits segmentados) ---
-  const partesHilo = cfg.porPost ? a.texto.split("———").map(x => x.trim()).filter(Boolean) : [a.texto];
-  const excedeLimite = partesHilo.some(parte => parte.length > 280);
-  const largo = partesHilo.length + " posts · máximo " + Math.max(0, ...partesHilo.map(parte => parte.length)) + "/255 caracteres";
-
-  // Cada modal-prev ajustado para que el contenido se visualice completo sin scroll ni recortes
-  const vistaPrevia = partesHilo.map((parte, indice) => `
-    <div class="modal-prev" style="margin-bottom: 12px; max-height: none; overflow: visible; height: auto; padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
-      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom: 6px;">
-        <b>Post ${indice + 1}/${partesHilo.length}</b>
-        <span class="mini mono">${parte.length}/255 caracteres</span>
-      </div>
-      <div style="margin: 8px 0; white-space: pre-wrap; word-break: break-word; line-height: 1.55;">${escHtml(parte)}</div>
-      <div class="row" style="gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="btn sm" data-copy-idx="${indice}">Copiar post ${indice + 1}</button>
-        ${parte.length <= 280 ? `<a class="btn sm primary" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(parte)}" target="_blank" rel="noopener">Publicar Post ${indice + 1} en X ↗</a>` : '<span class="mini" style="color:var(--alert)">Supera los 280 caracteres.</span>'}
-      </div>
-    </div>`).join("");
-
-  // Adaptar el modal a las dimensiones de la pantalla
-  dlg.style.maxWidth = "min(800px, 94vw)";
-  dlg.style.width = "94vw";
-  dlg.style.maxHeight = "90vh";
-  dlg.style.margin = "auto";
-
-  dlg_cont.style.maxHeight = "90vh";
-  dlg_cont.style.display = "flex";
-  dlg_cont.style.flexDirection = "column";
-  dlg_cont.style.width = "100%";
-  dlg_cont.style.overflow = "hidden";
+  const largo = a.texto.length + "/" + cfg.limite + " caracteres";
 
   dlg_cont.innerHTML = `
-    <div class="modal-head" style="flex-shrink: 0;"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
-      <div style="flex:1"><b>Gestionar Hilo en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
-    <div class="modal-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; padding: 16px 18px; gap: 8px;">
-      <div class="modal-meta" style="flex-shrink: 0;"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${escHtml(m.autor)}</b></span>
+    <div class="modal-head"><div class="mk" style="--pc:${p.color}">${p.ini}</div>
+      <div style="flex:1"><b>Publicar en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
+    <div class="modal-body">
+      <div class="modal-meta"><span>Formato: <b>${a.formato}</b></span><span>Origen: <b>${m.autor}</b></span>
         <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
-      <div style="flex-shrink: 0;"><span class="label" style="display:block; margin: 4px 0 2px 0;">Secuencia de tuits listos para difusión</span></div>
-      
-      <!-- Componente contenedor agrupado con scroll exclusivo para los posts -->
-      <div class="hilo-scroll" style="overflow-y: auto; flex: 1; min-height: 0; max-height: calc(90vh - 240px); padding-right: 4px;">
-        ${vistaPrevia}
-      </div>
-
-      <div style="flex-shrink: 0; margin-top: 4px;">
-        <div class="mini">Puedes abrir cada tuit individualmente en X. Una vez que termines de difundir todo el hilo, puedes marcar el bloque completo como publicado abajo.</div>
-        ${excedeLimite ? '<div class="mini" style="color:var(--alert); font-weight:600; margin-top: 4px;">Acorta los posts que superan 280 caracteres antes de publicar.</div>' : ""}
-      </div>
+      <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g, "&lt;")}</div></div>
+      <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
     </div>
-    <div class="modal-foot" style="flex-shrink: 0;">
+    <div class="modal-foot">
       <button class="btn" id="dlg_no">Cancelar</button>
-      <button class="btn primary" id="dlg_si" ${excedeLimite ? "disabled" : ""}>Marcar todo el hilo como Publicado</button>
+      <button class="btn primary" id="dlg_si">Publicar ahora</button>
     </div>`;
-
-  dlg_cont.querySelectorAll("[data-copy-idx]").forEach(boton => {
-    boton.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(partesHilo[Number(boton.dataset.copyIdx)]);
-        const originalText = boton.textContent;
-        boton.textContent = "¡Copiado!";
-        setTimeout(() => { boton.textContent = originalText; }, 1500);
-      } catch (error) {
-        toast("No se pudo copiar el post", "Selecciona el texto y cópialo manualmente", false);
-      }
-    };
-  });
-
-  const limpiarEstilosDlg = () => {
-    dlg.style.maxWidth = "";
-    dlg.style.width = "";
-    dlg.style.maxHeight = "";
-    dlg.style.margin = "";
-    dlg_cont.removeAttribute("style");
-  };
-
+  
   dlg.showModal();
-  dlg_no.onclick = () => { limpiarEstilosDlg(); dlg.close(); };
-  dlg_si.onclick = () => { limpiarEstilosDlg(); dlg.close(); publicar(id); };
-  dlg.onclose = () => { limpiarEstilosDlg(); };
+  dlg_no.onclick = () => dlg.close();
+  dlg_si.onclick = () => { dlg.close(); publicar(id); };
   setTimeout(() => dlg_si.focus(), 50);
 }
 
@@ -966,9 +873,7 @@ async function publicar(id) {
       };
       await guardarCuraduriaEnOCI().then(ok => {
         if (!ok) return revertir();
-        const detalleToast = (resultado.es_hilo && resultado.posts && resultado.posts.length > 1)
-          ? p.cuenta + " · Post 1/" + resultado.posts.length + " abierto en X"
-          : p.cuenta;
+        const detalleToast = p.cuenta;
         toast("¡Publicado con éxito en " + p.nom + "!", detalleToast, true, () => {
           revertir();
           guardarCuraduriaEnOCI().then(ok2 => ok2 && toast("Publicación revertida", "El contenido volvió a " + previo));

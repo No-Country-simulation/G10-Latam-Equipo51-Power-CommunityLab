@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from backend.analizador_sentimiento import _llamar_cohere
 from backend.config_voz import aplicar_chips, reglas_de_estilo, voz_como_prompt
 
-LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 255, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
+LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 280, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
 SEPARADOR_HILO = "\n\n———\n\n"
 
 INSTRUCCIONES = {
@@ -18,9 +18,9 @@ INSTRUCCIONES = {
         "salvo que la guía de voz o las reglas de estilo indiquen lo contrario."
     ),
     "Hilo de X": (
-        "Escribe contenido para X (Twitter). Si el tema es breve, escribe 1 solo tuit. "
-        "Si la información requiere más contexto, escribe una secuencia de tuits (tantos como sean necesarios, sin forzar un número fijo, además no debes numerarlos). "
-        "CADA tuit debe tener máximo 255 caracteres y debes separarlos únicamente con una línea que contenga: \n\n———\n\n"
+        "Escribe UN SOLO tuit o post corto para X (Twitter) de máximo 280 caracteres. "
+        "Debe ser un único párrafo fluido, con gancho directo y sin saltos de línea innecesarios. "
+        "PROHIBIDO usar separadores como '———', guiones múltiples, o dividir el mensaje en partes."
     ),
     "Tip / FAQ": (
         "Convierte la pregunta en un tip/FAQ para la comunidad: título en negrita (**así**), respuesta breve "
@@ -47,16 +47,17 @@ def _contexto_newsletter(mensajes: list[dict]) -> str:
     lineas = [f"- {m.get('autor')} ({m.get('tipo')}): {str(m.get('texto'))[:140]}" for m in mensajes[:12]]
     return f"Mensajes del lote ({len(mensajes)}, {pct}% positivos):\n" + "\n".join(lineas)
 
-
 def _ajustar(formato: str, texto: str, voz: dict | None = None) -> str:
     texto = re.sub(r"```\w*", "", texto).strip()
     if voz:
-        texto = aplicar_chips(texto, voz)   # Sin hashtags / Sin emojis, garantizado
+        texto = aplicar_chips(texto, voz)
+        
+    # Si la IA devolvió algún separador accidental, lo limpiamos y unificamoscio
     if formato == "Hilo de X":
-        posts = [p.strip() for p in re.split(r"\n\s*[—–-]{3,}\s*\n", texto) if p.strip()]
-        posts = [p if len(p) <= 255 else p[:252].rstrip() + "…" for p in posts]
-        return SEPARADOR_HILO.join(posts)
-    limite = LIMITES.get(formato, 3000)
+        texto = re.sub(r"\n\s*[—–-]{3,}\s*\n", " ", texto)
+        texto = re.sub(r"\n+", " ", texto).strip()  # Elimina saltos de línea excesivos
+        
+    limite = LIMITES.get(formato, 280)
     return texto if len(texto) <= limite else texto[: limite - 1].rstrip() + "…"
 
 

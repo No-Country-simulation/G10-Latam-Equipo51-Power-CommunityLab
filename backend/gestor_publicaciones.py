@@ -57,29 +57,16 @@ async def publicar_en_redes(texto: str, plataforma: str):
                     return {"success": False, "error": f"Error LinkedIn ({response.status_code}): {response.text}"}
 
         elif plataforma == "x":
-            # Modo asistido por límite de créditos de la API de X (Error 402)
-            segmentos = [s.strip() for s in re.split(r"\n?\s*[—–-]{3,}\s*\n?", texto) if s.strip()]
-            if not segmentos:
-                segmentos = [texto.strip()]
-
-            publicaciones_x = []
-            for indice, segmento in enumerate(segmentos):
-                texto_limpio = segmento if len(segmento) <= 280 else segmento[:277].rstrip() + "…"
-                publicaciones_x.append({
-                    "indice": indice + 1,
-                    "total": len(segmentos),
-                    "texto": texto_limpio,
-                    "caracteres": len(texto_limpio),
-                    "intent_url": f"https://twitter.com/intent/tweet?text={urllib.parse.quote(texto_limpio)}"
-                })
-
-            print(f"--> [X] Usando Modo Asistido (Intent URL) para {len(publicaciones_x)} post(s).")
+            texto_limpio = texto.strip()
+            if len(texto_limpio) > 280:
+                texto_limpio = texto_limpio[:277].rstrip() + "…"
+            
+            intent_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(texto_limpio)}"
+            
             return {
                 "success": True,
                 "modo_asistido": True,
-                "es_hilo": len(publicaciones_x) > 1,
-                "url_destino": publicaciones_x[0]["intent_url"],
-                "posts": publicaciones_x,
+                "url_destino": intent_url,
                 "mensaje": "Abriendo compositor de X"
             }
 
