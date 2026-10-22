@@ -47,6 +47,7 @@ El equipo revisa, edita y publica desde una interfaz web. La voz de marca (tono,
 | Separar front y backend con nginx en localhost (HTTP, sin dominio) | Listo: ver sección 10 |
 | Login de usuarios (cookie de sesión, sin dominio ni HTTPS) | Listo: ver sección 10 |
 | Landing pública conectada a la curaduría (FAQs y newsletter publicados) | Listo: ver `frontend/landingpage/README.md` |
+| Cumplimiento legal básico (avisos, términos, minimización de datos hacia la IA) | Listo para el prototipo; pendientes en `docs/legal/README.md` |
 | Publicación real en LinkedIn / X | Pendiente (hoy se prepara el contenido) |
 
 ---
@@ -513,7 +514,9 @@ sudo ss -tlnp | grep -E ':(80|8000|27017)\b'                                    
 │   ├── db.py                      # MongoDB (opcional, tolerante a fallos)
 │   ├── oci_storage.py             # cliente único de Object Storage y prefijos
 │   ├── rutas_contenido.py         # /generar, /config/voz, /sincronizar
+│   ├── privacidad.py              # enmascara correos y teléfonos antes de enviar texto a la IA
 │   └── rutas_publico.py           # /publico/faqs y /publico/newsletter (landing, sin sesión)
+├── docs/legal/                    # privacidad, acuerdo de tratamiento, proveedores y procedimientos
 ├── frontend/landingpage/          # landing pública: info, planes, FAQs y newsletter (ver su README)
 └── frontend/insightmind-v2/
     ├── index.html

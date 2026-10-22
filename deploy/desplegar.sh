@@ -17,7 +17,7 @@ sudo cp -r "$REPO"/frontend/insightmind-v2/{index.html,css,js,img} "$WEB/"
 # Landing pública (FAQs y newsletter publicados): http://localhost/landing/
 sudo rm -rf "$WEB"/landing
 sudo mkdir -p "$WEB"/landing
-sudo cp -r "$REPO"/frontend/landingpage/{index.html,css,js,datos,img} "$WEB/landing/"
+sudo cp -r "$REPO"/frontend/landingpage/{index.html,css,js,datos,img,fuentes,legal} "$WEB/landing/"
 sudo restorecon -R "$WEB" 2>/dev/null || true
 
 # SELinux: permite que nginx haga proxy a uvicorn

@@ -769,6 +769,29 @@ function aprobarPendientes(plat) {
 }
 
 // modal de confirmación antes de publicar  
+/* ---- Confirmación legal antes de publicar ----
+   Los formatos que pueden nombrar a alguien (casos de éxito en LinkedIn y X, el newsletter)
+   exigen confirmar que esas personas dieron su permiso. Las FAQs se publican sin nombres:
+   se confirma que el texto no incluye datos personales. Ver docs/legal/ y el aviso para
+   comunidades de la landing (/landing/legal/comunidad.html). */
+const NOMBRAN_PERSONAS = ["Post de LinkedIn", "Hilo de X", "Destaque de newsletter"];
+function casillaLegal(formatos) {
+  const nombra = formatos.some(f => NOMBRAN_PERSONAS.includes(f));
+  const texto = nombra
+    ? "Confirmo que las personas mencionadas aceptaron aparecer en esta publicación."
+    : "Confirmo que el texto no incluye nombres ni datos personales de la comunidad.";
+  return `<label class="confirmacion-legal"><input type="checkbox" id="chk_legal"> <span>${texto}</span></label>`;
+}
+/* El botón de publicar se habilita solo con la casilla marcada (y si nada más lo bloquea) */
+function exigirConfirmacionLegal(boton) {
+  const chk = document.getElementById("chk_legal");
+  if (!chk || !boton) return;
+  const bloqueadoPorOtraRazon = boton.disabled;
+  const actualizar = () => { boton.disabled = bloqueadoPorOtraRazon || !chk.checked; };
+  chk.addEventListener("change", actualizar);
+  actualizar();
+}
+
 function confirmarPublicacion(id) {
   const a = E.activos.find(x => x.id === id), cfg = FORMATOS[a.formato], p = PLAT[cfg.plat], m = msg(a.fuente);
   
@@ -782,16 +805,18 @@ function confirmarPublicacion(id) {
         <span>Longitud: <b>${largo}</b></span>${a.editado ? "<span>Estado: <b>editado a mano</b></span>" : ""}</div>
       <div><span class="label">Así se va a publicar</span><div class="modal-prev">${a.texto.replace(/</g, "&lt;")}</div></div>
       <div class="mini">Se registrará en Publicaciones con su enlace y el mensaje que lo originó. Tendrás 6 segundos para deshacer.</div>
+      ${casillaLegal([a.formato])}
     </div>
     <div class="modal-foot">
       <button class="btn" id="dlg_no">Cancelar</button>
       <button class="btn primary" id="dlg_si">Publicar ahora</button>
     </div>`;
   
+  exigirConfirmacionLegal(dlg_si);
   dlg.showModal();
   dlg_no.onclick = () => dlg.close();
   dlg_si.onclick = () => { dlg.close(); publicar(id); };
-  setTimeout(() => dlg_si.focus(), 50);
+  setTimeout(() => (document.getElementById("chk_legal") || dlg_si).focus(), 50);
 }
 
 /* Fecha de publicación: se guarda en ISO (la lee la landing) y se muestra legible.
@@ -948,9 +973,11 @@ function publicarLote(plat) {
       <div style="flex:1"><b>Publicar ${lista.length} contenidos en ${p.nom}</b><div class="mini">${p.cuenta} · ${p.modo}</div></div></div>
     <div class="modal-body">
       <div class="modal-prev">${lista.map(a => "• " + escHtml(a.texto.split("\n")[0].slice(0, 70)) + "…").join("\n\n")}</div>
-      <div class="mini">Se publican en orden y quedan registrados en Publicaciones. Tendrás 6 segundos para deshacer.</div></div>
+      <div class="mini">Se publican en orden y quedan registrados en Publicaciones. Tendrás 6 segundos para deshacer.</div>
+      ${casillaLegal(lista.map(a => a.formato))}</div>
     <div class="modal-foot"><button class="btn" id="dlg_no">Cancelar</button>
       <button class="btn primary" id="dlg_si">Publicar los ${lista.length}</button></div>`;
+  exigirConfirmacionLegal(dlg_si);
   dlg.showModal(); dlg_no.onclick = () => dlg.close();
   dlg_si.onclick = () => {
     dlg.close();

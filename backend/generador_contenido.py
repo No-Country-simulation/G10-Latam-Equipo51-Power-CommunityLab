@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from backend.analizador_sentimiento import _llamar_cohere
 from backend.config_voz import aplicar_chips, reglas_de_estilo, voz_como_prompt
+from backend.privacidad import enmascarar
 
 LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 280, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
 SEPARADOR_HILO = "\n\n———\n\n"
@@ -33,18 +34,21 @@ INSTRUCCIONES = {
 }
 
 
-def _datos(m: dict) -> str:
+def _datos(m: dict, con_autor: bool = True) -> str:
+    """Lo que ve la IA de un mensaje. Correos y teléfonos van enmascarados; el autor solo se
+    incluye cuando el formato lo necesita (casos de éxito), nunca en FAQs. Ver backend/privacidad.py."""
+    autor = f"Autor: {m.get('autor')}\n" if con_autor else ""
     return (
-        f"Autor: {m.get('autor')}\nCanal: {m.get('canal', 'general')}\n"
+        f"{autor}Canal: {m.get('canal', 'general')}\n"
         f"Tipo: {m.get('tipo')}\nComunidad: {m.get('origen_comunidad') or 'n/d'}\n"
-        f"Periodo: {m.get('periodo_referencia') or 'n/d'}\nMensaje: \"{m.get('texto')}\""
+        f"Periodo: {m.get('periodo_referencia') or 'n/d'}\nMensaje: \"{enmascarar(m.get('texto'))}\""
     )
 
 
 def _contexto_newsletter(mensajes: list[dict]) -> str:
     pos = sum(1 for m in mensajes if m.get("sent", 0) > 0.2)
     pct = round(pos / len(mensajes) * 100) if mensajes else 0
-    lineas = [f"- {m.get('autor')} ({m.get('tipo')}): {str(m.get('texto'))[:140]}" for m in mensajes[:12]]
+    lineas = [f"- {m.get('autor')} ({m.get('tipo')}): {enmascarar(m.get('texto'))[:140]}" for m in mensajes[:12]]
     return f"Mensajes del lote ({len(mensajes)}, {pct}% positivos):\n" + "\n".join(lineas)
 
 def _ajustar(formato: str, texto: str, voz: dict | None = None) -> str:
@@ -71,7 +75,8 @@ def generar_texto(formato: str, mensaje: dict, voz: dict, mensajes: list[dict] |
         "comentarios sobre lo que haces. Responde en el idioma del mensaje original "
         f"({'portugués' if mensaje.get('idioma') == 'pt' else 'español'}).\n\n" + voz_como_prompt(voz)
     )
-    base = _contexto_newsletter(mensajes) if formato == "Destaque de newsletter" and mensajes else _datos(mensaje)
+    base = (_contexto_newsletter(mensajes) if formato == "Destaque de newsletter" and mensajes
+            else _datos(mensaje, con_autor=formato != "Tip / FAQ"))   # las FAQs se publican sin nombres
     prompt = f"{INSTRUCCIONES[formato]}\n\n{base}"
     reglas = reglas_de_estilo(voz)
     if reglas:   # al final del prompt de usuario, donde más pesa, para que no las pise la estructura del formato

@@ -13,6 +13,7 @@ import re
 import json
 import requests
 from backend import cohere_uso
+from backend.privacidad import enmascarar
 from dotenv import load_dotenv
 
 
@@ -24,7 +25,7 @@ COHERE_MODEL = "command-r-08-2024"
 
 # Súbela cada vez que cambie el prompt: la caché del bucket se indexa por etag + MODELO_CACHE,
 # y sin esto los mensajes ya analizados se seguirían sirviendo con el prompt anterior.
-VERSION_ANALISIS = "tipo-ia-v1"
+VERSION_ANALISIS = "tipo-ia-v2"   # v2: el prompt ya no lleva el autor y enmascara correos y teléfonos
 MODELO_CACHE = f"{COHERE_MODEL}+{VERSION_ANALISIS}"
 
 # Mismos umbrales que "Ajustes -> Umbrales de decisión" en el frontend
@@ -58,7 +59,7 @@ Devuelve UNICAMENTE un JSON valido, sin texto adicional ni backticks, con esta f
   "por_que": "una frase breve explicando la clasificacion"
 }}
 
-Mensaje de {autor}:
+Mensaje de un miembro de la comunidad:
 \"\"\"{texto}\"\"\"
 """
 
@@ -67,7 +68,9 @@ PISTA = ('\nEl origen etiquetó este mensaje como "{tipo}". Es solo una pista y 
 
 
 def _construir_prompt(autor: str, texto: str, pista: str | None = None) -> str:
-    return PROMPT_ANALISIS.format(autor=autor, texto=texto,
+    """El autor no viaja a Cohere (no cambia el análisis) y el texto va con correos y
+    teléfonos enmascarados. Ver backend/privacidad.py."""
+    return PROMPT_ANALISIS.format(texto=enmascarar(texto),
                                   pista=PISTA.format(tipo=pista) if pista else "")
 
 

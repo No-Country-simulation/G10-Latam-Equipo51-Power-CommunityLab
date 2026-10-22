@@ -106,8 +106,12 @@ python pruebas/prueba_publico.py
 frontend/landingpage/
 ├── index.html        # una sola página: Información, Planes, FAQs, Newsletter
 ├── css/sitio.css     # tokens del panel (claro/oscuro) + estilos de la landing
+├── css/fuentes.css   # @font-face de las fuentes alojadas en fuentes/
 ├── js/datos.js       # TODA la lectura de datos: API, respaldo, markdown mínimo
 ├── js/sitio.js       # tema, anclas, planes, acordeón de FAQs, ediciones, formulario, animaciones
+├── js/legal.js       # tema en las páginas legales
+├── legal/            # aviso de privacidad, aviso para comunidades, términos y cookies
+├── fuentes/          # Schibsted Grotesk e IBM Plex Mono (woff2, SIL OFL), sin Google Fonts
 ├── datos/            # respaldo local (forma de curaduria.json), fijados.json y planes.json
 ├── img/
 │   ├── hero-claro.*  # foto del hero, tema claro: .avif y .jpg, en 2000 y 1000 px
@@ -179,7 +183,19 @@ Todas se apagan con `prefers-reduced-motion`, y sin JavaScript todo se ve igual.
 | CLS (saltos de diseño) | 0 |
 | Tareas largas | 0 |
 
-## 6. Pendientes
+## 6. Legal
+
+- **Páginas, enlazadas en el pie:**
+  - `legal/privacidad.html`: sitio y boletín.
+  - `legal/comunidad.html`: para los miembros de las comunidades cuyas conversaciones se analizan.
+  - `legal/terminos.html`.
+  - `legal/cookies.html`.
+- **Sin cookies ni terceros:** las fuentes se sirven desde `fuentes/` y no hay analítica. Por eso no hace falta banner de cookies. Lo único que guarda el navegador es el tema (`im-sitio-tema`).
+- **Boletín:** junto al botón hay un aviso de consentimiento. Al conectar el envío real hay que guardar la prueba del consentimiento y confirmar por correo (ver el `TODO` en `js/sitio.js`).
+- **Transparencia:** FAQs y newsletter avisan que se redactan con IA y que una persona los revisa. Los planes avisan que son ilustrativos.
+- **Datos por completar:** lo que aparece subrayado en amarillo en las páginas legales (correo de contacto, regiones, plazos) son datos pendientes. La lista completa está en `docs/legal/README.md`.
+
+## 7. Pendientes
 
 - **Suscripción al newsletter:** hoy solo confirma en pantalla. Ver el `TODO` en `js/sitio.js` para conectarla a un servicio real.
 - **Precios:** son definitivos solo cuando se editen en `datos/planes.json`.

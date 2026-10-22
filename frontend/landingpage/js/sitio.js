@@ -301,8 +301,12 @@
       campo.focus();
       return;
     }
-    // TODO: enviar la suscripción al servicio real (p. ej. POST {ORIGEN}/suscripciones con { correo }).
-    // En la v1 no se envía nada: solo se confirma en pantalla.
+    // TODO: enviar la suscripción al servicio real (p. ej. POST {ORIGEN}/suscripciones).
+    // Para poder demostrar el consentimiento, guarda junto al correo:
+    //   { correo, consentimiento: <texto exacto de #suscripcion_legal>, fecha: ISO, origen: "landing" }
+    // y confirma con doble opt-in (un correo con enlace de confirmación) antes del primer envío.
+    // Cada boletín debe llevar un enlace para darse de baja. Ver legal/privacidad.html.
+    // En la v1 no se envía ni se guarda nada: solo se confirma en pantalla.
     estadoForm("exito", `${ico("i_check")}<span>Listo. Te escribiremos el viernes a <strong>${escapar(correo)}</strong>.</span>`);
     form.reset();
   });
