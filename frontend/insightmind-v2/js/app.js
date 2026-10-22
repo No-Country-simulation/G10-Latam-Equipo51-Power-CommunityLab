@@ -1146,9 +1146,8 @@ function visualizarTickets() {
     const rowBtns = contenedorBtnDiscord.parentElement;
     if (rowBtns && !rowBtns.querySelector("#btn_slack_principal")) {
       const btnSlackPrin = document.createElement("button");
-      btnSlackPrin.className = "btn primary sm";
+      btnSlackPrin.className = "btn sm";
       btnSlackPrin.id = "btn_slack_principal";
-      btnSlackPrin.style.backgroundColor = "#5b63a8";
       btnSlackPrin.style.marginLeft = "10px";
       btnSlackPrin.textContent = "Avisar en Slack · #soporte-equipo";
       rowBtns.appendChild(btnSlackPrin);
@@ -1183,8 +1182,8 @@ function visualizarTicketsEn(cont) {
     </tr></thead>
       <tbody>${filasTickets()}</tbody></table></div>
       <div class="row" style="margin-top:12px; gap:10px;">
-        <button class="btn primary sm" id="btn_avisar" style="background-color:#5865F2;">Avisar en Discord · #soporte-interno</button>
-        <button class="btn primary sm" id="btn_slack" style="background-color:#5b63a8;">Avisar en Slack · #soporte-equipo</button>
+        <button class="btn primary sm" id="btn_avisar">Avisar en Discord · #soporte-interno</button>
+        <button class="btn sm" id="btn_slack">Avisar en Slack · #soporte-equipo</button>
       </div></div>`;
   cont.innerHTML = ""; cont.appendChild(card);
   
