@@ -158,6 +158,27 @@ async function redactarConVoz(activos = [], textoPrevio = {}) {
 }
 
 const ic = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
+
+/* ---- Modal: botón de cerrar y cierre al hacer clic fuera ----
+   Todos los modales usan el mismo <dialog id="dlg">. Al abrir, se añade una ✕ a la cabecera,
+   y un clic en el fondo oscuro también lo cierra. Ambos pasan por el botón Cancelar/Cerrar
+   (#dlg_no) cuando existe, para respetar la limpieza que haga ese modal. Esc ya cierra solo. */
+function cerrarModal() {
+  const cancelar = document.getElementById("dlg_no");
+  if (cancelar) cancelar.click(); else dlg.close();
+}
+const abrirModalNativo = dlg.showModal.bind(dlg);
+dlg.showModal = () => {
+  const cabecera = dlg_cont.querySelector(".modal-head");
+  if (cabecera && !cabecera.querySelector(".modal-cerrar")) {
+    cabecera.insertAdjacentHTML("beforeend",
+      `<button type="button" class="modal-cerrar" aria-label="Cerrar">${ic("cerrar")}</button>`);
+    cabecera.querySelector(".modal-cerrar").onclick = cerrarModal;
+  }
+  abrirModalNativo();
+};
+/* El <dialog> no tiene relleno: un clic cuyo destino es el propio dialog cayó en el fondo */
+dlg.addEventListener("click", e => { if (e.target === dlg) cerrarModal(); });
 const $ = s => document.querySelector(s), el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
 const msg = id => DATOS.find(d => d.id === id);
 

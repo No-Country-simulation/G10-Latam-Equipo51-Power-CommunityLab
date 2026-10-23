@@ -1000,3 +1000,11 @@ body:has(#p_panorama:not([hidden])) .pano-actualizar{display:inline-flex}
 .confirmacion-legal{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:12px 14px;
   border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);font-size:.86rem;line-height:1.45;cursor:pointer}
 .confirmacion-legal input{margin-top:3px;flex:none;width:16px;height:16px;accent-color:var(--primary)}
+
+/* Botón de cerrar de los modales (ver cerrarModal en app.js) */
+.modal-cerrar{margin-left:auto;flex:none;width:36px;height:36px;display:grid;place-items:center;
+  border:0;border-radius:var(--radius);background:transparent;color:var(--muted);cursor:pointer;
+  transition:background-color .15s ease,color .15s ease}
+.modal-cerrar .ico{width:18px;height:18px}
+.modal-cerrar:hover{background:var(--secondary);color:var(--ink)}
+.modal-cerrar:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
