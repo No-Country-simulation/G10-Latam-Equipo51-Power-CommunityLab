@@ -28,7 +28,7 @@ Análisis automatizado (sentimiento, tipo, temas, relevancia), redacción de bor
 ## 4. Obligaciones del Responsable
 
 1. Contar con una base legal para el tratamiento e **informar a los miembros** antes del primer análisis, con el [Aviso para miembros de comunidades](../../frontend/landingpage/legal/comunidad.html) o uno equivalente.
-2. Obtener el **consentimiento** de una persona antes de publicar su nombre o su historia.
+2. Obtener, al inscribir a cada persona, su **autorización** para compartir sus logros con su nombre, en un punto específico, separado y opcional, que pueda retirar cuando quiera. Mantener el registro de quién la dio y quién la retiró. Sin esa autorización, el contenido se publica sin nombre ni datos que identifiquen a la persona.
 3. Revisar y aprobar todo contenido antes de publicarlo.
 4. Trasladar al Encargado, sin demora, las solicitudes de derechos que le lleguen.
 
