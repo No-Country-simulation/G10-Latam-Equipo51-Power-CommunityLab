@@ -1186,7 +1186,7 @@ function visualizarTickets() {
     tablaTicketsHist.innerHTML = [["2026-semana-03", "Error 500 al subir el proyecto final", "discord", "15 sep", "17 sep", "Resuelto"],
       ["2026-semana-03", "Video del módulo 2 sin audio", "discord", "16 sep", "18 sep", "Resuelto"],
       ["2026-semana-02", "Certificado no se descarga", "discord", "09 sep", "—", "En curso"]].map(f =>
-      `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${PLAT[f[2]].nom}</span></td>
+      `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-mute">${(PLAT[f[2]] || {}).nom || f[2]}</span></td>
       <td class="muted">${f[3]}</td><td class="muted">${f[4]}</td><td><span class="pill ${f[5] === "Resuelto" ? "p-ok" : "p-warn"}">${f[5]}</span></td></tr>`).join("");
   }
 
