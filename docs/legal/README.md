@@ -43,7 +43,7 @@ Lo segundo es lo delicado: las personas de la comunidad no eligieron usar Insigh
 | A Cohere no le llegan correos ni teléfonos: se enmascaran antes de enviar | `backend/privacidad.py` (prueba: `pruebas/prueba_privacidad.py`) |
 | El análisis no envía el nombre de la persona a Cohere | `backend/analizador_sentimiento.py` |
 | Las FAQs se redactan sin el nombre del autor | `backend/generador_contenido.py` |
-| Para publicar contenido que nombra a alguien (LinkedIn, X, newsletter) hay que confirmar con un clic que autorizó al inscribirse; en FAQs, que no hay datos personales | `frontend/insightmind-v2/js/app.js` (`casillaLegal`) |
+| Para publicar contenido que nombra a alguien (LinkedIn, X, newsletter) hay que confirmar con un clic que se cuenta con su autorización; en FAQs, que no hay datos personales | `frontend/insightmind-v2/js/app.js` (`casillaLegal`) |
 | La API pública de la landing no expone autores, tickets ni el texto original | `backend/rutas_publico.py` |
 | Nada se publica sin aprobación humana | Flujo de curaduría |
 | Acceso al panel con usuario, contraseña y cookie de sesión `HttpOnly` + `SameSite=Strict` | `backend/auth.py` |
@@ -67,7 +67,6 @@ Lo segundo es lo delicado: las personas de la comunidad no eligieron usar Insigh
 - [ ] **Acuerdo firmado** con cada organización cuya comunidad se conecte.
 - [ ] **Aviso a la comunidad** publicado por la organización antes del primer análisis.
 - [ ] **Autorización en la inscripción.** El formulario de inscripción de la organización debe incluir un punto **específico, separado y opcional**, por ejemplo: "Autorizo que mis logros y mensajes en la comunidad se compartan con mi nombre en las redes y el boletín del programa. Puedo retirar esta autorización cuando quiera". Quien no lo marque se inscribe igual y su historia sale sin nombre. La organización mantiene la lista de quién autorizó y quién lo retiró.
-- [ ] **Apagar el modo demostración.** `AUTORIZACION_DEMO = true` en `frontend/insightmind-v2/js/app.js` asume que todos los alumnos autorizaron (la casilla sale marcada). Ponerlo en `false` antes de usar una comunidad real.
 
 ### Importantes
 

@@ -770,35 +770,19 @@ function aprobarPendientes(plat) {
 
 // modal de confirmación antes de publicar  
 /* ---- Confirmación legal antes de publicar ----
-   Modelo de autorización en la inscripción: al inscribirse, cada alumno decide (en un punto
-   separado y opcional) si autoriza que se compartan sus logros con su nombre. Antes de publicar
-   un formato que puede nombrar a alguien (casos de éxito en LinkedIn y X, el newsletter) se
-   confirma esa autorización con un clic, sin contactar a nadie. Las FAQs se publican sin
-   nombres: se confirma que el texto no incluye datos personales.
+   Antes de publicar un formato que puede nombrar a alguien (LinkedIn, X, newsletter) se
+   confirma con un clic que se cuenta con su autorización. Las FAQs se publican sin nombres:
+   se confirma que el texto no incluye datos personales.
    Ver docs/legal/ y /landing/legal/comunidad.html. */
 const NOMBRAN_PERSONAS = ["Post de LinkedIn", "Hilo de X", "Destaque de newsletter"];
-
-/* DEMOSTRACIÓN: se asume que todos los alumnos autorizaron al inscribirse, así la casilla
-   aparece marcada y lo dice. Antes de operar con una comunidad real, ponlo en false: la
-   autorización debe venir del formulario de inscripción de la organización. */
-const AUTORIZACION_DEMO = true;
-
 function casillaLegal(formatos) {
   const nombra = formatos.some(f => NOMBRAN_PERSONAS.includes(f));
-  if (!nombra) {
-    return `<label class="confirmacion-legal"><input type="checkbox" id="chk_legal">
-      <span>Confirmo que el texto no incluye nombres ni datos personales de la comunidad.</span></label>`;
-  }
-  const varias = formatos.length > 1;
-  const texto = varias
-    ? "Confirmo que las personas mencionadas autorizaron, al inscribirse, que se compartan sus logros con su nombre."
-    : "Confirmo que esta persona autorizó, al inscribirse, que se compartan sus logros con su nombre.";
-  const demo = AUTORIZACION_DEMO
-    ? `<span class="confirmacion-demo">Demostración: se asume que todos los alumnos lo autorizaron.</span>` : "";
-  return `<label class="confirmacion-legal"><input type="checkbox" id="chk_legal"${AUTORIZACION_DEMO ? " checked" : ""}>
-      <span>${texto}
-        <span class="confirmacion-ayuda">Si no lo autorizó, quita su nombre y cualquier dato que lo identifique antes de publicar. Recuerda avisarle cuando su logro se publique.</span>
-        ${demo}</span></label>`;
+  const texto = !nombra
+    ? "Confirmo que el texto no incluye nombres ni datos personales de la comunidad."
+    : formatos.length > 1
+      ? "Asegúrate de que se cuente con la autorización de los usuarios mencionados para la publicación."
+      : "Asegúrate de que se cuente con la autorización de este usuario para la publicación.";
+  return `<label class="confirmacion-legal"><input type="checkbox" id="chk_legal"> <span>${texto}</span></label>`;
 }
 /* El botón de publicar se habilita solo con la casilla marcada (y si nada más lo bloquea) */
 function exigirConfirmacionLegal(boton) {
