@@ -1,0 +1,58 @@
+{
+    "discord": {
+        "nombre": "Discord (InsightMind G10)",
+        "on": true,
+        "tipo": "Chat / Ingestión",
+        "cuenta": "Canal #general",
+        "color": "#5865F2",
+        "ini": "DI",
+        "modo": "Conectado vía API"
+    },
+    "slack": {
+        "nombre": "Slack Oficial",
+        "on": true,
+        "tipo": "Chat / Soporte",
+        "cuenta": "InsightMind G10",
+        "color": "#4A154B",
+        "ini": "SL",
+        "modo": "Conectado vía API"
+    },
+    "linkedin": {
+        "nombre": "LinkedIn Page",
+        "on": true,
+        "tipo": "Publicación Automática",
+        "cuenta": "InsightMind G10",
+        "color": "#0A66C2",
+        "ini": "LI",
+        "modo": "Conectado vía API"
+    },
+    "x": {
+        "nombre": "X (Twitter)",
+        "on": true,
+        "tipo": "Publicación Corta",
+        "cuenta": "@insightmindg10",
+        "color": "#000000",
+        "ini": "X",
+        "modo": "Conectado vía API"
+    },
+    "web": {
+        "nombre": "Web de la comunidad",
+        "on": true,
+        "tipo": "Landing · sección FAQs",
+        "cuenta": "Landing de Insight Mind",
+        "color": "#20b2aa",
+        "ini": "WEB",
+        "modo": "Conectado a la landing",
+        "url": "/landing/#faqs"
+    },
+    "newsletter": {
+        "nombre": "Newsletter",
+        "on": true,
+        "tipo": "Landing · sección Newsletter",
+        "cuenta": "Landing de Insight Mind",
+        "color": "#ff8c00",
+        "ini": "NL",
+        "modo": "Conectado a la landing",
+        "url": "/landing/#newsletter"
+    }
+}
