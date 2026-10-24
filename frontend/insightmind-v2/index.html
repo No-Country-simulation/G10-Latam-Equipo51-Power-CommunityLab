@@ -290,6 +290,22 @@
                     <button class="btn primary sm" id="btn_ejemplo">Usar lote de ejemplo</button>
                   </div><input type="file" id="file" accept=".json,.csv" multiple hidden>
                 </div>
+                <details class="acc" id="slack_importar" style="margin-top:12px">
+                  <summary>Importar mensajes desde Slack</summary>
+                  <div class="body">
+                    <p class="mini" style="margin:0 0 10px">Lee mensajes recientes del canal, prioriza preguntas repetidas, problemas y logros destacados, y guarda como máximo 20 JSON en OCI. Después usa el mismo botón <b>Procesar con IA</b>.</p>
+                    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:end">
+                      <label style="display:grid;gap:5px;flex:1;min-width:190px">Canal Slack configurado en servidor
+                        <input type="text" id="slack_canal" placeholder="Configura SLACK_CHANNEL_ID en .env" autocomplete="off" readonly>
+                      </label>
+                      <label style="display:grid;gap:5px;min-width:130px">Periodo
+                        <select id="slack_horas"><option value="1">Última hora</option><option value="6">Últimas 6 horas</option><option value="12">Últimas 12 horas</option><option value="24" selected>Últimas 24 horas</option></select>
+                      </label>
+                      <button class="btn primary sm" id="btn_slack_importar" type="button">Importar y seleccionar</button>
+                    </div>
+                    <p class="mini" id="slack_importar_estado" role="status" aria-live="polite" style="margin:9px 0 0"></p>
+                  </div>
+                </details>
                 <details class="acc pegar" id="pegar_bloque">
                   <summary>Pegar mensajes en crudo</summary>
                   <div class="body">

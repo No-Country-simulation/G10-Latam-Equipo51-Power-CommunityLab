@@ -270,6 +270,44 @@ function irPaso(n) {
   [1, 2, 3].forEach(i => $("#paso_" + i).hidden = (i !== n));
 }
 
+const btnSlackImportar = document.getElementById("btn_slack_importar");
+const campoCanalSlack = document.getElementById("slack_canal");
+const estadoSlackImportar = document.getElementById("slack_importar_estado");
+if (campoCanalSlack && !API.modoDemo) {
+  API.configSlack().then(c => {
+    campoCanalSlack.value = c.canal || "";
+    if (!c.configurado && estadoSlackImportar) estadoSlackImportar.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor y reinicia FastAPI.";
+  }).catch(e => {
+    if (estadoSlackImportar) estadoSlackImportar.textContent = `No se pudo consultar la configuración Slack: ${e.message}`;
+  });
+}
+if (btnSlackImportar) btnSlackImportar.onclick = async () => {
+  const horas = Number((document.getElementById("slack_horas")?.value) || 24);
+  const estado = document.getElementById("slack_importar_estado");
+  if (!campoCanalSlack?.value.trim()) { estado.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor."; return; }
+  btnSlackImportar.disabled = true;
+  btnSlackImportar.textContent = "Consultando Slack…";
+  estado.textContent = "Leyendo mensajes y seleccionando los más relevantes…";
+  try {
+    const r = await API.importarSlack(horas);
+    estado.textContent = `${r.mensaje} Encontrados: ${r.mensajes_encontrados}; seleccionados: ${r.seleccionados}/20.`;
+    if (r.seleccionados > 0) {
+      const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      for (const nombre of r.archivos) {
+        E.archivos.push({ nombre: nombre.split("/").pop(), tamano: 0, estado: "subido", hora });
+      }
+      renderArchivos(); validacion.hidden = false;
+      toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI. Pulsa Procesar con IA.`, true);
+    } else toast("Sin mensajes para importar", r.mensaje || "No se encontraron mensajes en el periodo.", false);
+  } catch (e) {
+    estado.textContent = `No se pudo importar Slack: ${e.message}`;
+    toast("Error al importar Slack", e.message, false);
+  } finally {
+    btnSlackImportar.disabled = false;
+    btnSlackImportar.textContent = "Importar y seleccionar";
+  }
+};
+
 btn_file.onclick = () => file.click(); 
 file.onchange = subirYValidar; 
 btn_ejemplo.onclick = validar;

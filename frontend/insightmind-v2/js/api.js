@@ -73,6 +73,18 @@ const API = {
     return r.json();
   },
 
+  /* GET /slack/config — consulta el canal configurado en el .env del backend. */
+  async configSlack() {
+    if (this.modoDemo) throw new Error("La importación Slack requiere el backend real.");
+    return this._fetch("/slack/config");
+  },
+
+  /* POST /slack/ingestar — importa del canal configurado en .env y deja hasta 20 JSON en OCI. */
+  async importarSlack(horas) {
+    if (this.modoDemo) throw new Error("La importación Slack requiere el backend real.");
+    return this._fetch("/slack/ingestar", { method: "POST", body: JSON.stringify({ horas }) });
+  },
+
   /* GET /semanas — lista de semanas disponibles en el bucket de OCI */
   async semanas() {
     if (this.modoDemo) return null;   // en demo se usa el objeto HIST de datos-ejemplo.js

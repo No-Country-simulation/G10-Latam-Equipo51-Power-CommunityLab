@@ -26,7 +26,8 @@ from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
 from backend.gestor_conexiones import obtener_conexiones, cambiar_estado_conexion
 from backend.gestor_publicaciones import publicar_en_redes
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import re
 from dotenv import load_dotenv
 import os
 
@@ -68,6 +69,155 @@ class PublicacionRedesRequest(BaseModel):
     texto: str
     plataforma: str  # "linkedin" o "x"
     formato: str
+
+
+@app.get("/slack/config")
+async def config_slack():
+    """Entrega al frontend solo el ID de canal configurado; nunca expone el token."""
+    canal = os.getenv("SLACK_CHANNEL_ID", "").strip()
+    return {"configurado": bool(canal), "canal": canal}
+
+
+@app.post("/slack/ingestar")
+async def ingestar_slack(payload: dict):
+    """Importa mensajes recientes de Slack, selecciona hasta 20 relevantes y los deja
+    en OCI como JSON estándar para que /procesar siga siendo el flujo único de análisis IA."""
+    token = os.getenv("SLACK_BOT_TOKEN", "").strip()
+    if not token:
+        raise HTTPException(status_code=503, detail="Falta configurar SLACK_BOT_TOKEN (bot token xoxb-...).")
+    canal = os.getenv("SLACK_CHANNEL_ID", "").strip()
+    if not canal:
+        raise HTTPException(status_code=503, detail="Falta configurar SLACK_CHANNEL_ID en el archivo .env.")
+    try:
+        horas = int(payload.get("horas", 24))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="horas debe ser 1, 6, 12 o 24.")
+    if horas not in (1, 6, 12, 24):
+        raise HTTPException(status_code=400, detail="horas debe ser 1, 6, 12 o 24.")
+
+    ahora = datetime.now(timezone.utc)
+    oldest = str((ahora - timedelta(hours=horas)).timestamp())
+    headers = {"Authorization": f"Bearer {token}"}
+    mensajes = []
+    cursor = None
+    try:
+        async with httpx.AsyncClient(timeout=25) as http:
+            # Paginación para no limitarse a los primeros 100 mensajes.
+            for _ in range(10):
+                params = {"channel": canal, "oldest": oldest, "limit": 100, "inclusive": "true"}
+                if cursor:
+                    params["cursor"] = cursor
+                resp = await http.get("https://slack.com/api/conversations.history", headers=headers, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                if not data.get("ok"):
+                    error = data.get("error", "error desconocido")
+                    raise HTTPException(status_code=502, detail=f"Slack no pudo leer el canal: {error}. Verifica permisos del bot y el ID.")
+                mensajes.extend(data.get("messages", []))
+                cursor = (data.get("response_metadata") or {}).get("next_cursor")
+                if not cursor:
+                    break
+    except HTTPException:
+        raise
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"No se pudo conectar con Slack: {exc}")
+
+    # Deduplicación y priorización local: repeticiones, preguntas sin resolver,
+    # logros y problemas explícitos. No se envía el lote completo a otro proveedor.
+    stop = {"para","pero","porque","como","cuando","donde","desde","hasta","esto","esta","este","tengo","puede","puedo","alguien","ayuda","hola","gracias","por","con","una","uno","las","los","del","que","qué","porfa","favor","the","and","you","for","this","that"}
+    candidatos = []
+    for m in mensajes:
+        texto = re.sub(r"\s+", " ", str(m.get("text", ""))).strip()
+        if not texto or m.get("subtype") in {"channel_join", "channel_leave", "bot_message", "message_deleted"}:
+            continue
+        ts = float(m.get("ts", 0) or 0)
+        if ts < float(oldest):
+            continue
+        limpio = re.sub(r"https?://\S+|<@[A-Z0-9]+>|<#[A-Z0-9]+\|([^>]+)>", " ", texto.lower())
+        tokens = set(re.findall(r"[a-záéíóúñü0-9]{3,}", limpio)) - stop
+        if not tokens:
+            continue
+        pregunta = "?" in texto or bool(re.search(r"\b(cómo|como|qué|que|por qué|porque|ayuda|alguien sabe|consulta|duda|error)\b", limpio))
+        logro = bool(re.search(r"\b(logro|conseguí|consegui|conseguido|aprobé|aprobar|certificad[oa]|contratad[oa]|empleo|trabajo nuevo|lancé|lance|terminé|termine|finalicé|finalice|feliz|graduad[oa])\b", limpio))
+        reclamo = bool(re.search(r"\b(error|problema|fall[óo]|no funciona|bloquead[oa]|reclamo|falla|roto|urgente|no puedo|imped|ca[ií]d[oa])\b", limpio))
+        candidatos.append({"raw": m, "texto": texto, "tokens": tokens, "ts": ts,
+                           "pregunta": pregunta, "logro": logro, "reclamo": reclamo,
+                           "score": (2.2 if pregunta else 0) + (3.5 if logro else 0) + (2.6 if reclamo else 0) + min(len(tokens), 30) * 0.035})
+
+    # Agrupa textos parecidos para detectar preguntas repetidas sin librerías adicionales.
+    for item in candidatos:
+        item["repeticiones"] = 1
+        for otro in candidatos:
+            if item is otro:
+                continue
+            union = item["tokens"] | otro["tokens"]
+            sim = len(item["tokens"] & otro["tokens"]) / max(1, len(union))
+            if sim >= 0.55:
+                item["repeticiones"] += 1
+        item["score"] += min(item["repeticiones"] - 1, 8) * 1.7
+
+    candidatos.sort(key=lambda x: (x["score"], x["ts"]), reverse=True)
+    elegidos, tokens_vistos = [], []
+    for item in candidatos:
+        if len(elegidos) >= 20:
+            break
+        # Evita que varias copias de la misma pregunta consuman el cupo.
+        if any(len(item["tokens"] & t) / max(1, len(item["tokens"] | t)) >= 0.72 for t in tokens_vistos):
+            continue
+        elegidos.append(item); tokens_vistos.append(item["tokens"])
+
+    if not elegidos:
+        return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes), "seleccionados": 0, "archivos": [], "mensaje": "No se encontraron mensajes de texto relevantes en el periodo."}
+
+    # Slack entrega normalmente el ID del usuario (U...). Resolver los nombres solo
+    # para los mensajes seleccionados limita las llamadas y evita consultar cada mensaje.
+    usuarios = {}
+    async with httpx.AsyncClient(timeout=15) as http:
+        for item in elegidos:
+            user_id = str(item["raw"].get("user") or "").strip()
+            if not user_id or user_id in usuarios:
+                continue
+            try:
+                resp_user = await http.get(
+                    "https://slack.com/api/users.info",
+                    headers=headers,
+                    params={"user": user_id},
+                )
+                resp_user.raise_for_status()
+                user_data = resp_user.json()
+                if user_data.get("ok"):
+                    profile = user_data.get("user", {}).get("profile", {}) or {}
+                    usuario = user_data.get("user", {}) or {}
+                    nombre = (profile.get("display_name") or profile.get("real_name")
+                              or usuario.get("real_name") or usuario.get("name"))
+                    usuarios[user_id] = str(nombre).strip() if nombre else user_id
+                else:
+                    usuarios[user_id] = user_id
+            except (httpx.HTTPError, ValueError):
+                usuarios[user_id] = user_id
+
+    periodo = datetime.now().isocalendar().week
+    archivos = []
+    for idx, item in enumerate(elegidos, 1):
+        raw = item["raw"]
+        user_id = str(raw.get("user") or "").strip()
+        autor = usuarios.get(user_id) or str(raw.get("user_name") or raw.get("username") or user_id or "Usuario Slack")
+        fecha = datetime.fromtimestamp(item["ts"], timezone.utc).isoformat()
+        contenido = {
+            "origen_comunidad": f"Slack_{canal}",
+            "periodo_referencia": f"Semana_{periodo:02d}",
+            "interaccion": {"autor": autor, "canal": f"#{canal}", "texto": item["texto"], "fecha": fecha, "tipo": "logro" if item["logro"] else "queja" if item["reclamo"] else "pregunta_tecnica" if item["pregunta"] else "feedback"},
+            "metadata_slack": {"ts": str(raw.get("ts", "")), "permalink": raw.get("permalink"), "repeticiones_aproximadas": item["repeticiones"], "prioridad_preseleccion": round(item["score"], 2)}
+        }
+        nombre = f"slack-ingesta/{datetime.now().strftime('%Y%m%d-%H%M%S')}-{idx:02d}-{str(raw.get('ts','0')).replace('.', '-')}.json"
+        try:
+            client.put_object(namespace_name=namespace, bucket_name=BUCKET_NAME, object_name=nombre,
+                              put_object_body=json.dumps(contenido, ensure_ascii=False).encode("utf-8"))
+        except Exception as exc:
+            logging.getLogger("uvicorn.error").exception("Error guardando mensaje Slack en OCI")
+            raise HTTPException(status_code=502, detail=f"No se pudo guardar el lote en OCI: {exc}")
+        archivos.append(nombre)
+    return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes), "mensajes_con_texto": len(candidatos), "seleccionados": len(archivos), "archivos": archivos, "mensaje": "Mensajes relevantes guardados en OCI. Ahora pulsa Procesar con IA para continuar el flujo existente."}
 
 
 @app.get("/files")
@@ -169,7 +319,8 @@ def _extraer_interaccion(contenido: dict) -> dict:
 
 
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import re
 
 def _contexto_mensaje(archivo: str, contenido: dict) -> dict:
     ctx = contexto.extraer(contenido)
