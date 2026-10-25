@@ -282,6 +282,7 @@ Copia `.env.example` a `.env` (está en `.gitignore`; **nunca lo subas al reposi
 | `MONGO_URI` | No | Cadena de conexión. Sin ella no se usa Mongo |
 | `MONGO_DB` | No | Base de datos de Mongo (por defecto `insightmind`) |
 | `SLACK_WEBHOOK_URL` | No | Webhook para avisos de tickets |
+| `SLACK_CHANNEL_LABEL` | No | Texto que el front muestra como canal de Slack (por defecto `Canal-slack`); el ID real no se expone |
 | `DISCORD_WEBHOOK_URL` | No | Webhook para avisos de tickets |
 | `AUTH_SECRET` | Sí (lo genera `crear`) | Clave con la que se firman las sesiones. Si cambia, se cierran todas |
 | `AUTH_USERS_FILE` | No | Archivo de usuarios (por defecto `data/usuarios.json`, fuera de git) |

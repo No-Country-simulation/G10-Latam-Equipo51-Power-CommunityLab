@@ -73,9 +73,11 @@ class PublicacionRedesRequest(BaseModel):
 
 @app.get("/slack/config")
 async def config_slack():
-    """Entrega al frontend solo el ID de canal configurado; nunca expone el token."""
+    """Entrega al frontend si Slack está configurado y la etiqueta a mostrar.
+    Nunca expone el token ni el ID real del canal."""
     canal = os.getenv("SLACK_CHANNEL_ID", "").strip()
-    return {"configurado": bool(canal), "canal": canal}
+    etiqueta = os.getenv("SLACK_CHANNEL_LABEL", "").strip() or "Canal-slack"
+    return {"configurado": bool(canal), "etiqueta": etiqueta}
 
 
 @app.post("/slack/ingestar")

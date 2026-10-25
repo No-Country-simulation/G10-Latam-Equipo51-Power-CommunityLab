@@ -273,9 +273,11 @@ function irPaso(n) {
 const btnSlackImportar = document.getElementById("btn_slack_importar");
 const campoCanalSlack = document.getElementById("slack_canal");
 const estadoSlackImportar = document.getElementById("slack_importar_estado");
+let slackConfigurado = false;
 if (campoCanalSlack && !API.modoDemo) {
   API.configSlack().then(c => {
-    campoCanalSlack.value = c.canal || "";
+    slackConfigurado = !!c.configurado;
+    campoCanalSlack.value = c.etiqueta || "Canal-slack"; // etiqueta definida en SLACK_CHANNEL_LABEL (.env); nunca el ID real
     if (!c.configurado && estadoSlackImportar) estadoSlackImportar.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor y reinicia FastAPI.";
   }).catch(e => {
     if (estadoSlackImportar) estadoSlackImportar.textContent = `No se pudo consultar la configuración Slack: ${e.message}`;
@@ -284,7 +286,7 @@ if (campoCanalSlack && !API.modoDemo) {
 if (btnSlackImportar) btnSlackImportar.onclick = async () => {
   const horas = Number((document.getElementById("slack_horas")?.value) || 24);
   const estado = document.getElementById("slack_importar_estado");
-  if (!campoCanalSlack?.value.trim()) { estado.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor."; return; }
+  if (!slackConfigurado) { estado.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor."; return; }
   btnSlackImportar.disabled = true;
   btnSlackImportar.textContent = "Consultando Slack…";
   estado.textContent = "Leyendo mensajes y seleccionando los más relevantes…";
