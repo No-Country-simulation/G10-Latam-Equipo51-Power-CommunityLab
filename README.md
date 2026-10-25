@@ -43,7 +43,9 @@ Una comunidad de aprendizaje habla todo el día. En Discord, en foros, en formul
 
 Casi todo se pierde en el historial. Leerlo a mano le cuesta horas al equipo de comunidad, y las señales que importan, como alguien que no puede entrar a su curso y está por rendirse, llegan tarde o no llegan.
 
-<!-- Imagen P2 (el ruido): pendiente -->
+<p align="center">
+  <img src="docs/assets/readme/p2-ruido.webp" width="100%" alt="Cientos de burbujas de papel grafito amontonadas; unas pocas burbujas periwinkle quedan medio escondidas entre ellas.">
+</p>
 
 ---
 
@@ -121,7 +123,11 @@ Nada se publica solo. La curaduría humana no es un paso extra: es parte del mec
   </tr>
 </table>
 
-<!-- Video P5 (curaduría en acción): pendiente -->
+<p align="center">
+  <img src="docs/assets/readme/p7-curaduria.webp" width="100%" alt="Panel de curaduría: posts de LinkedIn generados con su score, el mensaje que los originó y los botones para publicar, guardar, acortar, alargar, volver a generar o descartar.">
+</p>
+
+<p align="center"><sub>La curaduría: cada pieza muestra de qué mensaje salió y se puede editar, acortar, alargar o volver a generar antes de publicarla.</sub></p>
 
 ---
 
@@ -144,7 +150,9 @@ Dos ideas lo distinguen de una herramienta de marca:
 - **El embudo mide al modelo.** Si sube el porcentaje de piezas aprobadas sin editar, los prompts mejoraron. Es una métrica de calidad, no de vanidad.
 - **La lista de riesgo mide personas, no marca.** Avisa cuando alguien lleva semanas atorado y está por irse.
 
-<!-- Capturas P6 (Panorama): pendientes -->
+<p align="center">
+  <img src="docs/assets/readme/p6-panorama.webp" width="100%" alt="Panorama de la comunidad: métricas de la semana y el pulso con mensajes positivos arriba y negativos abajo.">
+</p>
 
 <sub>«Temas en ascenso» y «Dónde duele» se completan cuando el análisis devuelva temas; mientras tanto usan datos de ejemplo (ver [Próximos pasos](#próximos-pasos)).</sub>
 
@@ -172,11 +180,47 @@ Los miembros de una comunidad no eligieron usar InsightMind. Por eso la privacid
 
 <sub>Son plantillas para un proyecto académico, no asesoría legal. Lo que falta antes de operar con datos reales está en [`docs/legal/README.md`](docs/legal/README.md).</sub>
 
-<!-- Captura P7 (casilla de autorización): pendiente -->
+<p align="center">
+  <img src="docs/assets/readme/p7-autorizacion.webp" width="100%" alt="Modal «Publicar en LinkedIn Page» con la casilla obligatoria marcada: «Asegúrate de que se cuente con la autorización de este usuario para la publicación».">
+</p>
+
+<p align="center"><sub>Sin la casilla marcada, el botón «Publicar ahora» no se activa.</sub></p>
 
 ---
 
-<!-- Recorrido por el producto (capturas P7): pendiente -->
+<!-- ═══════════════════════════ 6 · RECORRIDO POR EL PRODUCTO ═══════════════════════════ -->
+
+## Recorrido por el producto
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/assets/readme/p7-analisis.webp" width="100%" alt="Ejecución del grafo de procesos: validar, limpiar y enmascarar datos personales, analizar, agrupar preguntas, router, consolidar, guardar en OCI y generar."><br>
+      <b>Análisis paso a paso</b><br>
+      <sub>El grafo de procesos muestra cada etapa mientras ocurre, desde enmascarar datos personales hasta guardar en OCI.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/assets/readme/p7-tickets.webp" width="100%" alt="Tickets internos con severidad, autor, canal y resumen, seleccionados en lote, con botones para avisar en Discord y en Slack."><br>
+      <b>Tickets en lote</b><br>
+      <sub>Las quejas y los problemas se convierten en tickets que se avisan al equipo por Discord o Slack.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/assets/readme/p7-voz.webp" width="100%" alt="Ajustes: guía de voz con texto libre y chips de estilo, umbrales de decisión y cuentas vinculadas."><br>
+      <b>Una sola voz de marca</b><br>
+      <sub>Guía de voz, chips de estilo y umbrales de decisión en una sola pantalla.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/assets/readme/p7-faq.webp" width="100%" alt="Sección de preguntas frecuentes de la landing pública, con el aviso de que se redactan con IA y las revisa una persona."><br>
+      <b>Publicado en la landing</b><br>
+      <sub>Las FAQs aprobadas llegan solas a la landing, con el aviso de que se redactan con IA.</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
 
 <!-- ═══════════════════════════ 6 · CUMPLIMIENTO DEL BRIEF ═══════════════════════════ -->
 
