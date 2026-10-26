@@ -827,7 +827,6 @@ sudo ss -tlnp | grep -E ':(8000|27017)\b'                                       
 - **Slack sin repeticiones ni sorpresas.** No volver a importar un mensaje ya importado (usando su `ts` de Slack como identificador) y mostrar una vista previa con cuántos mensajes se encontraron, se eligieron y se descartaron antes de confirmar.
 - **Temas y palabras clave en el análisis.** Dos campos más en la misma llamada a Cohere activan los bloques del Panorama que hoy usan datos de ejemplo.
 - **Roles de usuario.** Separar quien cura de quien administra.
-- **Cookie de sesión segura en producción.** Con HTTPS ya activo, falta poner `AUTH_COOKIE_SECURE=true` en el servidor para que la cookie solo viaje cifrada. Es el primer bloqueante de [`docs/legal/README.md`](docs/legal/README.md).
 - **Privacidad operable.** Guardar quién confirmó cada autorización y cuándo, enviar los casos de éxito a la IA con un marcador `{nombre}` en lugar del nombre real, y borrar automáticamente según los plazos de conservación.
 - **Umbrales editables y persistidos** en el backend, no solo en el front.
 - **Instance principals de OCI** en lugar de `~/.oci/config`, y un usuario de sistema dedicado.
