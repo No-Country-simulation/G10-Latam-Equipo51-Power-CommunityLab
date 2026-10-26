@@ -60,7 +60,7 @@ Lo segundo es lo delicado: las personas de la comunidad no eligieron usar Insigh
 ### Bloqueantes
 
 - [x] **HTTPS.** Activo en `https://insightmind.duckdns.org` con Let's Encrypt; `http://` redirige.
-- [ ] **Cookie segura.** Con HTTPS ya activo, poner `AUTH_COOKIE_SECURE=true` en el `.env` del servidor y reiniciar el backend, para que la cookie de sesión solo viaje cifrada.
+- [x] **Cookie segura.** Con HTTPS ya activo, poner `AUTH_COOKIE_SECURE=true` en el `.env` del servidor y reiniciar el backend, para que la cookie de sesión solo viaje cifrada.
 - [ ] **Correo de contacto real.** Reemplazar `privacidad@[dominio]` en las cuatro páginas de `frontend/landingpage/legal/` y revisar que alguien lo atienda.
 - [ ] **Completar los marcadores.** Los textos entre corchetes y subrayados en amarillo en las páginas legales: región de OCI y de MongoDB, plazos de conservación, proveedor de correo, licencia del repositorio y país de la ley aplicable.
 - [ ] **Contrato con Cohere.** Confirmar en sus términos de API si usan los datos para entrenar, y desactivarlo si es posible. Ver [PROVEEDORES.md](PROVEEDORES.md).
