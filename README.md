@@ -24,13 +24,27 @@
 </p>
 
 <p align="center">
-  <a href="https://insightmind.duckdns.org/landing/"><strong>Ver la landing</strong></a> ·
+   <a href="https://insightmind.duckdns.org/landing/"><strong>Ver la landing</strong></a> ·
+  <a href="#mira-insightmind-en-acción"><strong>Ver el video</strong></a> ·
   <a href="#pruébalo"><strong>Instalar</strong></a> ·
-  <a href="#equipo"><strong>Equipo</strong></a>
 </p>
+
 
 <p align="center">
   <sub>Hackathon <strong>Oracle Next Education (ONE)</strong> × <strong>No Country</strong> · G10 Latam · Equipo 51</sub>
+</p>
+
+---
+<!-- ═══════════════════════════════ DEMO EN VIDEO ═══════════════════════════════ -->
+
+## Mira InsightMind en acción
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=sLSffcaH_Pc">
+    <img src="https://img.youtube.com/vi/sLSffcaH_Pc/maxresdefault.jpg" width="720" alt="Demo de InsightMind · Community Lab en YouTube">
+  </a>
+  <br>
+  <sub>Haz clic en la imagen para ver la demo en YouTube.</sub>
 </p>
 
 ---
