@@ -27,6 +27,7 @@
    <a href="https://insightmind.duckdns.org/landing/"><strong>Ver la landing</strong></a> ·
   <a href="#mira-insightmind-en-acción"><strong>Ver el video</strong></a> ·
   <a href="#pruébalo"><strong>Instalar</strong></a> ·
+  <a href="#equipo"><strong>Equipo</strong></a> ·
 </p>
 
 
