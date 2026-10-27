@@ -184,6 +184,28 @@ const msg = id => DATOS.find(d => d.id === id);
 
 /* Escapa todo lo que viene de la comunidad, del LLM o del servidor antes de meterlo en innerHTML. */
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+/* Aviso sonoro al terminar un lote: dos notas suaves sintetizadas con Web Audio, sin archivos.
+   El navegador solo deja sonar audio que inició el usuario, así que se prepara en el clic de
+   "Procesar con IA" y suena al final. Si el navegador no tiene Web Audio, simplemente no suena. */
+let audioCtx = null;
+function prepararSonido() {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); }
+  catch (e) { audioCtx = null; }
+}
+function sonidoListo() {
+  if (!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  [[880, 0], [1318.5, 0.12]].forEach(([frecuencia, retraso]) => {   /* La5 y Mi6: una quinta, clara y discreta */
+    const osc = audioCtx.createOscillator(), vol = audioCtx.createGain();
+    osc.type = "sine"; osc.frequency.value = frecuencia;
+    vol.gain.setValueAtTime(0, t0 + retraso);
+    vol.gain.linearRampToValueAtTime(0.06, t0 + retraso + 0.02);
+    vol.gain.exponentialRampToValueAtTime(0.0001, t0 + retraso + 0.9);
+    osc.connect(vol).connect(audioCtx.destination);
+    osc.start(t0 + retraso); osc.stop(t0 + retraso + 1);
+  });
+}
+
 function toast(titulo, texto, ok, undo) {
   const t = el("div", "toast" + (ok ? " ok" : ""), `<div><b>${escHtml(titulo)}</b>${escHtml(texto || "")}</div>`);
   if (undo) { const u = el("button", "btn sm undo", "Deshacer"); u.onclick = () => { undo(); t.remove(); }; t.appendChild(u); }
@@ -477,6 +499,7 @@ cargarUsoCohere();
 
 // Botón para ejecutar el procesamiento 
 btn_procesar.onclick = async () => {
+  prepararSonido();
 
   // Cambia a la vista de progreso
   irPaso(2); 
@@ -581,6 +604,7 @@ async function fin(resultado, nodoGenerar = null) {
 
   analisis_resultado.hidden = false;
   toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (response ? " · con tu guía de voz" : ""), true);
+  sonidoListo();
 }
 
 btn_a_3.onclick = () => irPaso(3);
