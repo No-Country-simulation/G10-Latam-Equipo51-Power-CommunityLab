@@ -212,18 +212,51 @@ function toast(titulo, texto, ok, undo) {
   toasts.appendChild(t); setTimeout(() => t.remove(), undo ? 6500 : 3400);
 }
 
+/* Cuánto se produce por lote, como mucho.
+
+   Sin topes, "un post por cada éxito" se desborda en cuanto la comunidad crece:
+   con 500 alumnos escribiendo son ~260 posts de LinkedIn en una semana, y
+   entonces nadie cura nada. La curaduría humana es lo que distingue a este
+   producto, así que el sistema tiene que entregar poco y bueno, no todo. */
+const TOPES = { linkedin: 5, x: 2, faq: 5 };
+
 function construir() {
-  
+
   const a = []; let n = 1; const add = o => a.push(Object.assign({ id: "A" + (n++), estado: "Pendiente" }, o));
   const exitos = DATOS.filter(m => ruta(m) === "exito").sort((x, y) => y.score - x.score);
-  
-  exitos.forEach((m, i) => {
-    add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) });
-    if (i === 0) add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) });
-  });
 
-  DATOS.filter(m => ruta(m) === "faq").sort((x, y) => y.score - x.score).slice(0, 2)
-    .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
+  exitos.slice(0, TOPES.linkedin).forEach(m =>
+    add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) }));
+
+  exitos.slice(0, TOPES.x).forEach(m =>
+    add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) }));
+
+  /* Las FAQ se eligen por TEMA REPETIDO, no por score suelto. Si ocho personas
+     preguntan lo mismo, ese es el tip que hay que escribir; la pregunta con el
+     score más alto puede ser un caso aislado que no le sirve a nadie más.
+     Si el análisis todavía no guarda temas, se cae al criterio anterior. */
+  const preguntas = DATOS.filter(m => ruta(m) === "faq");
+  const conTema = preguntas.filter(m => (m.temas || []).length);
+
+  if (conTema.length) {
+    const porTema = new Map();
+    conTema.forEach(m => (m.temas || []).forEach(t => {
+      if (!porTema.has(t)) porTema.set(t, []);
+      porTema.get(t).push(m);
+    }));
+    [...porTema.entries()]
+      .sort((x, y) => y[1].length - x[1].length ||
+                      Math.max(...y[1].map(m => m.score)) - Math.max(...x[1].map(m => m.score)))
+      .slice(0, TOPES.faq)
+      .forEach(([tema, msgs]) => {
+        const mejor = msgs.slice().sort((x, y) => y.score - x.score)[0];
+        add({ formato: "Tip / FAQ", fuente: mejor.id, score: mejor.score,
+              tema, repeticiones: msgs.length, texto: faqGenerico(mejor) });
+      });
+  } else {
+    preguntas.sort((x, y) => y.score - x.score).slice(0, TOPES.faq)
+      .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
+  }
   
     if (DATOS.length) {
     const pos = DATOS.filter(m => m.sent > .2).length;
@@ -800,7 +833,7 @@ async function visualizarCuraduria() {
       const pillC = a.estado === "Publicado" ? "p-pri" : a.estado === "Listo" ? "p-ok" : a.estado === "Descartado" ? "p-mute" : "p-warn";
       const it = el("div", "item " + a.estado.toLowerCase());
       it.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:9px">
-          <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
+          <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span>${a.repeticiones > 1 ? `<span class="pill p-pri" title="${escHtml(a.tema || "")}">preguntado por ${a.repeticiones}</span>` : ""}</div>
           <span class="pill ${pillC}">${a.estado}</span></div>
         <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${escHtml(m.autor)}</summary>
           <div class="body"><div class="meta">${escHtml(m.canal)} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${escHtml(m.texto)}
