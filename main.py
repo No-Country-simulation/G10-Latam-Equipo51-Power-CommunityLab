@@ -214,7 +214,7 @@ async def ingestar_slack(payload: dict):
             "No se pudo listar %s: se importa sin deduplicar", PREFIJO_SLACK)
         ya_en_bucket = set()
 
-    archivos, repetidos = [], 0
+    archivos, repetidos = [], []
     for item in elegidos:
         raw = item["raw"]
         ts = str(raw.get("ts", "")).strip().replace(".", "-")
@@ -222,7 +222,7 @@ async def ingestar_slack(payload: dict):
         clave = ts or hashlib.sha256(item["texto"].encode("utf-8")).hexdigest()[:16]
         nombre = f"{PREFIJO_SLACK}{canal_slug}-{clave}.json"
         if nombre in ya_en_bucket:
-            repetidos += 1
+            repetidos.append(nombre)
             continue
         user_id = str(raw.get("user") or "").strip()
         autor = usuarios.get(user_id) or str(raw.get("user_name") or raw.get("username") or user_id or "Usuario Slack")
@@ -246,7 +246,8 @@ async def ingestar_slack(payload: dict):
                "Todos los mensajes relevantes del periodo ya estaban importados: no se guardó nada nuevo.")
     return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes),
             "mensajes_con_texto": len(candidatos), "seleccionados": len(archivos),
-            "repetidos": repetidos, "archivos": archivos, "mensaje": mensaje}
+            "repetidos": len(repetidos), "archivos": archivos,
+            "archivos_repetidos": repetidos, "mensaje": mensaje}
 
 
 @app.get("/files")

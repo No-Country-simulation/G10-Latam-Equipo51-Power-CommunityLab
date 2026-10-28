@@ -350,19 +350,26 @@ if (btnSlackImportar) btnSlackImportar.onclick = async () => {
     const repetidos = r.repetidos || 0;
     estado.textContent = `${r.mensaje} Encontrados: ${r.mensajes_encontrados}; nuevos: ${r.seleccionados}/20`
       + (repetidos ? `; ya importados: ${repetidos}.` : ".");
-    if (r.seleccionados > 0) {
-      const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      for (const nombre of r.archivos) {
-        E.archivos.push({ nombre: nombre.split("/").pop(), tamano: 0, estado: "subido", hora });
-      }
-      renderArchivos(); validacion.hidden = false;
-      toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI`
-        + (repetidos ? ` · ${repetidos} ya estaban` : "") + ". Pulsa Procesar con IA.", true);
-    } else if (repetidos) {
+    /* Se listan los dos grupos: lo recién guardado y lo que ya estaba. Sin esto, una
+       importación sin novedades no mostraba nada y parecía que no había pasado nada. */
+    const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const añadir = (nombres, estado, preexistente = false) => (nombres || []).forEach(n => {
+      const corto = n.split("/").pop();
+      if (E.archivos.some(a => a.nombre === corto)) return;   /* no duplicar en la lista */
+      E.archivos.push({ nombre: corto, tamano: 0, estado, hora, preexistente });
+    });
+    añadir(r.archivos, "subido");
+    añadir(r.archivos_repetidos, "existente", true);
+
+    if (r.seleccionados > 0 || repetidos) {
       /* Nada nuevo NO es un error: esos mensajes ya están en el bucket y se procesan igual,
          saliendo de caché. Se deja el botón a la vista en lugar de avisar de un fallo. */
-      validacion.hidden = false;
-      toast("Sin novedades en Slack", `Los ${repetidos} mensajes relevantes ya estaban importados. Puedes procesar igual.`, true);
+      renderArchivos(); validacion.hidden = false;
+      if (r.seleccionados > 0)
+        toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI`
+          + (repetidos ? ` · ${repetidos} ya estaban` : "") + ". Pulsa Procesar con IA.", true);
+      else
+        toast("Sin novedades en Slack", `Los ${repetidos} mensajes relevantes ya estaban importados. Procesar no vuelve a gastar IA.`, true);
     } else toast("Sin mensajes para importar", r.mensaje || "No se encontraron mensajes en el periodo.", false);
   } catch (e) {
     estado.textContent = `No se pudo importar Slack: ${e.message}`;
@@ -390,15 +397,27 @@ drop.addEventListener("drop", e => {
 E.archivos = [];   /* { nombre, tamano, hora, estado: "subiendo" | "subido" | "error" } */
 
 const fmtTamano = b => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
-const ESTADO_ARCHIVO = { subiendo: ["Subiendo…", "warn"], subido: ["Subido a OCI", "ok"], error: ["Error", "alert"] };
+/* `existente` = el mensaje ya estaba en el bucket de una importación anterior.
+   `analizado`/`reutilizado` se marcan al terminar /procesar, con el campo `nuevo`
+   que trae cada mensaje: así se ve de un vistazo qué costó una llamada a la IA. */
+const ESTADO_ARCHIVO = { subiendo: ["Subiendo…", "warn"], subido: ["Subido a OCI", "ok"],
+  existente: ["Ya estaba en OCI", "neutro"], analizado: ["Analizado ahora", "ok"],
+  reutilizado: ["Ya analizado · sin coste", "neutro"], error: ["Error", "alert"] };
 const MAX_ARCHIVOS = 20;   /* tope de archivos por sesión; los que fallan no cuentan */
-const archivosOcupados = () => E.archivos.filter(a => a.estado !== "error").length;
+/* Lo que ya estaba en el bucket se lista para que se vea, pero NO gasta cupo: el tope
+   limita lo que se sube en esta sesión, no lo que la comunidad acumuló antes. */
+const archivosOcupados = () => E.archivos.filter(a => a.estado !== "error" && !a.preexistente).length;
 
 function renderArchivos() {
   const lista = E.archivos;
   archivos_subidos.hidden = !lista.length;
-  const ok = lista.filter(a => a.estado === "subido").length;
-  archivos_total.textContent = `${archivosOcupados()}/${MAX_ARCHIVOS} archivos · ${ok} subido${ok === 1 ? "" : "s"}`;
+  /* Antes de procesar interesa cuánto hay; después, cuánto costó de verdad. */
+  const cuenta = e => lista.filter(a => a.estado === e).length;
+  const analizados = cuenta("analizado"), cacheados = cuenta("reutilizado");
+  const detalle = analizados || cacheados
+    ? `${analizados} analizado${analizados === 1 ? "" : "s"} con IA · ${cacheados} desde caché`
+    : `${lista.filter(a => a.estado === "subido" || a.estado === "existente").length} en OCI`;
+  archivos_total.textContent = `${archivosOcupados()}/${MAX_ARCHIVOS} archivos · ${detalle}`;
   archivos_lista.innerHTML = "";
   /* el más reciente primero */
   [...lista].reverse().forEach(a => {
@@ -609,6 +628,15 @@ async function fin(resultado, nodoGenerar = null) {
     archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
 
+  /* Cada archivo de la lista queda marcado con lo que REALMENTE pasó: `nuevo` lo decide
+     el backend y separa lo que costó una llamada a Cohere de lo que salió de caché.
+     Procesar un lote ya procesado se ve, así, como lo que es: cero gasto de IA. */
+  resultado.mensajes.forEach(m => {
+    const fila = E.archivos.find(a => a.nombre === String(m.archivo || "").split("/").pop());
+    if (fila) fila.estado = m.nuevo ? "analizado" : "reutilizado";
+  });
+  renderArchivos();
+
   E.periodo = (resultado.periodos || [])[0] || null;
   E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
@@ -641,7 +669,11 @@ async function fin(resultado, nodoGenerar = null) {
   visualizar(); 
 
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (response ? " · con tu guía de voz" : ""), true);
+  const cache = resultado.cache || {};
+  const costeIA = cache.analizados ? `${cache.analizados} analizados con IA` : "sin gastar IA";
+  toast("Lote procesado", `${costeIA} · ${cache.reutilizados || 0} desde caché · `
+    + `${pendientes.length} activos nuevos · ${reutilizados} reutilizados · ${c.tickets.length} tickets`
+    + (response ? " · con tu guía de voz" : ""), true);
   sonidoListo();
 }
 
