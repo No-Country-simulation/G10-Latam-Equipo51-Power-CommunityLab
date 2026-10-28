@@ -23,12 +23,12 @@ let E = {
 };
 
 Object.keys(PLAT).forEach(k => E.conex[k] = PLAT[k].on);
-/* El prototipo arranca siempre limpio: el usuario ejecuta el flujo desde "Usar lote de ejemplo".
-   Solo el historial trae semanas anteriores con datos. */
+/* El prototipo arranca siempre limpio: el usuario ejecuta el flujo importando desde Slack,
+   subiendo un archivo o pegando mensajes. Solo el historial trae semanas anteriores con datos. */
 const save = () => { };   /* el estado vive en memoria durante la sesión; en producción lo persiste OCI */
 /* Guarda el estado de la curaduría en OCI: activos/<slug>/curaduria.json (PUT /curaduria/{slug}).
    Devuelve true si se guardó, false si falló (conError ya muestra el toast) y
-   "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
+   "local" si no hay lote real (slug), donde no hay nada que subir. */
 async function guardarCuraduriaEnOCI() {
   if (!E.slug) return "local";
   /* Un lote puede mezclar periodos (Semana_01, Semana_05...): cada activo/ticket se guarda en
@@ -332,7 +332,7 @@ let slackConfigurado = false;
 if (campoCanalSlack && !API.modoDemo) {
   API.configSlack().then(c => {
     slackConfigurado = !!c.configurado;
-    campoCanalSlack.value = c.etiqueta || "Canal-slack"; // etiqueta definida en SLACK_CHANNEL_LABEL (.env); nunca el ID real
+    campoCanalSlack.textContent = c.etiqueta || "Canal-slack"; // etiqueta definida en SLACK_CHANNEL_LABEL (.env); nunca el ID real
     if (!c.configurado && estadoSlackImportar) estadoSlackImportar.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor y reinicia FastAPI.";
   }).catch(e => {
     if (estadoSlackImportar) estadoSlackImportar.textContent = `No se pudo consultar la configuración Slack: ${e.message}`;
@@ -347,14 +347,22 @@ if (btnSlackImportar) btnSlackImportar.onclick = async () => {
   estado.textContent = "Leyendo mensajes y seleccionando los más relevantes…";
   try {
     const r = await API.importarSlack(horas);
-    estado.textContent = `${r.mensaje} Encontrados: ${r.mensajes_encontrados}; seleccionados: ${r.seleccionados}/20.`;
+    const repetidos = r.repetidos || 0;
+    estado.textContent = `${r.mensaje} Encontrados: ${r.mensajes_encontrados}; nuevos: ${r.seleccionados}/20`
+      + (repetidos ? `; ya importados: ${repetidos}.` : ".");
     if (r.seleccionados > 0) {
       const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
       for (const nombre of r.archivos) {
         E.archivos.push({ nombre: nombre.split("/").pop(), tamano: 0, estado: "subido", hora });
       }
       renderArchivos(); validacion.hidden = false;
-      toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI. Pulsa Procesar con IA.`, true);
+      toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI`
+        + (repetidos ? ` · ${repetidos} ya estaban` : "") + ". Pulsa Procesar con IA.", true);
+    } else if (repetidos) {
+      /* Nada nuevo NO es un error: esos mensajes ya están en el bucket y se procesan igual,
+         saliendo de caché. Se deja el botón a la vista en lugar de avisar de un fallo. */
+      validacion.hidden = false;
+      toast("Sin novedades en Slack", `Los ${repetidos} mensajes relevantes ya estaban importados. Puedes procesar igual.`, true);
     } else toast("Sin mensajes para importar", r.mensaje || "No se encontraron mensajes en el periodo.", false);
   } catch (e) {
     estado.textContent = `No se pudo importar Slack: ${e.message}`;
@@ -367,7 +375,6 @@ if (btnSlackImportar) btnSlackImportar.onclick = async () => {
 
 btn_file.onclick = () => file.click(); 
 file.onchange = subirYValidar; 
-btn_ejemplo.onclick = validar;
 btn_pegar.onclick = pegarMensajes;
 
 drop.addEventListener("dragover", e => { e.preventDefault(); drop.style.borderColor = "var(--primary)"; });
@@ -378,8 +385,6 @@ drop.addEventListener("drop", e => {
     file.files = e.dataTransfer.files; 
     subirYValidar(); }
 });
-
-function validar() { validacion.hidden = false; toast("Archivo cargado", "12 interacciones válidas · 1 duplicada eliminada"); }
 
 /* ---------- LISTA DE ARCHIVOS SUBIDOS (referencia) ---------- */
 E.archivos = [];   /* { nombre, tamano, hora, estado: "subiendo" | "subido" | "error" } */

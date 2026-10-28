@@ -22,7 +22,7 @@ from backend.rutas_dashboard import router as router_dashboard
 from backend.cohere_uso import router as router_cohere_uso
 from backend.ingesta_texto import router as router_ingesta
 from backend.rutas_publico import invalidar_cache as invalidar_cache_publico, router as router_publico
-from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
+from backend.oci_storage import PREFIJO_SLACK, PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
 from backend.gestor_conexiones import obtener_conexiones, cambiar_estado_conexion
 from backend.gestor_publicaciones import publicar_en_redes
@@ -201,9 +201,29 @@ async def ingestar_slack(payload: dict):
                 usuarios[user_id] = user_id
 
     periodo = datetime.now().isocalendar().week
-    archivos = []
-    for idx, item in enumerate(elegidos, 1):
+
+    # Un mensaje de Slack se guarda UNA vez. El nombre del objeto sale del `ts` del mensaje
+    # (único e inmutable dentro del canal) y no de la hora de la importación: antes, reimportar
+    # el mismo canal creaba un archivo nuevo por mensaje, y como la caché de análisis y la huella
+    # de generación van por nombre de archivo, se volvía a redactar contenido ya redactado.
+    canal_slug = re.sub(r"[^A-Za-z0-9_-]", "-", canal) or "canal"
+    try:
+        ya_en_bucket = {o.name for o in listar_objetos(PREFIJO_SLACK)}
+    except Exception:
+        logging.getLogger("uvicorn.error").warning(
+            "No se pudo listar %s: se importa sin deduplicar", PREFIJO_SLACK)
+        ya_en_bucket = set()
+
+    archivos, repetidos = [], 0
+    for item in elegidos:
         raw = item["raw"]
+        ts = str(raw.get("ts", "")).strip().replace(".", "-")
+        # Sin ts (no debería pasar) el contenido identifica al mensaje: dos distintos no colisionan.
+        clave = ts or hashlib.sha256(item["texto"].encode("utf-8")).hexdigest()[:16]
+        nombre = f"{PREFIJO_SLACK}{canal_slug}-{clave}.json"
+        if nombre in ya_en_bucket:
+            repetidos += 1
+            continue
         user_id = str(raw.get("user") or "").strip()
         autor = usuarios.get(user_id) or str(raw.get("user_name") or raw.get("username") or user_id or "Usuario Slack")
         fecha = datetime.fromtimestamp(item["ts"], timezone.utc).isoformat()
@@ -213,7 +233,6 @@ async def ingestar_slack(payload: dict):
             "interaccion": {"autor": autor, "canal": f"#{canal}", "texto": item["texto"], "fecha": fecha, "tipo": "logro" if item["logro"] else "queja" if item["reclamo"] else "pregunta_tecnica" if item["pregunta"] else "feedback"},
             "metadata_slack": {"ts": str(raw.get("ts", "")), "permalink": raw.get("permalink"), "repeticiones_aproximadas": item["repeticiones"], "prioridad_preseleccion": round(item["score"], 2)}
         }
-        nombre = f"slack-ingesta/{datetime.now().strftime('%Y%m%d-%H%M%S')}-{idx:02d}-{str(raw.get('ts','0')).replace('.', '-')}.json"
         try:
             client.put_object(namespace_name=namespace, bucket_name=BUCKET_NAME, object_name=nombre,
                               put_object_body=json.dumps(contenido, ensure_ascii=False).encode("utf-8"))
@@ -221,7 +240,13 @@ async def ingestar_slack(payload: dict):
             logging.getLogger("uvicorn.error").exception("Error guardando mensaje Slack en OCI")
             raise HTTPException(status_code=502, detail=f"No se pudo guardar el lote en OCI: {exc}")
         archivos.append(nombre)
-    return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes), "mensajes_con_texto": len(candidatos), "seleccionados": len(archivos), "archivos": archivos, "mensaje": "Mensajes relevantes guardados en OCI. Ahora pulsa Procesar con IA para continuar el flujo existente."}
+        ya_en_bucket.add(nombre)
+    mensaje = ("Mensajes relevantes guardados en OCI. Ahora pulsa Procesar con IA para continuar el flujo existente."
+               if archivos else
+               "Todos los mensajes relevantes del periodo ya estaban importados: no se guardó nada nuevo.")
+    return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes),
+            "mensajes_con_texto": len(candidatos), "seleccionados": len(archivos),
+            "repetidos": repetidos, "archivos": archivos, "mensaje": mensaje}
 
 
 @app.get("/files")

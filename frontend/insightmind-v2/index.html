@@ -273,8 +273,8 @@
             <div id="paso_1">
               <div class="block">
                 <p class="blk-title">Lote de interacciones</p>
-                <p class="blk-info">Acepta <code>.json</code> y <code>.csv</code>. También puede llegar por webhook
-                  desde Discord o un formulario.</p>
+                <p class="blk-info">La vía principal es importar desde Slack. También puedes subir un
+                  <code>.json</code> o <code>.csv</code>, o pegar los mensajes en crudo.</p>
                 <div class="uso-cohere" id="cohere_uso" hidden>
                   <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
                     <span class="label" style="margin:0">Llamadas a Cohere este mes</span>
@@ -284,20 +284,13 @@
                     aria-label="Llamadas a Cohere usadas este mes" id="cohere_prog"><i id="cohere_barra"></i></div>
                   <p class="mini" id="cohere_nota" style="margin:6px 0 0"></p>
                 </div>
-                <div class="dropzone" id="drop">Arrastra el archivo aquí
-                  <div class="row" style="justify-content:center;margin-top:11px">
-                    <button class="btn sm" id="btn_file">Subir archivo</button>
-                    <button class="btn primary sm" id="btn_ejemplo">Usar lote de ejemplo</button>
-                  </div><input type="file" id="file" accept=".json,.csv" multiple hidden>
-                </div>
-                <details class="acc" id="slack_importar" style="margin-top:12px">
-                  <summary>Importar mensajes desde Slack</summary>
+                <details class="acc" id="slack_importar" open>
+                  <summary>Importar mensajes desde Slack<span class="pill p-pri" style="margin-left:auto">Recomendado</span></summary>
                   <div class="body">
-                    <p class="mini" style="margin:0 0 10px">Lee mensajes recientes del canal, prioriza preguntas repetidas, problemas y logros destacados, y guarda como máximo 20 JSON en OCI. Después usa el mismo botón <b>Procesar con IA</b>.</p>
                     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:end">
-                      <label style="display:grid;gap:5px;flex:1;min-width:190px">Canal Slack configurado en servidor
-                        <input type="text" id="slack_canal" placeholder="Configura SLACK_CHANNEL_ID en .env" autocomplete="off" readonly>
-                      </label>
+                      <div style="display:grid;gap:5px;flex:1;min-width:150px">Canal de Slack
+                        <b id="slack_canal" style="padding:9px 0;font-size:.92rem;color:var(--ink)">Sin configurar</b>
+                      </div>
                       <label style="display:grid;gap:5px;min-width:130px">Periodo
                         <select id="slack_horas"><option value="1">Última hora</option><option value="6">Últimas 6 horas</option><option value="12">Últimas 12 horas</option><option value="24" selected>Últimas 24 horas</option></select>
                       </label>
@@ -306,6 +299,11 @@
                     <p class="mini" id="slack_importar_estado" role="status" aria-live="polite" style="margin:9px 0 0"></p>
                   </div>
                 </details>
+                <div class="dropzone" id="drop" style="margin-top:12px">O arrastra un archivo aquí
+                  <div class="row" style="justify-content:center;margin-top:11px">
+                    <button class="btn sm" id="btn_file">Subir archivo</button>
+                  </div><input type="file" id="file" accept=".json,.csv" multiple hidden>
+                </div>
                 <details class="acc pegar" id="pegar_bloque">
                   <summary>Pegar mensajes en crudo</summary>
                   <div class="body">
