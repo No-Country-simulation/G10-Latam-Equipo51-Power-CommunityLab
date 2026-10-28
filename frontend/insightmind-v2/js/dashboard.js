@@ -322,19 +322,28 @@ function visualizarTemas(v){
 function visualizarClaves(v){
   if(!cubre("claves")){claves_chips.innerHTML="";claves_sug.innerHTML="";
     claves_grid.innerHTML=faltaActivar;return;}
-  /* Con datos reales, las palabras las decide el análisis, no el panel: no hay
-     endpoint para vigilar o dejar de vigilar una, así que no se ofrecen chips. */
-  if(PANO)DASH.claves=PANO.claves.map(c=>c.termino);
+  /* Con datos reales las palabras salen del análisis, ordenadas por menciones.
+     Se vigilan las 3 primeras y el resto queda como sugerencia: mostrar las doce
+     de golpe llena la pantalla de tarjetas y ninguna destaca.
+     La elección es de esta sesión; no hay endpoint que la persista todavía. */
+  if(PANO && !DASH.clavesTocadas) DASH.claves = PANO.claves.slice(0,3).map(c=>c.termino);
   claves_chips.innerHTML=DASH.claves.map(c=>
     `<span class="vchip">${escHtml(c)}<button data-q="${escHtml(c)}" aria-label="Dejar de vigilar ${escHtml(c)}">×</button></span>`).join("")
     ||`<span class="mini">No vigilas ninguna palabra todavía.</span>`;
-  if(PANO)claves_chips.querySelectorAll("button").forEach(b=>b.remove());
-  else claves_chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  claves_chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    DASH.clavesTocadas=true;
     DASH.claves=DASH.claves.filter(x=>x!==b.dataset.q);visualizarDashboard();});
-  if(PANO){claves_sug.innerHTML='<span class="mini">Las extrae el análisis de cada mensaje.</span>';}
-  else claves_sug.innerHTML=CLAVES_SUGERIDAS.filter(c=>!DASH.claves.includes(c)).slice(0,8)
-    .map(c=>`<button data-a="${c}">${ic("mas")}${c}</button>`).join("");
+
+  /* Sugerencias: con datos reales, las siguientes 5 más mencionadas que no se
+     estén vigilando ya. Sin backend, la lista de ejemplo de siempre. */
+  const sugeridas = PANO
+    ? PANO.claves.map(c=>c.termino).filter(c=>!DASH.claves.includes(c)).slice(0,5)
+    : CLAVES_SUGERIDAS.filter(c=>!DASH.claves.includes(c)).slice(0,8);
+  claves_sug.innerHTML = sugeridas.length
+    ? sugeridas.map(c=>`<button data-a="${escHtml(c)}">${ic("mas")}${escHtml(c)}</button>`).join("")
+    : '<span class="mini">No hay más palabras detectadas en este periodo.</span>';
   claves_sug.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{
+    DASH.clavesTocadas=true;
     DASH.claves=[...DASH.claves,b.dataset.a];visualizarDashboard();
     toast("Palabra en seguimiento",b.dataset.a+" se agregó al panel",true);});
   claves_grid.innerHTML=DASH.claves.map(c=>{const k=serieClave(v,c);

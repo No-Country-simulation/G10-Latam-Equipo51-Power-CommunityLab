@@ -23,12 +23,12 @@ let E = {
 };
 
 Object.keys(PLAT).forEach(k => E.conex[k] = PLAT[k].on);
-/* El prototipo arranca siempre limpio: el usuario ejecuta el flujo desde "Usar lote de ejemplo".
-   Solo el historial trae semanas anteriores con datos. */
+/* El prototipo arranca siempre limpio: el usuario ejecuta el flujo importando desde Slack,
+   subiendo un archivo o pegando mensajes. Solo el historial trae semanas anteriores con datos. */
 const save = () => { };   /* el estado vive en memoria durante la sesión; en producción lo persiste OCI */
 /* Guarda el estado de la curaduría en OCI: activos/<slug>/curaduria.json (PUT /curaduria/{slug}).
    Devuelve true si se guardó, false si falló (conError ya muestra el toast) y
-   "local" si no hay lote real (slug) —p. ej. el lote de ejemplo—, donde no hay nada que subir. */
+   "local" si no hay lote real (slug), donde no hay nada que subir. */
 async function guardarCuraduriaEnOCI() {
   if (!E.slug) return "local";
   /* Un lote puede mezclar periodos (Semana_01, Semana_05...): cada activo/ticket se guarda en
@@ -212,18 +212,51 @@ function toast(titulo, texto, ok, undo) {
   toasts.appendChild(t); setTimeout(() => t.remove(), undo ? 6500 : 3400);
 }
 
+/* Cuánto se produce por lote, como mucho.
+
+   Sin topes, "un post por cada éxito" se desborda en cuanto la comunidad crece:
+   con 500 alumnos escribiendo son ~260 posts de LinkedIn en una semana, y
+   entonces nadie cura nada. La curaduría humana es lo que distingue a este
+   producto, así que el sistema tiene que entregar poco y bueno, no todo. */
+const TOPES = { linkedin: 5, x: 2, faq: 5 };
+
 function construir() {
-  
+
   const a = []; let n = 1; const add = o => a.push(Object.assign({ id: "A" + (n++), estado: "Pendiente" }, o));
   const exitos = DATOS.filter(m => ruta(m) === "exito").sort((x, y) => y.score - x.score);
-  
-  exitos.forEach((m, i) => {
-    add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) });
-    if (i === 0) add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) });
-  });
 
-  DATOS.filter(m => ruta(m) === "faq").sort((x, y) => y.score - x.score).slice(0, 2)
-    .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
+  exitos.slice(0, TOPES.linkedin).forEach(m =>
+    add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) }));
+
+  exitos.slice(0, TOPES.x).forEach(m =>
+    add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) }));
+
+  /* Las FAQ se eligen por TEMA REPETIDO, no por score suelto. Si ocho personas
+     preguntan lo mismo, ese es el tip que hay que escribir; la pregunta con el
+     score más alto puede ser un caso aislado que no le sirve a nadie más.
+     Si el análisis todavía no guarda temas, se cae al criterio anterior. */
+  const preguntas = DATOS.filter(m => ruta(m) === "faq");
+  const conTema = preguntas.filter(m => (m.temas || []).length);
+
+  if (conTema.length) {
+    const porTema = new Map();
+    conTema.forEach(m => (m.temas || []).forEach(t => {
+      if (!porTema.has(t)) porTema.set(t, []);
+      porTema.get(t).push(m);
+    }));
+    [...porTema.entries()]
+      .sort((x, y) => y[1].length - x[1].length ||
+                      Math.max(...y[1].map(m => m.score)) - Math.max(...x[1].map(m => m.score)))
+      .slice(0, TOPES.faq)
+      .forEach(([tema, msgs]) => {
+        const mejor = msgs.slice().sort((x, y) => y.score - x.score)[0];
+        add({ formato: "Tip / FAQ", fuente: mejor.id, score: mejor.score,
+              tema, repeticiones: msgs.length, texto: faqGenerico(mejor) });
+      });
+  } else {
+    preguntas.sort((x, y) => y.score - x.score).slice(0, TOPES.faq)
+      .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
+  }
   
     if (DATOS.length) {
     const pos = DATOS.filter(m => m.sent > .2).length;
@@ -299,7 +332,7 @@ let slackConfigurado = false;
 if (campoCanalSlack && !API.modoDemo) {
   API.configSlack().then(c => {
     slackConfigurado = !!c.configurado;
-    campoCanalSlack.value = c.etiqueta || "Canal-slack"; // etiqueta definida en SLACK_CHANNEL_LABEL (.env); nunca el ID real
+    campoCanalSlack.textContent = c.etiqueta || "Canal-slack"; // etiqueta definida en SLACK_CHANNEL_LABEL (.env); nunca el ID real
     if (!c.configurado && estadoSlackImportar) estadoSlackImportar.textContent = "Configura SLACK_CHANNEL_ID en el .env del servidor y reinicia FastAPI.";
   }).catch(e => {
     if (estadoSlackImportar) estadoSlackImportar.textContent = `No se pudo consultar la configuración Slack: ${e.message}`;
@@ -314,14 +347,29 @@ if (btnSlackImportar) btnSlackImportar.onclick = async () => {
   estado.textContent = "Leyendo mensajes y seleccionando los más relevantes…";
   try {
     const r = await API.importarSlack(horas);
-    estado.textContent = `${r.mensaje} Encontrados: ${r.mensajes_encontrados}; seleccionados: ${r.seleccionados}/20.`;
-    if (r.seleccionados > 0) {
-      const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      for (const nombre of r.archivos) {
-        E.archivos.push({ nombre: nombre.split("/").pop(), tamano: 0, estado: "subido", hora });
-      }
+    const repetidos = r.repetidos || 0;
+    estado.textContent = `${r.mensaje} Encontrados: ${r.mensajes_encontrados}; nuevos: ${r.seleccionados}/20`
+      + (repetidos ? `; ya importados: ${repetidos}.` : ".");
+    /* Se listan los dos grupos: lo recién guardado y lo que ya estaba. Sin esto, una
+       importación sin novedades no mostraba nada y parecía que no había pasado nada. */
+    const hora = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const añadir = (nombres, estado, preexistente = false) => (nombres || []).forEach(n => {
+      const corto = n.split("/").pop();
+      if (E.archivos.some(a => a.nombre === corto)) return;   /* no duplicar en la lista */
+      E.archivos.push({ nombre: corto, tamano: 0, estado, hora, preexistente });
+    });
+    añadir(r.archivos, "subido");
+    añadir(r.archivos_repetidos, "existente", true);
+
+    if (r.seleccionados > 0 || repetidos) {
+      /* Nada nuevo NO es un error: esos mensajes ya están en el bucket y se procesan igual,
+         saliendo de caché. Se deja el botón a la vista en lugar de avisar de un fallo. */
       renderArchivos(); validacion.hidden = false;
-      toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI. Pulsa Procesar con IA.`, true);
+      if (r.seleccionados > 0)
+        toast("Importación Slack lista", `${r.seleccionados} mensajes guardados en OCI`
+          + (repetidos ? ` · ${repetidos} ya estaban` : "") + ". Pulsa Procesar con IA.", true);
+      else
+        toast("Sin novedades en Slack", `Los ${repetidos} mensajes relevantes ya estaban importados. Procesar no vuelve a gastar IA.`, true);
     } else toast("Sin mensajes para importar", r.mensaje || "No se encontraron mensajes en el periodo.", false);
   } catch (e) {
     estado.textContent = `No se pudo importar Slack: ${e.message}`;
@@ -334,7 +382,6 @@ if (btnSlackImportar) btnSlackImportar.onclick = async () => {
 
 btn_file.onclick = () => file.click(); 
 file.onchange = subirYValidar; 
-btn_ejemplo.onclick = validar;
 btn_pegar.onclick = pegarMensajes;
 
 drop.addEventListener("dragover", e => { e.preventDefault(); drop.style.borderColor = "var(--primary)"; });
@@ -346,21 +393,31 @@ drop.addEventListener("drop", e => {
     subirYValidar(); }
 });
 
-function validar() { validacion.hidden = false; toast("Archivo cargado", "12 interacciones válidas · 1 duplicada eliminada"); }
-
 /* ---------- LISTA DE ARCHIVOS SUBIDOS (referencia) ---------- */
 E.archivos = [];   /* { nombre, tamano, hora, estado: "subiendo" | "subido" | "error" } */
 
 const fmtTamano = b => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
-const ESTADO_ARCHIVO = { subiendo: ["Subiendo…", "warn"], subido: ["Subido a OCI", "ok"], error: ["Error", "alert"] };
+/* `existente` = el mensaje ya estaba en el bucket de una importación anterior.
+   `analizado`/`reutilizado` se marcan al terminar /procesar, con el campo `nuevo`
+   que trae cada mensaje: así se ve de un vistazo qué costó una llamada a la IA. */
+const ESTADO_ARCHIVO = { subiendo: ["Subiendo…", "warn"], subido: ["Subido a OCI", "ok"],
+  existente: ["Ya estaba en OCI", "neutro"], analizado: ["Analizado ahora", "ok"],
+  reutilizado: ["Ya analizado · sin coste", "neutro"], error: ["Error", "alert"] };
 const MAX_ARCHIVOS = 20;   /* tope de archivos por sesión; los que fallan no cuentan */
-const archivosOcupados = () => E.archivos.filter(a => a.estado !== "error").length;
+/* Lo que ya estaba en el bucket se lista para que se vea, pero NO gasta cupo: el tope
+   limita lo que se sube en esta sesión, no lo que la comunidad acumuló antes. */
+const archivosOcupados = () => E.archivos.filter(a => a.estado !== "error" && !a.preexistente).length;
 
 function renderArchivos() {
   const lista = E.archivos;
   archivos_subidos.hidden = !lista.length;
-  const ok = lista.filter(a => a.estado === "subido").length;
-  archivos_total.textContent = `${archivosOcupados()}/${MAX_ARCHIVOS} archivos · ${ok} subido${ok === 1 ? "" : "s"}`;
+  /* Antes de procesar interesa cuánto hay; después, cuánto costó de verdad. */
+  const cuenta = e => lista.filter(a => a.estado === e).length;
+  const analizados = cuenta("analizado"), cacheados = cuenta("reutilizado");
+  const detalle = analizados || cacheados
+    ? `${analizados} analizado${analizados === 1 ? "" : "s"} con IA · ${cacheados} desde caché`
+    : `${lista.filter(a => a.estado === "subido" || a.estado === "existente").length} en OCI`;
+  archivos_total.textContent = `${archivosOcupados()}/${MAX_ARCHIVOS} archivos · ${detalle}`;
   archivos_lista.innerHTML = "";
   /* el más reciente primero */
   [...lista].reverse().forEach(a => {
@@ -571,6 +628,15 @@ async function fin(resultado, nodoGenerar = null) {
     archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
 
+  /* Cada archivo de la lista queda marcado con lo que REALMENTE pasó: `nuevo` lo decide
+     el backend y separa lo que costó una llamada a Cohere de lo que salió de caché.
+     Procesar un lote ya procesado se ve, así, como lo que es: cero gasto de IA. */
+  resultado.mensajes.forEach(m => {
+    const fila = E.archivos.find(a => a.nombre === String(m.archivo || "").split("/").pop());
+    if (fila) fila.estado = m.nuevo ? "analizado" : "reutilizado";
+  });
+  renderArchivos();
+
   E.periodo = (resultado.periodos || [])[0] || null;
   E.origen = (resultado.origenes_comunidad || [])[0] || null;
 
@@ -603,7 +669,11 @@ async function fin(resultado, nodoGenerar = null) {
   visualizar(); 
 
   analisis_resultado.hidden = false;
-  toast("Lote procesado", `${pendientes.length} activos generados · ${reutilizados} reutilizados · ${c.tickets.length} tickets` + (response ? " · con tu guía de voz" : ""), true);
+  const cache = resultado.cache || {};
+  const costeIA = cache.analizados ? `${cache.analizados} analizados con IA` : "sin gastar IA";
+  toast("Lote procesado", `${costeIA} · ${cache.reutilizados || 0} desde caché · `
+    + `${pendientes.length} activos nuevos · ${reutilizados} reutilizados · ${c.tickets.length} tickets`
+    + (response ? " · con tu guía de voz" : ""), true);
   sonidoListo();
 }
 
@@ -800,7 +870,7 @@ async function visualizarCuraduria() {
       const pillC = a.estado === "Publicado" ? "p-pri" : a.estado === "Listo" ? "p-ok" : a.estado === "Descartado" ? "p-mute" : "p-warn";
       const it = el("div", "item " + a.estado.toLowerCase());
       it.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:9px">
-          <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span></div>
+          <div class="row" style="gap:8px"><b>${a.formato}</b><span class="mono mini">score ${a.score}</span>${a.repeticiones > 1 ? `<span class="pill p-pri" title="${escHtml(a.tema || "")}">preguntado por ${a.repeticiones}</span>` : ""}</div>
           <span class="pill ${pillC}">${a.estado}</span></div>
         <details class="acc" style="margin-bottom:9px"><summary>Basado en: mensaje de ${escHtml(m.autor)}</summary>
           <div class="body"><div class="meta">${escHtml(m.canal)} · SCORE ${m.score} · SENT ${m.sent.toFixed(2)}</div>${escHtml(m.texto)}

@@ -2,11 +2,16 @@
 inyectando la guía de voz guardada en PUT /config/voz."""
 
 import re
+import hashlib
+import os
 from concurrent.futures import ThreadPoolExecutor
 
 from backend.analizador_sentimiento import _llamar_cohere
 from backend.config_voz import aplicar_chips, reglas_de_estilo, voz_como_prompt
 from backend.privacidad import enmascarar
+
+# El cuello de botella es la espera de red, no la CPU. Si Cohere devuelve 429, bájalo.
+HILOS_GENERACION = int(os.getenv("HILOS_GENERACION", "8"))
 
 LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 280, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
 SEPARADOR_HILO = "\n\n———\n\n"
@@ -93,6 +98,24 @@ def generar_lote(items: list[dict], voz: dict) -> tuple[dict, dict]:
     """items: [{id, formato, mensaje, mensajes?, texto_previo?}] -> ({id: texto}, {id: error})"""
     resultados, errores = {}, {}
 
+    def _firma(it) -> str | None:
+        """Dos activos del mismo formato sobre el mismo mensaje dan el mismo texto:
+        se pide una vez y se reparte. Las variantes ("Volver a generar") y la
+        newsletter, que resume todo el lote, no se deduplican."""
+        if it.get("texto_previo") or it.get("mensajes"):
+            return None
+        m = it.get("mensaje") or {}
+        crudo = "\u0000".join(str(x or "") for x in (it["formato"], m.get("texto"), m.get("autor")))
+        return hashlib.sha256(crudo.encode("utf-8")).hexdigest()
+
+    por_firma: dict[str, list] = {}
+    sueltos = []
+    for it in items:
+        f = _firma(it)
+        (sueltos if f is None else por_firma.setdefault(f, [])).append(it)
+
+    trabajos = sueltos + [grupo[0] for grupo in por_firma.values()]
+
     def uno(it):
         try:
             resultados[it["id"]] = generar_texto(
@@ -100,6 +123,15 @@ def generar_lote(items: list[dict], voz: dict) -> tuple[dict, dict]:
         except Exception as e:  # un activo que falla no tumba al resto
             errores[it["id"]] = str(e)
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        list(pool.map(uno, items))
+    with ThreadPoolExecutor(max_workers=HILOS_GENERACION) as pool:
+        list(pool.map(uno, trabajos))
+
+    # repartir el texto a los gemelos que no se llegaron a pedir
+    for grupo in por_firma.values():
+        cabeza = grupo[0]["id"]
+        for gemelo in grupo[1:]:
+            if cabeza in resultados:
+                resultados[gemelo["id"]] = resultados[cabeza]
+            elif cabeza in errores:
+                errores[gemelo["id"]] = errores[cabeza]
     return resultados, errores

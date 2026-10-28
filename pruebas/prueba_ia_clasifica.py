@@ -79,7 +79,28 @@ con_respuesta("esto no es json")
 r = A.analizar_interaccion({"autor": "Ana", "texto": "x", "tipo": "logro"})
 check("JSON inválido -> conserva la pista", r["tipo"] == "logro" and r["tipo_corregido"] is False)
 
-check("versión de caché nueva", A.MODELO_CACHE == "command-r-08-2024+tipo-ia-v1", A.MODELO_CACHE)
+# No se fija una versión concreta: subirla es lo normal al tocar el prompt, y una
+# prueba que se rompe en cada bump se acaba ignorando. Lo que importa es que la
+# llave de caché lleve versión, porque sin eso se sirve análisis viejo.
+check("la llave de caché lleva versión", A.MODELO_CACHE.startswith(A.COHERE_MODEL + "+")
+      and A.VERSION_ANALISIS in A.MODELO_CACHE, A.MODELO_CACHE)
+
+# ---------------- temas y palabras clave ----------------
+con_respuesta('{"tipo":"queja","sentimiento":"negativo","score":80,'
+              '"temas":["acceso a laboratorios"],"claves":["Tenancy","bucket","error"],"por_que":"x"}')
+r = A.analizar_interaccion({"autor": "Ana", "texto": "no entro al lab"})
+check("el tema se normaliza al catálogo", r["temas"] == ["Acceso a laboratorios"], r["temas"])
+check("las claves bajan a minúscula", r["claves"] == ["tenancy", "bucket", "error"], r["claves"])
+
+con_respuesta('{"tipo":"queja","sentimiento":"negativo","score":80,'
+              '"temas":["A","B","C"],"claves":["a","A","b","c","d","e"],"por_que":"x"}')
+r = A.analizar_interaccion({"autor": "Ana", "texto": "x"})
+check("máximo 2 temas", len(r["temas"]) == 2, r["temas"])
+check("máximo 3 claves, sin repetidos", r["claves"] == ["a", "b", "c"], r["claves"])
+
+con_respuesta("esto tampoco es json")
+r = A.analizar_interaccion({"autor": "Ana", "texto": "x"})
+check("JSON roto -> listas vacías, no revienta", r["temas"] == [] and r["claves"] == [])
 
 # ---------------- endpoint ----------------
 from fastapi import FastAPI

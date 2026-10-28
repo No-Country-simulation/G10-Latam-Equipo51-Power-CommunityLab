@@ -275,6 +275,7 @@ dialog::backdrop{background:rgba(3,7,18,.6);backdrop-filter:blur(2px)}
 input[type=text],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-2);color:var(--ink);font-size:.92rem}
 textarea{line-height:1.6;resize:vertical}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+select{padding-right:30px}
 
 .acc{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel-2);overflow:hidden}
 .acc>summary{cursor:pointer;padding:10px 13px;font-size:.88rem;font-weight:600;color:var(--ink-2);list-style:none;display:flex;gap:8px;align-items:center}
@@ -352,6 +353,7 @@ code{font-family:var(--mono);font-size:.84rem;background:var(--panel-2);padding:
 .archivo-estado.ok{color:var(--ok);background:var(--ok-soft)}
 .archivo-estado.warn{color:var(--warn);background:var(--warn-soft)}
 .archivo-estado.alert{color:var(--alert);background:var(--alert-soft)}
+.archivo-estado.neutro{color:var(--muted)}
 .archivo.subiendo .archivo-estado{animation:archivoPulso 1.1s ease-in-out infinite}
 @keyframes archivoIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @keyframes archivoPulso{50%{opacity:.45}}

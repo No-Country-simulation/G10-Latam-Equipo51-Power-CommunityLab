@@ -21,6 +21,7 @@ namespace = client.get_namespace().data
 PREFIJO_CURADURIA = "activos/"   # activos/<slug>/curaduria.json
 PREFIJO_ANALISIS = "analisis/"   # analisis/<archivo>.json  (caché de Cohere)
 PREFIJO_CONFIG = "config/"       # config/voz.json
+PREFIJO_SLACK = "slack-ingesta/"  # slack-ingesta/<canal>-<ts>.json  (NO reservado: es entrada a analizar)
 PREFIJOS_RESERVADOS = (PREFIJO_CURADURIA, PREFIJO_ANALISIS, PREFIJO_CONFIG)
 
 

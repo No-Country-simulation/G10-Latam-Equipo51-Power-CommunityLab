@@ -22,10 +22,12 @@ from backend.rutas_dashboard import router as router_dashboard
 from backend.cohere_uso import router as router_cohere_uso
 from backend.ingesta_texto import router as router_ingesta
 from backend.rutas_publico import invalidar_cache as invalidar_cache_publico, router as router_publico
-from backend.oci_storage import PREFIJOS_RESERVADOS, leer_json, listar_objetos
+from backend.oci_storage import PREFIJO_SLACK, PREFIJOS_RESERVADOS, leer_json, listar_objetos
 from backend.gestor_semanas import obtener_lista_semanas_oci, obtener_detalle_semana_oci
 from backend.gestor_conexiones import obtener_conexiones, cambiar_estado_conexion
 from backend.gestor_publicaciones import publicar_en_redes
+import hashlib
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 import re
 from dotenv import load_dotenv
@@ -199,9 +201,29 @@ async def ingestar_slack(payload: dict):
                 usuarios[user_id] = user_id
 
     periodo = datetime.now().isocalendar().week
-    archivos = []
-    for idx, item in enumerate(elegidos, 1):
+
+    # Un mensaje de Slack se guarda UNA vez. El nombre del objeto sale del `ts` del mensaje
+    # (único e inmutable dentro del canal) y no de la hora de la importación: antes, reimportar
+    # el mismo canal creaba un archivo nuevo por mensaje, y como la caché de análisis y la huella
+    # de generación van por nombre de archivo, se volvía a redactar contenido ya redactado.
+    canal_slug = re.sub(r"[^A-Za-z0-9_-]", "-", canal) or "canal"
+    try:
+        ya_en_bucket = {o.name for o in listar_objetos(PREFIJO_SLACK)}
+    except Exception:
+        logging.getLogger("uvicorn.error").warning(
+            "No se pudo listar %s: se importa sin deduplicar", PREFIJO_SLACK)
+        ya_en_bucket = set()
+
+    archivos, repetidos = [], []
+    for item in elegidos:
         raw = item["raw"]
+        ts = str(raw.get("ts", "")).strip().replace(".", "-")
+        # Sin ts (no debería pasar) el contenido identifica al mensaje: dos distintos no colisionan.
+        clave = ts or hashlib.sha256(item["texto"].encode("utf-8")).hexdigest()[:16]
+        nombre = f"{PREFIJO_SLACK}{canal_slug}-{clave}.json"
+        if nombre in ya_en_bucket:
+            repetidos.append(nombre)
+            continue
         user_id = str(raw.get("user") or "").strip()
         autor = usuarios.get(user_id) or str(raw.get("user_name") or raw.get("username") or user_id or "Usuario Slack")
         fecha = datetime.fromtimestamp(item["ts"], timezone.utc).isoformat()
@@ -211,7 +233,6 @@ async def ingestar_slack(payload: dict):
             "interaccion": {"autor": autor, "canal": f"#{canal}", "texto": item["texto"], "fecha": fecha, "tipo": "logro" if item["logro"] else "queja" if item["reclamo"] else "pregunta_tecnica" if item["pregunta"] else "feedback"},
             "metadata_slack": {"ts": str(raw.get("ts", "")), "permalink": raw.get("permalink"), "repeticiones_aproximadas": item["repeticiones"], "prioridad_preseleccion": round(item["score"], 2)}
         }
-        nombre = f"slack-ingesta/{datetime.now().strftime('%Y%m%d-%H%M%S')}-{idx:02d}-{str(raw.get('ts','0')).replace('.', '-')}.json"
         try:
             client.put_object(namespace_name=namespace, bucket_name=BUCKET_NAME, object_name=nombre,
                               put_object_body=json.dumps(contenido, ensure_ascii=False).encode("utf-8"))
@@ -219,7 +240,14 @@ async def ingestar_slack(payload: dict):
             logging.getLogger("uvicorn.error").exception("Error guardando mensaje Slack en OCI")
             raise HTTPException(status_code=502, detail=f"No se pudo guardar el lote en OCI: {exc}")
         archivos.append(nombre)
-    return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes), "mensajes_con_texto": len(candidatos), "seleccionados": len(archivos), "archivos": archivos, "mensaje": "Mensajes relevantes guardados en OCI. Ahora pulsa Procesar con IA para continuar el flujo existente."}
+        ya_en_bucket.add(nombre)
+    mensaje = ("Mensajes relevantes guardados en OCI. Ahora pulsa Procesar con IA para continuar el flujo existente."
+               if archivos else
+               "Todos los mensajes relevantes del periodo ya estaban importados: no se guardó nada nuevo.")
+    return {"ok": True, "canal": canal, "horas": horas, "mensajes_encontrados": len(mensajes),
+            "mensajes_con_texto": len(candidatos), "seleccionados": len(archivos),
+            "repetidos": len(repetidos), "archivos": archivos,
+            "archivos_repetidos": repetidos, "mensaje": mensaje}
 
 
 @app.get("/files")
@@ -330,6 +358,13 @@ def _contexto_mensaje(archivo: str, contenido: dict) -> dict:
             "periodo_referencia": ctx["periodo_referencia"]}
 
 
+# Cuántas llamadas a Cohere van a la vez. El cuello de botella es la espera de
+# red, no la CPU: en serie, 24 mensajes son 24 esperas encadenadas.
+# Si Cohere empieza a devolver 429, baja este número.
+HILOS_IA = int(os.getenv("HILOS_IA", "6"))
+HILOS_BUCKET = int(os.getenv("HILOS_BUCKET", "12"))
+
+
 @app.post("/procesar")
 def procesar_lote(forzar: bool = False):
     """
@@ -362,52 +397,107 @@ def procesar_lote(forzar: bool = False):
     mensajes, procesados = [], []     # procesados: (objeto, mensaje) NUEVOS, para replicar en MongoDB
     reutilizados = nuevos = omitidos = 0
 
-    for obj in entradas:
-        # 1) ¿ya analizado?
-        if obj.name in en_cache:
-            cacheado = cache_analisis.cargar(obj.name, obj.etag, MODELO_CACHE)
-            if cacheado:
-                if "archivo" not in cacheado:
-                    # caché anterior a origen/periodo: se completa leyendo el archivo, sin llamar a Cohere
-                    try:
-                        contenido = leer_json(obj.name)
-                        cacheado.update(_contexto_mensaje(obj.name, contenido))
-                        cache_analisis.guardar(obj.name, obj.etag, MODELO_CACHE, cacheado)
-                        db.guardar_entrada(obj.name, obj.etag, contenido, contexto.extraer(contenido))
-                    except ValueError:
-                        cacheado["archivo"] = obj.name
-                    procesados.append((obj, dict(cacheado)))   # solo los completados se re-sincronizan
-                elif mongo_vacio:
-                    procesados.append((obj, dict(cacheado)))
-                # nuevo=False / etag viajan solo en la respuesta (no se escriben en analisis/)
-                mensajes.append({**cacheado, "etag": obj.etag, "nuevo": False})
-                reutilizados += 1
-                continue
+    # --------------------------------------------------------------- 1) caché
+    def _leer_cache(obj):
+        return obj, cache_analisis.cargar(obj.name, obj.etag, MODELO_CACHE)
 
-        # 2) analizar con Cohere
+    cacheados = {}
+    en_cache_objs = [o for o in entradas if o.name in en_cache]
+    if en_cache_objs:
+        with ThreadPoolExecutor(max_workers=HILOS_BUCKET) as pool:
+            for obj, dato in pool.map(_leer_cache, en_cache_objs):
+                if dato:
+                    cacheados[obj.name] = dato
+    pendientes = [o for o in entradas if o.name not in cacheados]
+
+    # ----------------------------------------------------------- 2) descargas
+    def _descargar(obj):
         try:
-            contenido = leer_json(obj.name)
-        except ValueError:  # no es JSON
-            log.warning("Se omite %s: no es un JSON válido", obj.name)
-            omitidos += 1
-            continue
+            return obj, leer_json(obj.name), None
+        except ValueError as e:
+            return obj, None, e
 
-        ctx = contexto.extraer(contenido)
-        interaccion = ctx["interaccion"]
-        extra = _contexto_mensaje(obj.name, contenido)
+    por_analizar = []          # (obj, contenido, ctx, extra)
+    if pendientes:
+        with ThreadPoolExecutor(max_workers=HILOS_BUCKET) as pool:
+            for obj, contenido, error in pool.map(_descargar, pendientes):
+                if error is not None:
+                    log.warning("Se omite %s: no es un JSON válido", obj.name)
+                    omitidos += 1
+                    continue
+                por_analizar.append((obj, contenido, contexto.extraer(contenido),
+                                     _contexto_mensaje(obj.name, contenido)))
+
+    # ------------------------------------------------- 3) análisis sin repetir
+    # Dos archivos con EXACTAMENTE el mismo mensaje no valen dos llamadas a la IA:
+    # se analiza uno y el resultado se reparte. Pasa cada vez que se reenvía el
+    # mismo volcado de Slack o Discord en otro lote.
+    def _firma(interaccion: dict) -> str:
+        crudo = "\u0000".join(str(interaccion.get(k) or "") for k in ("texto", "tipo", "canal"))
+        return hashlib.sha256(crudo.encode("utf-8")).hexdigest()
+
+    unicos: dict[str, dict] = {}
+    for _, _, ctx, _ in por_analizar:
+        unicos.setdefault(_firma(ctx["interaccion"]), ctx["interaccion"])
+
+    analisis_por_firma, fallos_por_firma = {}, {}
+
+    def _analizar(par):
+        firma, interaccion = par
+        try:
+            return firma, analizar_interaccion(interaccion), None
+        except Exception as e:      # un mensaje que falla no tumba el lote
+            return firma, None, e
+
+    if unicos:
+        with ThreadPoolExecutor(max_workers=HILOS_IA) as pool:
+            for firma, res, err in pool.map(_analizar, unicos.items()):
+                (analisis_por_firma if err is None else fallos_por_firma)[firma] = res if err is None else err
+
+    duplicados = len(por_analizar) - len(unicos)
+    if duplicados:
+        log.info("Deduplicación: %s mensajes repetidos reutilizan otro análisis", duplicados)
+
+    # ------------------------------------------------- 4) repartir y guardar
+    escrituras = []
+    for obj, contenido, ctx, extra in por_analizar:
+        firma = _firma(ctx["interaccion"])
         db.guardar_entrada(obj.name, obj.etag, contenido, ctx)
-
-        try:
-            mensaje = {**analizar_interaccion(interaccion), **extra}
-        except Exception as e:
-            # un mensaje que falla no tumba el lote y NO se cachea (se reintenta la próxima vez)
-            mensajes.append({**mensaje_con_error(interaccion, e), **extra, "etag": obj.etag, "nuevo": True})
+        if firma in fallos_por_firma:
+            mensajes.append({**mensaje_con_error(ctx["interaccion"], fallos_por_firma[firma]),
+                             **extra, "etag": obj.etag, "nuevo": True})
             continue
-
-        cache_analisis.guardar(obj.name, obj.etag, MODELO_CACHE, mensaje)
+        mensaje = {**analisis_por_firma[firma], **extra}
+        escrituras.append((obj, mensaje))
         mensajes.append({**mensaje, "etag": obj.etag, "nuevo": True})
         procesados.append((obj, mensaje))
         nuevos += 1
+
+    if escrituras:
+        with ThreadPoolExecutor(max_workers=HILOS_BUCKET) as pool:
+            list(pool.map(lambda par: cache_analisis.guardar(
+                par[0].name, par[0].etag, MODELO_CACHE, par[1]), escrituras))
+
+    # -------------------------------------------- 5) los que venían de caché
+    for obj in entradas:
+        cacheado = cacheados.get(obj.name)
+        if not cacheado:
+            continue
+        if "archivo" not in cacheado:
+            # caché anterior a origen/periodo: se completa leyendo el archivo, sin llamar a Cohere
+            try:
+                contenido = leer_json(obj.name)
+                cacheado.update(_contexto_mensaje(obj.name, contenido))
+                cache_analisis.guardar(obj.name, obj.etag, MODELO_CACHE, cacheado)
+                db.guardar_entrada(obj.name, obj.etag, contenido, contexto.extraer(contenido))
+            except ValueError:
+                cacheado["archivo"] = obj.name
+            procesados.append((obj, dict(cacheado)))   # solo los completados se re-sincronizan
+        elif mongo_vacio:
+            procesados.append((obj, dict(cacheado)))
+        # nuevo=False / etag viajan solo en la respuesta (no se escriben en analisis/)
+        mensajes.append({**cacheado, "etag": obj.etag, "nuevo": False})
+        reutilizados += 1
 
     hoy = datetime.now()
 
@@ -416,7 +506,8 @@ def procesar_lote(forzar: bool = False):
     for m in mensajes:   # slug propio (el del lote solo como respaldo si el periodo no se reconoce)
         m["slug"] = contexto.slug_de_mensaje(m) or resultado["slug"]
     resultado.update(contexto.resumen_contexto(mensajes))
-    resultado["cache"] = {"reutilizados": reutilizados, "analizados": nuevos, "omitidos": omitidos}
+    resultado["cache"] = {"reutilizados": reutilizados, "analizados": nuevos,
+                          "omitidos": omitidos, "duplicados": duplicados}
 
     # 3) replica en MongoDB (si está configurado; nunca rompe el flujo)
     for obj, m in procesados:
