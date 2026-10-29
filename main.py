@@ -371,7 +371,10 @@ def _contexto_mensaje(archivo: str, contenido: dict) -> dict:
 # Cuántas llamadas a Cohere van a la vez. El cuello de botella es la espera de
 # red, no la CPU: en serie, 24 mensajes son 24 esperas encadenadas.
 # Si Cohere empieza a devolver 429, baja este número.
-HILOS_IA = int(os.getenv("HILOS_IA", "6"))
+# 2 y no 6: con una clave de plan gratuito, seis llamadas simultáneas agotan el
+# límite por minuto de Cohere y TODO el lote vuelve con 429 (score 0, descartado).
+# Con 2 el lote tarda más pero termina. Subir solo con una clave de pago.
+HILOS_IA = int(os.getenv("HILOS_IA", "2"))
 HILOS_BUCKET = int(os.getenv("HILOS_BUCKET", "12"))
 
 
