@@ -111,7 +111,9 @@ _SESION.mount("https://", _ADAPTADOR)
 # latencia deja de estar acotada por lo que de verdad necesitamos.
 TOPE_TOKENS_ANALISIS = 400
 TIMEOUT_COHERE = int(os.getenv("TIMEOUT_COHERE", "45"))
-REINTENTOS_COHERE = int(os.getenv("REINTENTOS_COHERE", "3"))
+# 5 reintentos: con la espera creciente (1, 2, 4, 8, 8 s) se cubren más de 20
+# segundos, suficiente para que se libere la ventana por minuto de Cohere.
+REINTENTOS_COHERE = int(os.getenv("REINTENTOS_COHERE", "5"))
 
 
 def _llamar_cohere(prompt: str, system: str | None = None, temperature: float | None = None,

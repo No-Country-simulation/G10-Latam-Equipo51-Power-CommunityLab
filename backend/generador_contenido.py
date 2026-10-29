@@ -11,7 +11,9 @@ from backend.config_voz import aplicar_chips, reglas_de_estilo, voz_como_prompt
 from backend.privacidad import enmascarar
 
 # El cuello de botella es la espera de red, no la CPU. Si Cohere devuelve 429, bájalo.
-HILOS_GENERACION = int(os.getenv("HILOS_GENERACION", "8"))
+# Mismo motivo que HILOS_IA en main.py: ocho llamadas a la vez provocan 429
+# con una clave de plan gratuito.
+HILOS_GENERACION = int(os.getenv("HILOS_GENERACION", "2"))
 
 LIMITES = {"Post de LinkedIn": 3000, "Hilo de X": 280, "Tip / FAQ": 2500, "Destaque de newsletter": 4000}
 SEPARADOR_HILO = "\n\n———\n\n"
