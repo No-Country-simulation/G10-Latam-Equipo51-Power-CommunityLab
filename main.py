@@ -141,8 +141,18 @@ async def ingestar_slack(payload: dict):
         tokens = set(re.findall(r"[a-záéíóúñü0-9]{3,}", limpio)) - stop
         if not tokens:
             continue
-        pregunta = "?" in texto or bool(re.search(r"\b(cómo|como|qué|que|por qué|porque|ayuda|alguien sabe|consulta|duda|error)\b", limpio))
-        logro = bool(re.search(r"\b(logro|conseguí|consegui|conseguido|aprobé|aprobar|certificad[oa]|contratad[oa]|empleo|trabajo nuevo|lancé|lance|terminé|termine|finalicé|finalice|feliz|graduad[oa])\b", limpio))
+        # Solo interrogativos CON tilde: "que" y "como" sin tilde son conjunciones que
+        # aparecen en casi cualquier frase en español, y marcaban como pregunta técnica
+        # mensajes que no preguntaban nada ("Que gran experiencia...").
+        pregunta = "?" in texto or bool(re.search(r"\b(cómo|qué|por qué|ayuda|alguien sabe|consulta|duda|error)\b", limpio))
+        # "no logro" es el verbo lograr, no un hito: se excluye con el lookbehind.
+        # Primera persona del SINGULAR y del PLURAL: en una comunidad los hitos también
+        # son de equipo ("terminamos el proyecto", "logramos la certificación") y antes
+        # se escapaban todos.
+        logro = bool(re.search(r"\b((?<!no )logro|logramos|logrado|lograda|conseguí|consegui|conseguido|conseguimos|"
+                               r"aprobé|aprobar|aprobamos|certificad[oa]|contratad[oa]|empleo|trabajo nuevo|"
+                               r"lancé|lance|lanzamos|terminé|termine|terminamos|finalicé|finalice|finalizamos|"
+                               r"feliz|felicidades|felicitaciones|orgullos[oa]|graduad[oa])\b", limpio))
         reclamo = bool(re.search(r"\b(error|problema|fall[óo]|no funciona|bloquead[oa]|reclamo|falla|roto|urgente|no puedo|imped|ca[ií]d[oa])\b", limpio))
         candidatos.append({"raw": m, "texto": texto, "tokens": tokens, "ts": ts,
                            "pregunta": pregunta, "logro": logro, "reclamo": reclamo,
