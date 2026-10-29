@@ -212,18 +212,13 @@ function toast(titulo, texto, ok, undo) {
   toasts.appendChild(t); setTimeout(() => t.remove(), undo ? 6500 : 3400);
 }
 
-/* Cuánto se produce POR PERIODO, como mucho.
+/* Sin topes de salida: se genera un activo por cada mensaje que lo merezca.
 
-   Sin topes, "un post por cada éxito" se desborda en cuanto la comunidad crece:
-   con 500 alumnos escribiendo son ~260 posts de LinkedIn en una semana, y
-   entonces nadie cura nada. La curaduría humana es lo que distingue a este
-   producto, así que el sistema tiene que entregar poco y bueno, no todo.
-
-   El corte va por SEMANA, no sobre todo el bucket. Un tope global congelaba la
-   salida: un mensaje de hace quince días con score 95 bloqueaba para siempre a
-   uno nuevo con 85, y la herramienta dejaba de reaccionar a lo que iba llegando.
-   Cada periodo compite consigo mismo. */
-const TOPES = { linkedin: 10, x: 5, faq: 5 };
+   Hubo topes (5 y luego 10 por semana) para que una comunidad grande no sepultara
+   al curador: con 500 alumnos salían ~260 posts de LinkedIn por semana. Se quitaron
+   a propósito —el proyecto ya no recibe mantenimiento y se usa para demostraciones—
+   de modo que todo lo que se carga se vea. Si alguna vez vuelve a producción, el
+   tope hay que reponerlo: ver el historial de este archivo. */
 
 /* Agrupa por periodo conservando el orden de entrada (que ya viene por score). */
 function porPeriodo(mensajes) {
@@ -241,20 +236,15 @@ function construir() {
   const a = []; let n = 1; const add = o => a.push(Object.assign({ id: "A" + (n++), estado: "Pendiente" }, o));
   const exitos = DATOS.filter(m => ruta(m) === "exito").sort((x, y) => y.score - x.score);
 
-  porPeriodo(exitos).forEach(semana => {
-    semana.slice(0, TOPES.linkedin).forEach(m =>
-      add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) }));
+  exitos.forEach(m =>
+    add({ formato: "Post de LinkedIn", fuente: m.id, score: m.score, texto: linkedinTxt(m) }));
 
-    semana.slice(0, TOPES.x).forEach(m =>
-      add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) }));
-  });
+  exitos.forEach(m =>
+    add({ formato: "Hilo de X", fuente: m.id, score: m.score - 4, texto: hiloTxt(m) }));
 
-  /* Las FAQ se eligen por TEMA REPETIDO, no por score suelto. Si ocho personas
-     preguntan lo mismo, ese es el tip que hay que escribir; la pregunta con el
-     score más alto puede ser un caso aislado que no le sirve a nadie más.
-     Si el análisis todavía no guarda temas, se cae al criterio anterior.
-     El recuento de repeticiones es de la propia semana: así "preguntado por 8"
-     significa ocho personas ESTA semana, que es lo accionable. */
+  /* Las FAQ siguen agrupándose por TEMA: si ocho personas preguntan lo mismo, es UN
+     tip, no ocho. Eso no es un tope, es evitar repetir el mismo contenido. El recuento
+     es de la propia semana, así "preguntado por 8" significa ocho personas esta semana. */
   porPeriodo(DATOS.filter(m => ruta(m) === "faq")).forEach(preguntas => {
     const conTema = preguntas.filter(m => (m.temas || []).length);
 
@@ -267,14 +257,13 @@ function construir() {
       [...porTema.entries()]
         .sort((x, y) => y[1].length - x[1].length ||
                         Math.max(...y[1].map(m => m.score)) - Math.max(...x[1].map(m => m.score)))
-        .slice(0, TOPES.faq)
         .forEach(([tema, msgs]) => {
           const mejor = msgs.slice().sort((x, y) => y.score - x.score)[0];
           add({ formato: "Tip / FAQ", fuente: mejor.id, score: mejor.score,
                 tema, repeticiones: msgs.length, texto: faqGenerico(mejor) });
         });
     } else {
-      preguntas.slice().sort((x, y) => y.score - x.score).slice(0, TOPES.faq)
+      preguntas.slice().sort((x, y) => y.score - x.score)
         .forEach(m => add({ formato: "Tip / FAQ", fuente: m.id, score: m.score, texto: faqGenerico(m) }));
     }
   });
@@ -644,7 +633,10 @@ async function fin(resultado, nodoGenerar = null) {
     id: "m" + (i + 1), autor: m.autor, canal: m.canal || "general", tipo: m.tipo,
     tipo_pista: m.tipo_pista || null, tipo_corregido: !!m.tipo_corregido,
     sent: m.sent, score: m.score, idioma: m.idioma || "es", texto: m.texto,
-    por_que: m.por_que, temas: [m.tipo],
+    /* Los temas los extrae Cohere; antes se pisaban con [m.tipo], así que las FAQ
+       se agrupaban por TIPO y todas las preguntas colapsaban en un solo tip. */
+    por_que: m.por_que, temas: (m.temas && m.temas.length) ? m.temas : [m.tipo],
+    claves: m.claves || [],
     apoyo: m.tipo === "queja" || m.tipo === "problema_acceso",
     archivo: m.archivo, etag: m.etag, slug: m.slug, origen_comunidad: m.origen_comunidad, periodo_referencia: m.periodo_referencia
   }));
